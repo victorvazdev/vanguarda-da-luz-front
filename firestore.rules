@@ -299,5 +299,63 @@ service cloud.firestore {
 
       allow delete: if false;
     }
+
+    // ---------- Eventos ----------
+    // Lidos por membros ativos. Criados, editados e cancelados por administradores, sempre
+    // antes de começarem. O cancelamento mantém o evento (status 'cancelado') e é definitivo.
+    // As presenças ficam em subcoleção, então editar o evento não as altera.
+    function eventFields() {
+      return ['title', 'startsAt', 'description', 'organizer'];
+    }
+
+    function filledText(value, max) {
+      return value is string && value.size() <= max && value.matches('(?s).*\\S.*');
+    }
+
+    function validEventContent(d) {
+      return filledText(d.title, 80)
+        && filledText(d.organizer, 40)
+        && filledText(d.description, 2000)
+        && d.startsAt is timestamp;
+    }
+
+    match /events/{eventId} {
+      allow get, list: if isActive();
+
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(
+             eventFields().concat(['status', 'createdBy', 'createdAt', 'updatedAt']))
+        && request.resource.data.keys().hasAll(eventFields())
+        && validEventContent(request.resource.data)
+        && request.resource.data.startsAt > request.time
+        && request.resource.data.status == 'ativo'
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      // Edição: evento ativo e futuro; a nova data também precisa ser futura.
+      allow update: if isAdmin()
+        && resource.data.status == 'ativo'
+        && resource.data.startsAt > request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(eventFields().concat(['updatedAt', 'updatedBy']))
+        && validEventContent(request.resource.data)
+        && (request.resource.data.startsAt == resource.data.startsAt
+            || request.resource.data.startsAt > request.time)
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.updatedBy == request.auth.uid;
+
+      // Cancelamento: somente a situação muda, com registro de quem cancelou e quando.
+      allow update: if isAdmin()
+        && resource.data.status == 'ativo'
+        && resource.data.startsAt > request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'cancelledAt', 'cancelledBy'])
+        && request.resource.data.status == 'cancelado'
+        && request.resource.data.cancelledAt == request.time
+        && request.resource.data.cancelledBy == request.auth.uid;
+
+      allow delete: if false;
+    }
   }
 }

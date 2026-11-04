@@ -3,10 +3,11 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { SessionService } from '../../../core/auth/session.service';
 import { landingPathFor } from '../../../core/routing/paths';
 
-/** Abas da administração. Cada história acrescenta a sua (Eventos). */
+/** Abas da administração. */
 export const ADMIN_TABS = [
   { label: 'Candidaturas', path: '/admin/candidaturas' },
   { label: 'Membros', path: '/admin/membros' },
+  { label: 'Eventos', path: '/admin/eventos' },
 ] as const;
 
 @Component({

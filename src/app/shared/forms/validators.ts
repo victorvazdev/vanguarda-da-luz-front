@@ -36,3 +36,7 @@ export const characterNameFormat: ValidatorFn = (control) => {
   const value = String(control.value ?? '').trim();
   return !value || CHARACTER_NAME_PATTERN.test(value) ? null : { characterName: true };
 };
+
+/** Texto obrigatório que não aceita só espaços (erro `required`). */
+export const requiredText: ValidatorFn = (control) =>
+  String(control.value ?? '').trim() ? null : { required: true };

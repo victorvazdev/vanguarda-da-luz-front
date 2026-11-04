@@ -16,7 +16,7 @@ describe('AdminShell', () => {
     const fixture = TestBed.createComponent(AdminShell);
     await fixture.whenStable();
     const tabs = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.tabs a')];
-    expect(tabs.map((t) => t.textContent?.trim())).toEqual(['Candidaturas', 'Membros']);
+    expect(tabs.map((t) => t.textContent?.trim())).toEqual(['Candidaturas', 'Membros', 'Eventos']);
   });
 
   it('sai da área se a pessoa deixar de ser administradora durante o uso', async () => {

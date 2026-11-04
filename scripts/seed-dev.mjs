@@ -168,4 +168,32 @@ for (const p of PEOPLE) {
 }
 // Lista de administradores ativos (usada para impedir remover o último admin).
 await put('config/admins', { activeAdminUids: adminUids });
+
+// Eventos do protótipo, a partir de hoje (horários de Brasília, UTC−3).
+const atBrasilia = (days, hour, minute = 0) => {
+  const d = new Date(now + days * 86_400_000 - 3 * 3_600_000);
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hour + 3, minute));
+};
+const EVENTS = [
+  ['raid-1', 'Raid semanal', atBrasilia(3, 21)],
+  ['masmorras', 'Masmorras em grupo', atBrasilia(7, 20)],
+  ['raid-2', 'Raid semanal', atBrasilia(10, 21)],
+  ['encontro', 'Encontro da guilda', atBrasilia(18, 20), true],
+  ['raid-3', 'Raid semanal', atBrasilia(24, 21)],
+  ['raid-anterior', 'Raid semanal', atBrasilia(-4, 21)],
+];
+for (const [id, title, startsAt, cancelled] of EVENTS) {
+  await put(`events/seed-${id}`, {
+    title,
+    startsAt,
+    description: '[DESCRIÇÃO DO EVENTO]',
+    organizer: 'Maren',
+    status: cancelled ? 'cancelado' : 'ativo',
+    createdBy: adminUids[0],
+    createdAt: daysAgo(5),
+    updatedAt: daysAgo(5),
+    ...(cancelled ? { cancelledAt: daysAgo(1), cancelledBy: adminUids[0] } : {}),
+  });
+}
+console.log(`${EVENTS.length} eventos (1 cancelado, 1 passado)`);
 console.log(`\nSenha de todas as contas: ${PASSWORD}`);

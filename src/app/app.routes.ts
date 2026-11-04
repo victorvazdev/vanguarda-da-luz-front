@@ -86,6 +86,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/members/members-admin-page').then((m) => m.MembersAdminPage),
       },
+      {
+        path: 'eventos',
+        title: 'Eventos',
+        loadComponent: () =>
+          import('./features/admin/events/events-admin-page').then((m) => m.EventsAdminPage),
+      },
     ],
   },
   {
