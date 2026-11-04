@@ -1,0 +1,106 @@
+.members__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+
+  .admin__title {
+    margin: 0;
+  }
+}
+
+.members__search {
+  width: min(100%, 240px);
+}
+
+.members__note {
+  margin-top: var(--space-3);
+}
+
+.members-table {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  thead th {
+    background: var(--color-surface);
+    color: var(--color-gold);
+    font-weight: 700;
+  }
+
+  tbody th {
+    font-weight: 400;
+  }
+}
+
+.members-table__name {
+  display: block;
+  color: var(--color-heading);
+  font-weight: 700;
+}
+
+.members-table__details {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.members-table__select {
+  width: auto;
+  min-width: 10rem;
+}
+
+.members-table__row--inactive {
+  color: var(--color-text-muted);
+}
+
+// Celular: cada linha vira um cartão com rótulos.
+@media (max-width: 680px) {
+  .members-table {
+    border: 0;
+
+    thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+
+    tr {
+      display: block;
+      padding-block: var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    th,
+    td {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      padding: var(--space-2) 0;
+      border: 0;
+    }
+
+    tbody th {
+      display: block;
+    }
+
+    td::before {
+      content: attr(data-label);
+      color: var(--color-text-muted);
+    }
+  }
+}

@@ -1,0 +1,73 @@
+<section class="hero" aria-labelledby="titulo-guilda">
+  <div class="container hero__grid">
+    <div class="hero__text">
+      <p class="eyebrow">{{ guild.tagline }}</p>
+      <h1 id="titulo-guilda" class="hero__title">{{ guild.name }}</h1>
+      <p class="hero__intro">{{ guild.intro }}</p>
+      <div class="actions">
+        @if (joinPath(); as path) {
+          <a class="btn btn--primary" [routerLink]="path">Fazer parte da guilda</a>
+        }
+        <a class="btn btn--outline" [routerLink]="joinInfoPath">Ver como ingressar</a>
+      </div>
+    </div>
+
+    <div class="emblem" aria-hidden="true">
+      <span class="emblem__ring"></span>
+      <span class="emblem__tick emblem__tick--top"></span>
+      <span class="emblem__tick emblem__tick--right"></span>
+      <span class="emblem__tick emblem__tick--bottom"></span>
+      <span class="emblem__tick emblem__tick--left"></span>
+      <img
+        class="emblem__logo"
+        src="images/logo-640.webp"
+        alt=""
+        width="640"
+        height="640"
+        fetchpriority="high"
+      />
+    </div>
+  </div>
+</section>
+
+<section class="band" aria-labelledby="titulo-historia">
+  <div class="container band__grid">
+    <div>
+      <h2 id="titulo-historia" class="band__title">Nossa história</h2>
+      <p class="muted">{{ guild.history }}</p>
+    </div>
+
+    <dl class="facts">
+      <div class="facts__item">
+        <dt class="facts__label">Valores</dt>
+        <dd class="facts__value">{{ guild.values }}</dd>
+      </div>
+      <div class="facts__item">
+        <dt class="facts__label">Facção</dt>
+        <dd class="facts__value">{{ guild.faction }}</dd>
+      </div>
+      <div class="facts__item">
+        <dt class="facts__label">Servidor no Retail</dt>
+        <dd class="facts__value">{{ guild.server }}</dd>
+      </div>
+      <div class="facts__item">
+        <dt class="facts__label">Rulesets no WoW Forever</dt>
+        <dd class="facts__value">{{ guild.foreverRulesets }}</dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+@if (joinPath(); as path) {
+  <section class="cta" aria-labelledby="titulo-convite">
+    <div class="container cta__bar">
+      <div>
+        <h2 id="titulo-convite" class="cta__title">Pronto para se juntar a nós?</h2>
+        <p class="muted">
+          Crie sua conta e envie a candidatura. Um administrador avaliará seu pedido.
+        </p>
+      </div>
+      <a class="btn btn--primary" [routerLink]="path">Fazer parte da guilda</a>
+    </div>
+  </section>
+}

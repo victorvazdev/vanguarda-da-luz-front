@@ -1,0 +1,131 @@
+<section aria-labelledby="titulo-membros">
+  <div class="members__header">
+    <h1 id="titulo-membros" class="admin__title">Membros</h1>
+    <div class="field members__search">
+      <label class="field__label" for="membros-busca">Buscar por nome</label>
+      <input
+        id="membros-busca"
+        class="field__input"
+        type="search"
+        autocomplete="off"
+        [value]="search()"
+        (input)="onSearch($event)"
+        aria-controls="membros-tabela"
+      />
+    </div>
+  </div>
+
+  <div aria-live="polite">
+    @if (status(); as message) {
+      <p class="notice admin__feedback">{{ message }}</p>
+    }
+  </div>
+  @if (error(); as message) {
+    <p class="form-alert admin__feedback" role="alert">{{ message }}</p>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="muted" role="status">Carregando…</p>
+    }
+    @case ('error') {
+      <p class="form-alert" role="alert">
+        Não foi possível carregar os membros. Recarregue a página.
+      </p>
+    }
+    @default {
+      <p class="sr-only" aria-live="polite">
+        {{ view().length }} de {{ total() }} membros exibidos.
+      </p>
+      @if (view().length) {
+        <table id="membros-tabela" class="members-table">
+          <caption class="sr-only">
+            Membros da guilda, com situação, permissão e ações
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Personagem</th>
+              <th scope="col">Situação</th>
+              <th scope="col">Permissão</th>
+              <th scope="col">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of view(); track row.uid) {
+              <tr
+                [class.members-table__row--inactive]="!row.active"
+                [attr.aria-busy]="busy() === row.uid"
+              >
+                <th scope="row" data-label="Personagem">
+                  <span class="members-table__name">
+                    {{ row.name }}
+                    @if (row.isSelf) {
+                      <span class="muted">(você)</span>
+                    }
+                  </span>
+                  <span class="members-table__details">{{ row.details }}</span>
+                </th>
+                <td data-label="Situação">{{ row.active ? 'Ativo' : 'Desativado' }}</td>
+                <td data-label="Permissão">
+                  @if (row.active) {
+                    <label class="sr-only" [for]="'permissao-' + row.uid"
+                      >Permissão de {{ row.name }}</label
+                    >
+                    <select
+                      [id]="'permissao-' + row.uid"
+                      class="field__input members-table__select"
+                      [value]="row.role"
+                      [disabled]="busy() !== null || row.isLastAdmin"
+                      [attr.aria-describedby]="row.isLastAdmin ? 'ultimo-admin' : null"
+                      (change)="onRoleChange(row, $event)"
+                    >
+                      <option value="membro">Membro</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  } @else {
+                    <span class="muted" aria-hidden="true">—</span>
+                    <span class="sr-only">Sem permissão enquanto desativado</span>
+                  }
+                </td>
+                <td data-label="Ações">
+                  @if (row.active) {
+                    <button
+                      type="button"
+                      class="btn btn--outline"
+                      [disabled]="busy() !== null || row.isLastAdmin"
+                      [attr.aria-describedby]="row.isLastAdmin ? 'ultimo-admin' : null"
+                      (click)="deactivate(row)"
+                    >
+                      Desativar<span class="sr-only"> {{ row.name }}</span>
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn btn--outline"
+                      [disabled]="busy() !== null"
+                      (click)="reactivate(row)"
+                    >
+                      Reativar<span class="sr-only"> {{ row.name }}</span>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        @if (view().some((r) => r.isLastAdmin)) {
+          <p id="ultimo-admin" class="field__hint members__note">
+            O único administrador ativo não pode perder a permissão nem ser desativado. Torne outro
+            membro administrador antes.
+          </p>
+        }
+      } @else {
+        <p class="muted">
+          {{
+            search() ? 'Nenhum membro encontrado para "' + search() + '".' : 'Ainda não há membros.'
+          }}
+        </p>
+      }
+    }
+  }
+</section>

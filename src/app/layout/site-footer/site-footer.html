@@ -1,0 +1,18 @@
+<footer class="site-footer">
+  <div class="container site-footer__bar">
+    <p class="site-footer__name">{{ guildName }}</p>
+    @if (links.length) {
+      <nav aria-label="Redes sociais">
+        <ul class="social">
+          @for (link of links; track link.name) {
+            <li>
+              <a class="social__link" [href]="link.url" target="_blank" rel="noopener noreferrer">
+                {{ link.name }}<span class="sr-only"> (abre em nova aba)</span>
+              </a>
+            </li>
+          }
+        </ul>
+      </nav>
+    }
+  </div>
+</footer>

@@ -1,59 +1,89 @@
-# VanguardaDaLuzFront
+# Vanguarda da Luz — front-end
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.5.
+Site da guilda de World of Warcraft **Vanguarda da Luz**: Angular 22 (standalone, zoneless, TypeScript estrito), Firebase Authentication, Cloud Firestore e Firebase Hosting no plano Spark (sem Cloud Functions nem Storage).
 
-## Development server
+Fontes de verdade: [`docs/criterios-de-aceite.md`](docs/criterios-de-aceite.md) e [`docs/prototipo.pdf`](docs/prototipo.pdf).
 
-To start a local development server, run:
+## Pré-requisitos
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- Node.js 22+ e npm
+- Java 21+ (para o emulador do Firestore)
 
 ```bash
-ng generate component component-name
+npm install
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Desenvolvimento
+
+Em dois terminais:
 
 ```bash
-ng generate --help
+npm run emulators   # Auth :9099, Firestore :8080, Hosting :5050, Emulator UI :4000
+npm start           # http://localhost:4200
 ```
 
-## Building
+Em desenvolvimento o app usa o projeto `demo-vanguarda-da-luz` e se conecta somente aos emuladores; nada vai para a nuvem. A Emulator UI (http://127.0.0.1:4000) mostra usuários e documentos.
 
-To build the project run:
+No emulador, o "e-mail" de redefinição de senha não é enviado: o link aparece no terminal dos emuladores e aponta para a página do próprio emulador. Para abrir o link equivalente na página do app:
 
 ```bash
-ng build
+npm run dev:reset-link -- email@exemplo.com
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Para popular os emuladores com dados de exemplo (um administrador e candidatos nos dois jogos; senha `segredo123`):
 
 ```bash
-ng test
+npm run dev:seed   # admin: maren@vanguarda.test
 ```
 
-## Running end-to-end tests
+## Verificações
 
-For end-to-end (e2e) testing, run:
+| Comando                  | O que faz                                                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `npm run lint`           | ESLint (TypeScript e templates, incluindo regras de acessibilidade)                                                      |
+| `npm run test:ci`        | Testes de unidade (Vitest)                                                                                               |
+| `npm run test:emulators` | Testes das Security Rules e dos fluxos Auth + Firestore, em emuladores próprios (`firebase.test.json`, portas 9199/8180) |
+| `npm run build`          | Build de produção                                                                                                        |
+| `npm run check`          | Tudo acima, em sequência                                                                                                 |
 
-```bash
-ng e2e
+Os testes usam emuladores separados dos de desenvolvimento, então podem rodar com `npm run emulators` ligado sem apagar seus dados.
+
+Para testar no navegador sem tocar nos dados de desenvolvimento, `npm run e2e:serve` gera um build apontando para os emuladores de teste e o serve em http://127.0.0.1:5150.
+
+## Estrutura
+
+```
+src/app/
+  core/        firebase, sessão e guards, conteúdo da guilda, rotas auxiliares
+  layout/      cabeçalho (menu por perfil) e rodapé (redes sociais)
+  features/    páginas, carregadas sob demanda (lazy loading)
+src/styles/    design tokens e estilos globais
+firestore.rules       Security Rules (negam tudo por padrão)
+tests/rules/          testes das Security Rules
+tests/integration/    fluxos contra os emuladores (cadastro, …)
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Textos da guilda ainda pendentes ficam entre colchetes em `src/app/core/content/guild-content.ts`.
 
-## Additional Resources
+## Produção
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Projeto Firebase: `vanguarda-da-luz` (padrão em `.firebaserc`). A configuração do app web fica em `src/environments/environment.prod.ts`.
+
+Configuração única no Console do Firebase, em **Authentication > Modelos > Redefinição de senha**:
+
+1. Em **Personalizar URL de ação**, informe `https://vanguarda-da-luz.web.app/redefinir-senha` (ou o domínio próprio do site). Sem isso, o link abre a página padrão do Firebase, que aceita senhas com 6 caracteres em vez de 8.
+2. Selecione o idioma **Português (Brasil)**. O app já envia `pt-BR`.
+
+### Primeiro administrador
+
+O primeiro administrador é definido manualmente, uma única vez:
+
+1. Cadastre-se pelo site normalmente e envie uma candidatura (ela vira o personagem principal).
+2. No Console do Firebase, em **Firestore**, edite os documentos com o seu `uid`:
+   - `users/{uid}`: `status` = `ativo` e `role` = `admin`;
+   - `applications/{uid}`: `status` = `aprovada`;
+   - crie `members/{uid}` com `username` (igual ao de `users`), `active` = `true`, `joinedAt` (data atual), `approvedBy` (o próprio `uid`) e o mapa `mainCharacter` com os campos de personagem da candidatura (`game`, `characterName`, `characterClass`, `characterRole` e `server` ou `characterSurname` + `ruleset`).
+   - crie `config/admins` com o campo `activeAdminUids` (array) contendo o seu `uid`. Essa lista guarda os administradores ativos e impede que a guilda fique sem nenhum.
+3. Saia e entre novamente. O menu **Administração** aparece.
+
+A partir daí, novos membros e administradores são definidos pelo próprio site.

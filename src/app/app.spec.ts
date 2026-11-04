@@ -1,24 +1,20 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { App } from './app';
+import { provideSessionStub } from './core/auth/session.stub';
 
 describe('App', () => {
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
+  it('renderiza cabeçalho, conteúdo principal, rodapé e link para pular ao conteúdo', async () => {
+    TestBed.configureTestingModule({
       imports: [App],
-    })
-      .compileComponents();
-  });
-
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
-  });
-
-  it('should render title', async () => {
+      providers: [provideRouter([]), provideSessionStub('visitor').provider],
+    });
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, vanguarda-da-luz-front');
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('header')).toBeTruthy();
+    expect(el.querySelector('main#conteudo')).toBeTruthy();
+    expect(el.querySelector('footer')).toBeTruthy();
+    expect(el.querySelector('a.skip-link')?.getAttribute('href')).toBe('#conteudo');
   });
 });

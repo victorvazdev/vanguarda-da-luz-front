@@ -1,0 +1,16 @@
+.application {
+  width: min(100% - 2 * var(--gutter), 510px);
+  padding-block: var(--space-6) var(--space-7);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+@media (max-width: 560px) {
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

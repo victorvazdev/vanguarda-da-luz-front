@@ -1,0 +1,30 @@
+// Diálogo de confirmação.
+.confirm {
+  width: min(100% - 2 * var(--gutter), 440px);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border-field);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+
+  &::backdrop {
+    background: rgb(0 0 0 / 70%);
+  }
+}
+
+.confirm__title {
+  margin-bottom: var(--space-3);
+  font-size: 1.375rem;
+}
+
+.confirm__message {
+  color: var(--color-text-muted);
+}
+
+.confirm__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}

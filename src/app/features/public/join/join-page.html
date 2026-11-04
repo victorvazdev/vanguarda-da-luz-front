@@ -1,0 +1,30 @@
+<article class="container container--narrow page">
+  <header class="page__header">
+    <h1>Como ingressar</h1>
+    <p class="muted">A entrada depende da aprovação de um administrador.</p>
+  </header>
+
+  <section aria-labelledby="titulo-requisitos">
+    <h2 id="titulo-requisitos" class="section-title">Requisitos</h2>
+    <p class="muted">{{ requirements }}</p>
+  </section>
+
+  <section aria-labelledby="titulo-passos">
+    <h2 id="titulo-passos" class="section-title">Passo a passo</h2>
+    <ol class="numbered">
+      @for (step of steps; track step.title) {
+        <li class="numbered__item">
+          <strong class="numbered__title">{{ step.title }}</strong>
+          <span class="muted">{{ step.text }}</span>
+        </li>
+      }
+    </ol>
+  </section>
+
+  <div class="actions">
+    @if (primaryAction(); as action) {
+      <a class="btn btn--primary" [routerLink]="action.path">{{ action.label }}</a>
+    }
+    <a class="btn btn--outline" [routerLink]="rulesPath">Ler as regras</a>
+  </div>
+</article>

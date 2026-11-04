@@ -1,0 +1,39 @@
+// Design tokens da Vanguarda da Luz. Tema único: escuro.
+:root {
+  color-scheme: dark;
+
+  // Cores
+  --color-bg: #141210;
+  --color-surface: #1c1915;
+  --color-border: #3d3220; // divisórias e cards (decorativo)
+  --color-border-field: #836d2f; // contorno de campos e botões de contorno: ≥ 3:1 sobre fundo e superfície
+  --color-gold: #f2c94c;
+  --color-text: #f3ecdd;
+  --color-text-muted: #d9cfbb;
+  --color-heading: #fff6df;
+  --color-cancel: #f2a488;
+  --color-on-gold: #141210;
+
+  // Tipografia
+  --font-heading: 'Cinzel', 'Times New Roman', serif;
+  --font-body: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  // Espaçamento (escala de 4 px)
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2.5rem;
+  --space-7: 3.5rem;
+
+  // Layout
+  --container: 900px;
+  --container-narrow: 660px;
+  --gutter: 16px;
+  --radius: 2px;
+
+  // Acessibilidade
+  --tap: 44px; // alvo de toque mínimo
+  --focus-ring: 3px solid var(--color-gold);
+}

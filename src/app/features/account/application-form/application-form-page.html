@@ -1,0 +1,204 @@
+<article class="container application">
+  <header class="page__header">
+    <h1>{{ isResubmission() ? 'Envie uma nova candidatura' : 'Envie sua candidatura' }}</h1>
+    <p class="muted">Um administrador usará estas informações para avaliar seu pedido.</p>
+  </header>
+
+  @if (!ready()) {
+    <p class="muted" role="status">Carregando…</p>
+  } @else {
+    <form class="form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (error(); as message) {
+        <p class="form-alert" role="alert" tabindex="-1">{{ message }}</p>
+      }
+
+      <fieldset class="choices" [attr.aria-describedby]="describedBy('game')">
+        <legend class="field__label">Jogo</legend>
+        <div class="choices__options">
+          @for (g of games; track g.id) {
+            <label class="choice">
+              <input
+                class="choice__input"
+                type="radio"
+                formControlName="game"
+                [value]="g.id"
+                [attr.aria-invalid]="!!fieldError('game')"
+              />
+              {{ g.label }}
+            </label>
+          }
+        </div>
+        @if (fieldError('game'); as message) {
+          <p id="candidatura-game-erro" class="field__error">{{ message }}</p>
+        }
+      </fieldset>
+
+      @if (game() === 'forever') {
+        <fieldset class="choices" [attr.aria-describedby]="describedBy('ruleset')">
+          <legend class="field__label">Ruleset</legend>
+          <div class="choices__options">
+            @for (r of rulesets; track r.id) {
+              <label class="choice">
+                <input
+                  class="choice__input"
+                  type="radio"
+                  formControlName="ruleset"
+                  [value]="r.id"
+                  [attr.aria-invalid]="!!fieldError('ruleset')"
+                />
+                {{ r.label }}
+              </label>
+            }
+          </div>
+          @if (fieldError('ruleset'); as message) {
+            <p id="candidatura-ruleset-erro" class="field__error">{{ message }}</p>
+          }
+        </fieldset>
+      }
+
+      <div class="form-grid">
+        <div class="field">
+          <label class="field__label" for="candidatura-characterName">Nome do personagem</label>
+          <input
+            id="candidatura-characterName"
+            class="field__input"
+            type="text"
+            formControlName="characterName"
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="12"
+            [attr.aria-invalid]="!!fieldError('characterName')"
+            [attr.aria-describedby]="describedBy('characterName')"
+          />
+          @if (fieldError('characterName'); as message) {
+            <p id="candidatura-characterName-erro" class="field__error">{{ message }}</p>
+          }
+        </div>
+
+        @if (game() === 'forever') {
+          <div class="field">
+            <label class="field__label" for="candidatura-characterSurname">Sobrenome</label>
+            <input
+              id="candidatura-characterSurname"
+              class="field__input"
+              type="text"
+              formControlName="characterSurname"
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="12"
+              [attr.aria-invalid]="!!fieldError('characterSurname')"
+              [attr.aria-describedby]="describedBy('characterSurname')"
+            />
+            @if (fieldError('characterSurname'); as message) {
+              <p id="candidatura-characterSurname-erro" class="field__error">{{ message }}</p>
+            }
+          </div>
+        } @else {
+          <div class="field">
+            <label class="field__label" for="candidatura-server">Servidor</label>
+            <input
+              id="candidatura-server"
+              class="field__input"
+              type="text"
+              formControlName="server"
+              autocomplete="off"
+              maxlength="40"
+              [attr.aria-invalid]="!!fieldError('server')"
+              [attr.aria-describedby]="describedBy('server')"
+            />
+            @if (fieldError('server'); as message) {
+              <p id="candidatura-server-erro" class="field__error">{{ message }}</p>
+            }
+          </div>
+        }
+
+        <div class="field">
+          <label class="field__label" for="candidatura-characterClass">Classe</label>
+          <select
+            id="candidatura-characterClass"
+            class="field__input"
+            formControlName="characterClass"
+            [attr.aria-invalid]="!!fieldError('characterClass')"
+            [attr.aria-describedby]="describedBy('characterClass')"
+          >
+            <option value="">{{ game() ? 'Selecione' : 'Escolha o jogo primeiro' }}</option>
+            @for (c of classes(); track c.id) {
+              <option [value]="c.id">{{ c.label }}</option>
+            }
+          </select>
+          @if (fieldError('characterClass'); as message) {
+            <p id="candidatura-characterClass-erro" class="field__error">{{ message }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="candidatura-characterRole">Função</label>
+          <select
+            id="candidatura-characterRole"
+            class="field__input"
+            formControlName="characterRole"
+            [attr.aria-invalid]="!!fieldError('characterRole')"
+            [attr.aria-describedby]="describedBy('characterRole')"
+          >
+            <option value="">{{ game() ? 'Selecione' : 'Escolha o jogo primeiro' }}</option>
+            @for (r of roles(); track r.id) {
+              <option [value]="r.id">{{ r.label }}</option>
+            }
+          </select>
+          @if (fieldError('characterRole'); as message) {
+            <p id="candidatura-characterRole-erro" class="field__error">{{ message }}</p>
+          }
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="candidatura-motivation"
+          >Por que você quer entrar na guilda?</label
+        >
+        <textarea
+          id="candidatura-motivation"
+          class="field__input field__input--textarea"
+          formControlName="motivation"
+          rows="5"
+          [attr.maxlength]="motivationMax"
+          [attr.aria-invalid]="!!fieldError('motivation')"
+          [attr.aria-describedby]="describedBy('motivation')"
+        ></textarea>
+        @if (fieldError('motivation'); as message) {
+          <p id="candidatura-motivation-erro" class="field__error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <div class="checkbox">
+          <input
+            id="candidatura-rulesAccepted"
+            class="checkbox__input"
+            type="checkbox"
+            formControlName="rulesAccepted"
+            [attr.aria-invalid]="!!fieldError('rulesAccepted')"
+            [attr.aria-describedby]="describedBy('rulesAccepted')"
+          />
+          <label class="checkbox__label" for="candidatura-rulesAccepted">
+            Li e aceito as
+            <a [routerLink]="paths.rules" target="_blank" rel="noopener"
+              >regras da guilda<span class="sr-only"> (abre em nova aba)</span></a
+            >.
+          </label>
+        </div>
+        @if (fieldError('rulesAccepted'); as message) {
+          <p id="candidatura-rulesAccepted-erro" class="field__error">{{ message }}</p>
+        }
+      </div>
+
+      <button
+        type="submit"
+        class="btn btn--primary btn--block"
+        [disabled]="submitting()"
+        [attr.aria-busy]="submitting()"
+      >
+        {{ submitting() ? 'Enviando…' : 'Enviar candidatura' }}
+      </button>
+    </form>
+  }
+</article>

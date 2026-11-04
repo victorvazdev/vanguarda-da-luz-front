@@ -1,0 +1,303 @@
+rules_version = '2';
+
+// Regras do Cloud Firestore da Vanguarda da Luz.
+// Tudo é negado por padrão. Cada história libera somente o que precisa,
+// sempre acompanhada de testes em tests/rules.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Funções auxiliares ----------
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    // Lido a cada requisição: mudanças de situação/permissão valem na próxima requisição.
+    function myAccount() {
+      return get(userPath(request.auth.uid)).data;
+    }
+
+    function isActive() {
+      return signedIn()
+        && exists(userPath(request.auth.uid))
+        && myAccount().status == 'ativo';
+    }
+
+    function applicationPath(uid) {
+      return /databases/$(database)/documents/applications/$(uid);
+    }
+
+    function memberPath(uid) {
+      return /databases/$(database)/documents/members/$(uid);
+    }
+
+    function adminsPath() {
+      return /databases/$(database)/documents/config/admins;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(userPath(request.auth.uid))
+        && myAccount().status == 'ativo'
+        && myAccount().role == 'admin';
+    }
+
+    // ---------- Nomes de usuário (unicidade) ----------
+    // ID do documento = nome em minúsculas. Só pode ser criado junto com a conta
+    // (mesma transação), e nunca alterado ou reaproveitado.
+    match /usernames/{usernameKey} {
+      // Consulta pontual de disponibilidade é pública; listar não.
+      allow get: if true;
+      allow list: if false;
+
+      allow create: if signedIn()
+        && usernameKey.matches('^[a-z0-9_-]{3,20}$')
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        // a conta ainda não existia antes desta escrita...
+        && !exists(userPath(request.auth.uid))
+        // ...e passa a existir apontando para este nome.
+        && getAfter(userPath(request.auth.uid)).data.usernameKey == usernameKey;
+
+      allow update, delete: if false;
+    }
+
+    // ---------- Contas (dados privados) ----------
+    match /users/{uid} {
+      allow get: if isSelf(uid) || isAdmin();
+      allow list: if isAdmin();
+
+      // Cadastro: a conta nasce pendente, com permissão de membro, ligada ao nome reservado.
+      allow create: if isSelf(uid)
+        && request.resource.data.keys().hasOnly(
+             ['username', 'usernameKey', 'email', 'status', 'role', 'createdAt'])
+        && request.resource.data.username is string
+        && request.resource.data.username.lower() == request.resource.data.usernameKey
+        && request.resource.data.status == 'pendente'
+        && request.resource.data.role == 'membro'
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.usernameKey)).data.uid == uid;
+
+      // Aprovação: o admin ativa a conta pendente no mesmo lote em que aprova a candidatura.
+      allow update: if isAdmin()
+        && resource.data.status == 'pendente'
+        && request.resource.data.status == 'ativo'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && getAfter(applicationPath(uid)).data.status == 'aprovada';
+
+      // Permissão: membro <-> admin, com a lista de admins ativos atualizada no mesmo lote.
+      allow update: if isAdmin()
+        && resource.data.status == 'ativo'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
+        && request.resource.data.role in ['membro', 'admin']
+        && (request.resource.data.role == 'admin')
+             == (uid in getAfter(adminsPath()).data.activeAdminUids);
+
+      // Desativação: a conta sai da lista de admins ativos e o membro sai das listas.
+      allow update: if isAdmin()
+        && resource.data.status == 'ativo'
+        && request.resource.data.status == 'desativado'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && !(uid in getAfter(adminsPath()).data.activeAdminUids)
+        && (!existsAfter(memberPath(uid)) || getAfter(memberPath(uid)).data.active == false);
+
+      // Reativação: a conta volta ativa sempre com permissão de membro (nunca admin direto)
+      // e o membro volta às listas.
+      allow update: if isAdmin()
+        && resource.data.status == 'desativado'
+        && request.resource.data.status == 'ativo'
+        && request.resource.data.role == 'membro'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'role'])
+        && !(uid in getAfter(adminsPath()).data.activeAdminUids)
+        && (!existsAfter(memberPath(uid)) || getAfter(memberPath(uid)).data.active == true);
+
+      allow delete: if false;
+    }
+
+    // ---------- Administradores ativos ----------
+    // `config/admins.activeAdminUids` = uids com status ativo e role admin. Nunca fica vazia,
+    // o que impede remover ou desativar o último administrador ativo. Criada manualmente
+    // junto com o primeiro administrador (ver README).
+    match /config/admins {
+      allow get: if isAdmin();
+
+      allow update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['activeAdminUids'])
+        && request.resource.data.activeAdminUids.size() >= 1
+        && adminListChangeIsConsistent(
+             resource.data.activeAdminUids, request.resource.data.activeAdminUids);
+
+      allow create, delete: if false;
+    }
+
+    // Exatamente um uid entra (e passa a ser admin ativo) ou sai (e deixa de ser).
+    function adminListChangeIsConsistent(before, after) {
+      let added = after.removeAll(before);
+      let removed = before.removeAll(after);
+      return after.size() == after.toSet().size()
+        && ((added.size() == 1 && removed.size() == 0
+              && getAfter(userPath(added[0])).data.status == 'ativo'
+              && getAfter(userPath(added[0])).data.role == 'admin')
+          || (removed.size() == 1 && added.size() == 0
+              && (getAfter(userPath(removed[0])).data.status != 'ativo'
+                  || getAfter(userPath(removed[0])).data.role != 'admin')));
+    }
+
+    // ---------- Candidaturas ----------
+    // Uma candidatura atual por usuário (ID = uid). Isso impede uma segunda candidatura
+    // pendente. Após uma recusa, o usuário pode reenviar; a decisão anterior vai para `history`.
+    function isPendingAccount() {
+      return signedIn()
+        && exists(userPath(request.auth.uid))
+        && myAccount().status == 'pendente';
+    }
+
+    // Funções possíveis por classe em cada jogo (igual a src/app/core/models/wow.ts).
+    function retailRoles() {
+      return {
+        'bruxo': ['dano'], 'cacador': ['dano'], 'cacador-de-demonios': ['tanque', 'dano'],
+        'cavaleiro-da-morte': ['tanque', 'dano'], 'conjurante': ['cura', 'dano'],
+        'druida': ['tanque', 'cura', 'dano'], 'guerreiro': ['tanque', 'dano'],
+        'ladino': ['dano'], 'mago': ['dano'], 'monge': ['tanque', 'cura', 'dano'],
+        'paladino': ['tanque', 'cura', 'dano'], 'sacerdote': ['cura', 'dano'],
+        'xama': ['cura', 'dano']
+      };
+    }
+
+    function foreverRoles() {
+      return {
+        'bruxo': ['dano'], 'cacador': ['dano'], 'druida': ['tanque', 'cura', 'dano'],
+        'guerreiro': ['tanque', 'dano'], 'ladino': ['dano'], 'mago': ['dano'],
+        'paladino': ['tanque', 'cura', 'dano'], 'sacerdote': ['cura', 'dano'],
+        'xama': ['cura', 'dano']
+      };
+    }
+
+    function validName(value) {
+      return value is string && value.size() >= 2 && value.size() <= 12;
+    }
+
+    function validClassAndRole(roles, d) {
+      return d.characterClass is string
+        && d.characterClass in roles
+        && d.characterRole in roles[d.characterClass];
+    }
+
+    // Retail: nome + servidor (texto). Forever: nome + sobrenome + ruleset (Normal ou JxJ).
+    function validGameCharacter(d) {
+      return (d.game == 'retail'
+          && d.server is string && d.server.size() >= 1 && d.server.size() <= 40
+          && !('characterSurname' in d) && !('ruleset' in d)
+          && validClassAndRole(retailRoles(), d))
+        || (d.game == 'forever'
+          && validName(d.characterSurname)
+          && d.ruleset in ['normal', 'jxj']
+          && !('server' in d)
+          && validClassAndRole(foreverRoles(), d));
+    }
+
+    function validApplication(d) {
+      return validName(d.characterName)
+        && validGameCharacter(d)
+        && d.motivation is string
+        && d.motivation.size() >= 1 && d.motivation.size() <= 1000
+        && d.rulesAccepted == true
+        && d.status == 'pendente'
+        && d.submittedAt == request.time;
+    }
+
+    function applicationFields() {
+      return ['game', 'characterName', 'characterSurname', 'server', 'ruleset',
+              'characterClass', 'characterRole', 'motivation', 'rulesAccepted',
+              'status', 'submittedAt'];
+    }
+
+    function previousDecision() {
+      return {
+        'status': resource.data.status,
+        'submittedAt': resource.data.submittedAt,
+        'decidedBy': resource.data.get('decidedBy', null),
+        'decidedAt': resource.data.get('decidedAt', null)
+      };
+    }
+
+    match /applications/{uid} {
+      allow get: if isSelf(uid) || isAdmin();
+      allow list: if isAdmin();
+
+      allow create: if isSelf(uid)
+        && isPendingAccount()
+        && request.resource.data.keys().hasOnly(applicationFields())
+        && validApplication(request.resource.data);
+
+      // Reenvio após recusa: substitui os dados e preserva a decisão anterior no histórico.
+      allow update: if isSelf(uid)
+        && isPendingAccount()
+        && resource.data.status == 'recusada'
+        && request.resource.data.keys().hasOnly(applicationFields().concat(['history']))
+        && validApplication(request.resource.data)
+        && request.resource.data.history
+             == resource.data.get('history', []).concat([previousDecision()]);
+
+      // Decisão do administrador: aprovar (com conta ativada e membro criado) ou recusar.
+      allow update: if isAdmin()
+        && resource.data.status == 'pendente'
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'decidedBy', 'decidedAt'])
+        && request.resource.data.decidedBy == request.auth.uid
+        && request.resource.data.decidedAt == request.time
+        && (
+          (request.resource.data.status == 'aprovada'
+            && getAfter(userPath(uid)).data.status == 'ativo'
+            && existsAfter(memberPath(uid)))
+          || (request.resource.data.status == 'recusada'
+            && getAfter(userPath(uid)).data.status == 'pendente')
+        );
+
+      allow delete: if false;
+    }
+
+    // ---------- Membros (dados visíveis aos membros; sem e-mail) ----------
+    function characterFields() {
+      return ['game', 'characterName', 'characterSurname', 'server', 'ruleset',
+              'characterClass', 'characterRole'];
+    }
+
+    match /members/{uid} {
+      allow get, list: if isActive();
+
+      // Criado na aprovação: o personagem principal é cópia fiel do personagem da candidatura.
+      allow create: if isAdmin()
+        && !exists(memberPath(uid))
+        && getAfter(applicationPath(uid)).data.status == 'aprovada'
+        && request.resource.data.keys().hasOnly(
+             ['username', 'mainCharacter', 'active', 'joinedAt', 'approvedBy'])
+        && request.resource.data.username == get(userPath(uid)).data.username
+        && request.resource.data.active == true
+        && request.resource.data.joinedAt == request.time
+        && request.resource.data.approvedBy == request.auth.uid
+        && request.resource.data.mainCharacter.keys().hasOnly(characterFields())
+        && getAfter(applicationPath(uid)).data
+             .diff(request.resource.data.mainCharacter).affectedKeys()
+             .hasOnly(applicationFields().concat(['history', 'decidedBy', 'decidedAt'])
+                       .removeAll(characterFields()));
+
+      // Desativação ou reativação do membro, sempre junto com a conta.
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['active'])
+        && request.resource.data.active is bool
+        && request.resource.data.active == (getAfter(userPath(uid)).data.status == 'ativo');
+
+      allow delete: if false;
+    }
+  }
+}
