@@ -33,13 +33,25 @@
   }
 
   thead th {
-    background: var(--color-surface);
+    background: linear-gradient(180deg, var(--color-azure-deep), var(--color-surface));
     color: var(--color-gold);
     font-weight: 700;
   }
 
   tbody th {
     font-weight: 400;
+  }
+
+  tbody tr {
+    transition: background-color var(--dur-fast) ease;
+
+    &:nth-child(even) {
+      background-color: rgb(255 246 223 / 2%);
+    }
+
+    &:hover {
+      background-color: rgb(242 201 76 / 6%);
+    }
   }
 }
 

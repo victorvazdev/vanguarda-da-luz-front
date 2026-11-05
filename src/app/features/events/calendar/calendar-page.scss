@@ -40,10 +40,12 @@
   th {
     padding: var(--space-2) var(--space-2);
     border: 1px solid var(--color-border);
-    background: var(--color-surface);
+    // Cabeçalho dos dias no azul da Aliança.
+    background: linear-gradient(180deg, var(--color-azure-deep), var(--color-surface));
     color: var(--color-gold);
     font-size: 0.875rem;
     font-weight: 700;
+    letter-spacing: 0.04em;
     text-align: left;
   }
 
@@ -57,6 +59,19 @@
   padding: var(--space-2);
   border: 1px solid var(--color-border);
   vertical-align: top;
+  transition: background-color var(--dur-fast) ease;
+
+  &:hover {
+    background-color: rgb(242 201 76 / 4%);
+  }
+}
+
+// O dia de hoje ganha um anel dourado brilhante na célula inteira.
+.calendar__cell:has(.calendar__day--today) {
+  background: radial-gradient(circle at 20% 15%, rgb(242 201 76 / 12%), transparent 70%);
+  box-shadow:
+    inset 0 0 0 1px var(--color-gold),
+    inset 0 0 18px rgb(242 201 76 / 18%);
 }
 
 .calendar__cell--outside {
@@ -74,9 +89,11 @@
 
 .calendar__day--today {
   padding-inline: var(--space-1);
-  background: var(--color-heading);
+  border-radius: var(--radius);
+  background: var(--gradient-gold);
   color: var(--color-on-gold);
   font-weight: 700;
+  box-shadow: var(--glow-sm);
 }
 
 .calendar__events {
@@ -94,17 +111,23 @@
   min-height: var(--tap);
   justify-content: center;
   padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-gold);
+  border: 1px solid var(--color-gold-deep);
   border-radius: var(--radius);
-  background: var(--color-gold);
+  background: var(--gradient-gold);
   color: var(--color-on-gold);
   font-size: 0.8125rem;
   line-height: 1.35;
   text-decoration: none;
   overflow-wrap: anywhere;
+  transition:
+    translate var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out);
 
   &:hover {
-    background: var(--color-heading);
+    translate: 0 -2px;
+    box-shadow:
+      0 6px 14px -6px rgb(0 0 0 / 80%),
+      var(--glow-sm);
   }
 }
 
@@ -114,7 +137,9 @@
 
 .calendar__event--cancelled {
   border-style: dashed;
-  background: transparent;
+  border-color: var(--color-border-field);
+  // Listras diagonais discretas marcam o cancelamento.
+  background: repeating-linear-gradient(-45deg, rgb(242 164 136 / 10%) 0 6px, transparent 6px 12px);
   color: var(--color-text);
 
   .calendar__event-title {
@@ -122,7 +147,7 @@
   }
 
   &:hover {
-    background: var(--color-surface);
+    box-shadow: none;
   }
 }
 
@@ -157,6 +182,14 @@
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text);
   text-decoration: none;
+  transition:
+    background-color var(--dur-fast) ease,
+    padding-left var(--dur) var(--ease-out);
+
+  &:hover {
+    padding-left: var(--space-2);
+    background: linear-gradient(90deg, rgb(242 201 76 / 8%), transparent);
+  }
 }
 
 .agenda__when {
@@ -205,6 +238,7 @@
     margin: var(--space-1) auto 0;
     border-radius: 50%;
     background: var(--color-gold);
+    box-shadow: 0 0 6px var(--color-gold);
   }
 
   .agenda {

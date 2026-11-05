@@ -106,12 +106,41 @@
 .auth-page {
   width: min(100% - 2 * var(--gutter), 360px);
   margin-inline: auto;
+  position: relative;
+  isolation: isolate;
   padding-block: var(--space-6) var(--space-7);
   text-align: center;
 
+  // Raios atrás do logo (versão menor do hero da home).
+  &::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--space-6) + 36px);
+    left: 50%;
+    z-index: -1;
+    width: 300px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background:
+      repeating-conic-gradient(rgb(255 224 138 / 12%) 0deg 3deg, transparent 3deg 15deg),
+      var(--gradient-radiance);
+    mask: radial-gradient(circle, #000 15%, transparent 62%);
+    translate: -50% -50%;
+    animation: auth-rays 100s linear infinite;
+    pointer-events: none;
+  }
+
   .form {
+    @include card;
+
     margin-top: var(--space-5);
     text-align: left;
+  }
+}
+
+@keyframes auth-rays {
+  to {
+    rotate: 1turn;
   }
 }
 
@@ -119,6 +148,7 @@
   display: block;
   margin: 0 auto var(--space-4);
   border-radius: 50%;
+  filter: drop-shadow(0 0 16px rgb(242 201 76 / 40%));
 }
 
 .auth-page__title {

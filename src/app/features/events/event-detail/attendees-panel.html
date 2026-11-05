@@ -24,7 +24,11 @@
       @if (view().length) {
         <ul class="attendees__list">
           @for (person of view(); track person.uid) {
-            <li class="attendees__item" [attr.aria-busy]="busy() === person.uid">
+            <li
+              class="attendees__item"
+              [attr.aria-busy]="busy() === person.uid"
+              [attr.data-initial]="person.name.charAt(0)"
+            >
               <strong class="attendees__name">{{ person.name }}</strong>
               <span>{{ person.details }}</span>
               @if (person.meta) {
