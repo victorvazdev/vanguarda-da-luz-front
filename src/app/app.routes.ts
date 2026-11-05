@@ -50,6 +50,13 @@ export const routes: Routes = [
       import('./features/auth/reset-password/reset-password-page').then((m) => m.ResetPasswordPage),
   },
   {
+    // Links de troca de e-mail (confirmar o novo ou desfazer pelo antigo).
+    path: 'confirmar-email',
+    title: 'Confirmar e-mail',
+    loadComponent: () =>
+      import('./features/auth/email-action/email-action-page').then((m) => m.EmailActionPage),
+  },
+  {
     path: 'candidatura',
     title: 'Envie sua candidatura',
     canActivate: [pendingGuard],

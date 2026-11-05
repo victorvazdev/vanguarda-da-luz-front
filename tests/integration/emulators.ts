@@ -116,3 +116,16 @@ export async function resetEmailCount(): Promise<number> {
   const { oobCodes } = (await res.json()) as { oobCodes: { requestType: string }[] };
   return oobCodes.filter((c) => c.requestType === 'PASSWORD_RESET').length;
 }
+
+/** Último código de "e-mail" de um tipo (ex.: `VERIFY_AND_CHANGE_EMAIL`) gerado pelo emulador. */
+export async function lastOobCode(
+  requestType: string,
+): Promise<{ email: string; oobCode: string }> {
+  const res = await fetch(`${AUTH}/emulator/v1/projects/${PROJECT_ID}/oobCodes`);
+  const { oobCodes } = (await res.json()) as {
+    oobCodes: { email: string; oobCode: string; requestType: string }[];
+  };
+  const codes = oobCodes.filter((c) => c.requestType === requestType);
+  if (!codes.length) throw new Error(`nenhum código ${requestType}`);
+  return codes[codes.length - 1];
+}

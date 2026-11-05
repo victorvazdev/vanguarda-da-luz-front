@@ -42,6 +42,9 @@ export const RULESETS: readonly { id: Ruleset; label: string }[] = [
   { id: 'jxj', label: 'JxJ' },
 ];
 
+/** Nível máximo de personagem em cada jogo (Retail: Midnight; Forever: Classic). */
+export const MAX_LEVEL: Record<Game, number> = { retail: 90, forever: 60 };
+
 export const ROLES: readonly { id: CharacterRole; label: string }[] = [
   { id: 'tanque', label: 'Tanque' },
   { id: 'cura', label: 'Cura' },

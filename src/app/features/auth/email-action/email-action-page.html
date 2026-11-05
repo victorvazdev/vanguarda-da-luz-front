@@ -1,0 +1,53 @@
+<div class="auth-page">
+  <img class="auth-page__logo" src="images/logo-256.webp" alt="" width="72" height="72" />
+
+  @switch (step()) {
+    @case ('checking') {
+      <h1 class="auth-page__title" tabindex="-1">Confirmar e-mail</h1>
+      <p class="auth-page__subtitle muted" role="status">Verificando o link…</p>
+    }
+
+    @case ('changed') {
+      <div class="auth-page__done">
+        <h1 class="auth-page__title" tabindex="-1">E-mail alterado</h1>
+        <div class="notice" role="status">
+          <p>Seu e-mail foi confirmado e alterado. Entre novamente usando o novo e-mail.</p>
+        </div>
+        <a class="btn btn--primary btn--block" [routerLink]="paths.signIn">Entrar</a>
+      </div>
+    }
+
+    @case ('restored') {
+      <div class="auth-page__done">
+        <h1 class="auth-page__title" tabindex="-1">E-mail restaurado</h1>
+        <div class="notice" role="status">
+          <p>
+            A troca foi desfeita e sua conta voltou a usar este e-mail. Se você não pediu a troca,
+            redefina sua senha.
+          </p>
+        </div>
+        <a class="btn btn--primary btn--block" [routerLink]="paths.signIn">Entrar</a>
+        <a class="btn btn--outline btn--block" [routerLink]="paths.forgotPassword"
+          >Redefinir senha</a
+        >
+      </div>
+    }
+
+    @default {
+      <div class="auth-page__done">
+        <h1 class="auth-page__title" tabindex="-1">Link inválido</h1>
+        @if (error(); as message) {
+          <p class="form-alert" role="alert">{{ message }}</p>
+        } @else {
+          <div class="notice" role="alert">
+            <p>
+              Este link expirou ou já foi usado. Para trocar o e-mail, peça um novo link em Minha
+              conta.
+            </p>
+          </div>
+        }
+        <a class="btn btn--primary btn--block" [routerLink]="paths.account">Minha conta</a>
+      </div>
+    }
+  }
+</div>

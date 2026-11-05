@@ -1,70 +1,11 @@
-<article class="container application-status">
-  <h1 class="page__title">Sua candidatura</h1>
+<article class="container account">
+  <h1 class="page__title">Minha conta</h1>
 
-  @switch (state()) {
-    @case ('loading') {
-      <p class="muted" role="status">Carregando…</p>
-    }
-    @case ('error') {
-      <p class="form-alert" role="alert">
-        Não foi possível carregar sua candidatura. Recarregue a página.
-      </p>
-    }
-    @default {
-      @if (view(); as v) {
-        <section class="notice status-card" aria-live="polite" aria-labelledby="titulo-situacao">
-          <p class="badge {{ v.badgeClass }}">{{ v.badge }}</p>
-          <h2 id="titulo-situacao" class="status-card__title">{{ v.title }}</h2>
-          <p>{{ v.text }}</p>
-          @if (v.action; as action) {
-            <a class="btn btn--primary" [routerLink]="action.path">{{ action.label }}</a>
-          }
-        </section>
-
-        <dl class="details">
-          <div>
-            <dt>Personagem</dt>
-            <dd>{{ v.character }}</dd>
-          </div>
-          <div>
-            <dt>Jogo</dt>
-            <dd>{{ v.game }}</dd>
-          </div>
-          <div>
-            <dt>{{ v.place.label }}</dt>
-            <dd>{{ v.place.value }}</dd>
-          </div>
-          <div>
-            <dt>Classe</dt>
-            <dd>{{ v.characterClass }}</dd>
-          </div>
-          <div>
-            <dt>Função</dt>
-            <dd>{{ v.role }}</dd>
-          </div>
-          <div>
-            <dt>Enviada em</dt>
-            <dd>{{ v.submittedAt }}</dd>
-          </div>
-          @if (v.decidedAt) {
-            <div>
-              <dt>Avaliada em</dt>
-              <dd>{{ v.decidedAt }}</dd>
-            </div>
-          }
-        </dl>
-      } @else {
-        <section class="notice status-card" aria-labelledby="titulo-situacao">
-          <h2 id="titulo-situacao" class="status-card__title">
-            Você ainda não enviou sua candidatura
-          </h2>
-          <p>
-            Sua conta aguarda aprovação. Envie a candidatura para que um administrador avalie seu
-            pedido.
-          </p>
-          <a class="btn btn--primary" [routerLink]="applicationPath">Enviar candidatura</a>
-        </section>
-      }
-    }
+  @if (isMember()) {
+    <app-characters-panel />
+  } @else {
+    <app-application-status />
   }
+
+  <app-account-settings-panel />
 </article>

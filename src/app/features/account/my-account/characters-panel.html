@@ -1,0 +1,302 @@
+<section class="account__section" aria-labelledby="titulo-personagens">
+  <div class="account__heading">
+    <h2 id="titulo-personagens" class="account__title">Personagens</h2>
+    @if (state() === 'ready' && editing() === null) {
+      <button type="button" class="btn btn--outline characters__add" (click)="openNew()">
+        Adicionar personagem
+      </button>
+    }
+  </div>
+
+  <div aria-live="polite">
+    @if (status(); as message) {
+      <p class="notice account__feedback">{{ message }}</p>
+    }
+  </div>
+  @if (error(); as message) {
+    <p class="form-alert account__feedback" role="alert">{{ message }}</p>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="muted" role="status">Carregando…</p>
+    }
+    @case ('error') {
+      <p class="form-alert" role="alert">
+        Não foi possível carregar seus personagens. Recarregue a página.
+      </p>
+    }
+    @default {
+      @if (mainPending()) {
+        <p class="notice account__feedback">
+          Informe o nível do seu personagem principal para completar o perfil. Depois disso você
+          poderá escolher outro personagem como principal.
+        </p>
+      }
+
+      <ul class="characters" aria-label="Seus personagens">
+        @for (c of view(); track c.key) {
+          <li class="character" [attr.data-character]="c.key" [attr.aria-busy]="busy() === c.key">
+            <div class="character__info">
+              <p class="character__name">
+                {{ c.name }}
+                @if (c.isMain) {
+                  <span class="badge badge--success">Principal</span>
+                }
+              </p>
+              <p class="character__details">{{ c.details }}</p>
+              <p class="character__details" [class.character__warning]="c.needsLevel">
+                {{ c.level }}
+              </p>
+            </div>
+            <div class="character__actions">
+              <button
+                type="button"
+                class="btn btn--outline character__edit"
+                [disabled]="busy() !== null || saving()"
+                (click)="edit(c.source)"
+              >
+                Editar<span class="sr-only"> {{ c.name }}</span>
+              </button>
+              @if (!c.isMain) {
+                <button
+                  type="button"
+                  class="btn btn--outline"
+                  [disabled]="busy() !== null || saving() || mainPending()"
+                  (click)="makeMain(c.source)"
+                >
+                  Tornar principal<span class="sr-only"> {{ c.name }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn--cancel"
+                  [disabled]="busy() !== null || saving()"
+                  (click)="remove(c.source)"
+                >
+                  Remover<span class="sr-only"> {{ c.name }}</span>
+                </button>
+              }
+            </div>
+          </li>
+        } @empty {
+          <li class="muted">Você ainda não tem personagens cadastrados.</li>
+        }
+      </ul>
+
+      @if (editing() !== null) {
+        <form
+          class="form character-form"
+          [formGroup]="form"
+          (ngSubmit)="save()"
+          novalidate
+          aria-labelledby="titulo-form-personagem"
+        >
+          <h3 id="titulo-form-personagem" class="account__subtitle" tabindex="-1">
+            {{ formTitle() }}
+          </h3>
+          @if (formError(); as message) {
+            <p class="form-alert" role="alert" tabindex="-1">{{ message }}</p>
+          }
+
+          <fieldset class="choices" [attr.aria-describedby]="describedBy('game')">
+            <legend class="field__label">Jogo</legend>
+            <div class="choices__options">
+              @for (g of games; track g.id) {
+                <label class="choice">
+                  <input
+                    class="choice__input"
+                    type="radio"
+                    formControlName="game"
+                    [value]="g.id"
+                    [attr.aria-invalid]="!!fieldError('game')"
+                  />
+                  {{ g.label }}
+                </label>
+              }
+            </div>
+            @if (fieldError('game'); as message) {
+              <p id="personagem-game-erro" class="field__error">{{ message }}</p>
+            }
+          </fieldset>
+
+          @if (game() === 'forever') {
+            <fieldset class="choices" [attr.aria-describedby]="describedBy('ruleset')">
+              <legend class="field__label">Ruleset</legend>
+              <div class="choices__options">
+                @for (r of rulesets; track r.id) {
+                  <label class="choice">
+                    <input
+                      class="choice__input"
+                      type="radio"
+                      formControlName="ruleset"
+                      [value]="r.id"
+                      [attr.aria-invalid]="!!fieldError('ruleset')"
+                    />
+                    {{ r.label }}
+                  </label>
+                }
+              </div>
+              @if (fieldError('ruleset'); as message) {
+                <p id="personagem-ruleset-erro" class="field__error">{{ message }}</p>
+              }
+            </fieldset>
+          }
+
+          <div class="form-grid">
+            <div class="field">
+              <label class="field__label" for="personagem-characterName">Nome do personagem</label>
+              <input
+                id="personagem-characterName"
+                class="field__input"
+                type="text"
+                formControlName="characterName"
+                autocomplete="off"
+                spellcheck="false"
+                maxlength="12"
+                [attr.aria-invalid]="!!fieldError('characterName')"
+                [attr.aria-describedby]="describedBy('characterName')"
+              />
+              @if (fieldError('characterName'); as message) {
+                <p id="personagem-characterName-erro" class="field__error">{{ message }}</p>
+              }
+            </div>
+
+            @if (game() === 'forever') {
+              <div class="field">
+                <label class="field__label" for="personagem-characterSurname">Sobrenome</label>
+                <input
+                  id="personagem-characterSurname"
+                  class="field__input"
+                  type="text"
+                  formControlName="characterSurname"
+                  autocomplete="off"
+                  spellcheck="false"
+                  maxlength="12"
+                  [attr.aria-invalid]="!!fieldError('characterSurname')"
+                  [attr.aria-describedby]="describedBy('characterSurname')"
+                />
+                @if (fieldError('characterSurname'); as message) {
+                  <p id="personagem-characterSurname-erro" class="field__error">{{ message }}</p>
+                }
+              </div>
+            } @else {
+              <div class="field">
+                <label class="field__label" for="personagem-server">Servidor</label>
+                <input
+                  id="personagem-server"
+                  class="field__input"
+                  type="text"
+                  formControlName="server"
+                  autocomplete="off"
+                  maxlength="40"
+                  [attr.aria-invalid]="!!fieldError('server')"
+                  [attr.aria-describedby]="describedBy('server')"
+                />
+                @if (fieldError('server'); as message) {
+                  <p id="personagem-server-erro" class="field__error">{{ message }}</p>
+                }
+              </div>
+            }
+
+            <div class="field">
+              <label class="field__label" for="personagem-characterClass">Classe</label>
+              <select
+                id="personagem-characterClass"
+                class="field__input"
+                formControlName="characterClass"
+                [attr.aria-invalid]="!!fieldError('characterClass')"
+                [attr.aria-describedby]="describedBy('characterClass')"
+              >
+                <option value="">{{ game() ? 'Selecione' : 'Escolha o jogo primeiro' }}</option>
+                @for (c of classes(); track c.id) {
+                  <option [value]="c.id">{{ c.label }}</option>
+                }
+              </select>
+              @if (fieldError('characterClass'); as message) {
+                <p id="personagem-characterClass-erro" class="field__error">{{ message }}</p>
+              }
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="personagem-characterRole">Função</label>
+              <select
+                id="personagem-characterRole"
+                class="field__input"
+                formControlName="characterRole"
+                [attr.aria-invalid]="!!fieldError('characterRole')"
+                [attr.aria-describedby]="describedBy('characterRole')"
+              >
+                <option value="">{{ game() ? 'Selecione' : 'Escolha o jogo primeiro' }}</option>
+                @for (r of roles(); track r.id) {
+                  <option [value]="r.id">{{ r.label }}</option>
+                }
+              </select>
+              @if (fieldError('characterRole'); as message) {
+                <p id="personagem-characterRole-erro" class="field__error">{{ message }}</p>
+              }
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="personagem-level">Nível</label>
+              <input
+                id="personagem-level"
+                class="field__input"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                step="1"
+                [attr.max]="maxLevel()"
+                formControlName="level"
+                [attr.aria-invalid]="!!fieldError('level')"
+                [attr.aria-describedby]="describedBy('level', 'personagem-level-dica')"
+              />
+              <p id="personagem-level-dica" class="field__hint">
+                @if (maxLevel(); as max) {
+                  De 1 a {{ max }}.
+                } @else {
+                  Escolha o jogo para ver o limite.
+                }
+              </p>
+              @if (fieldError('level'); as message) {
+                <p id="personagem-level-erro" class="field__error">{{ message }}</p>
+              }
+            </div>
+          </div>
+
+          @if (!editingMain() && !mainPending()) {
+            <div class="checkbox">
+              <input
+                id="personagem-asMain"
+                class="checkbox__input"
+                type="checkbox"
+                formControlName="asMain"
+              />
+              <label class="checkbox__label" for="personagem-asMain"
+                >Usar como personagem principal</label
+              >
+            </div>
+          }
+
+          <div class="actions">
+            <button
+              type="submit"
+              class="btn btn--primary"
+              [disabled]="saving()"
+              [attr.aria-busy]="saving()"
+            >
+              {{ saving() ? 'Salvando…' : 'Salvar personagem' }}
+            </button>
+            <button
+              type="button"
+              class="btn btn--outline"
+              [disabled]="saving()"
+              (click)="cancelEdit()"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      }
+    }
+  }
+</section>

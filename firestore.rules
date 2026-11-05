@@ -43,6 +43,14 @@ service cloud.firestore {
       return /databases/$(database)/documents/config/admins;
     }
 
+    function usernamePath(key) {
+      return /databases/$(database)/documents/usernames/$(key);
+    }
+
+    function characterPath(uid, characterId) {
+      return /databases/$(database)/documents/members/$(uid)/characters/$(characterId);
+    }
+
     function isAdmin() {
       return signedIn()
         && exists(userPath(request.auth.uid))
@@ -51,8 +59,9 @@ service cloud.firestore {
     }
 
     // ---------- Nomes de usuário (unicidade) ----------
-    // ID do documento = nome em minúsculas. Só pode ser criado junto com a conta
-    // (mesma transação), e nunca alterado ou reaproveitado.
+    // ID do documento = nome em minúsculas. Criado junto com a conta (cadastro) ou na troca
+    // de nome, sempre na mesma transação que atualiza a conta. Nunca é alterado: na troca,
+    // o nome antigo é excluído (fica livre) e o novo é criado.
     match /usernames/{usernameKey} {
       // Consulta pontual de disponibilidade é pública; listar não.
       allow get: if true;
@@ -62,12 +71,21 @@ service cloud.firestore {
         && usernameKey.matches('^[a-z0-9_-]{3,20}$')
         && request.resource.data.keys().hasOnly(['uid'])
         && request.resource.data.uid == request.auth.uid
-        // a conta ainda não existia antes desta escrita...
-        && !exists(userPath(request.auth.uid))
-        // ...e passa a existir apontando para este nome.
-        && getAfter(userPath(request.auth.uid)).data.usernameKey == usernameKey;
+        // a conta passa a apontar para este nome...
+        && getAfter(userPath(request.auth.uid)).data.usernameKey == usernameKey
+        && (
+          // ...no cadastro (a conta ainda não existia)...
+          !exists(userPath(request.auth.uid))
+          // ...ou na troca de nome de uma conta que não está desativada.
+          || (myAccount().status != 'desativado' && myAccount().usernameKey != usernameKey)
+        );
 
-      allow update, delete: if false;
+      // Troca de nome: o dono libera o nome antigo quando a conta deixa de usá-lo.
+      allow delete: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && getAfter(userPath(request.auth.uid)).data.usernameKey != usernameKey;
+
+      allow update: if false;
     }
 
     // ---------- Contas (dados privados) ----------
@@ -119,6 +137,28 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'role'])
         && !(uid in getAfter(adminsPath()).data.activeAdminUids)
         && (!existsAfter(memberPath(uid)) || getAfter(memberPath(uid)).data.active == true);
+
+      // Troca do nome de usuário pela própria pessoa (conta pendente ou ativa). Se a chave
+      // muda, o novo nome é reservado e o antigo é liberado no mesmo lote; o membro, se
+      // existir, recebe o novo nome.
+      allow update: if isSelf(uid)
+        && resource.data.status != 'desativado'
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['username', 'usernameKey'])
+        && request.resource.data.username is string
+        && request.resource.data.username.lower() == request.resource.data.usernameKey
+        && (request.resource.data.usernameKey == resource.data.usernameKey
+          || (getAfter(usernamePath(request.resource.data.usernameKey)).data.uid == uid
+            && !existsAfter(usernamePath(resource.data.usernameKey))))
+        && (!exists(memberPath(uid))
+          || getAfter(memberPath(uid)).data.username == request.resource.data.username);
+
+      // Troca de e-mail: o Firebase Auth confirma o novo endereço; a conta só copia o
+      // e-mail que está no token de quem fez login.
+      allow update: if isSelf(uid)
+        && resource.data.status != 'desativado'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email'])
+        && request.resource.data.email == request.auth.token.email;
 
       allow delete: if false;
     }
@@ -272,6 +312,19 @@ service cloud.firestore {
               'characterClass', 'characterRole'];
     }
 
+    // Nível máximo por jogo (igual a MAX_LEVEL em src/app/core/models/wow.ts).
+    function maxLevel(game) {
+      return {'retail': 90, 'forever': 60}[game];
+    }
+
+    function validCharacter(d) {
+      return validName(d.characterName)
+        && validGameCharacter(d)
+        && d.level is int
+        && d.level >= 1
+        && d.level <= maxLevel(d.game);
+    }
+
     match /members/{uid} {
       allow get, list: if isActive();
 
@@ -297,7 +350,43 @@ service cloud.firestore {
         && request.resource.data.active is bool
         && request.resource.data.active == (getAfter(userPath(uid)).data.status == 'ativo');
 
+      // Personagem principal escolhido pelo próprio membro: sempre um personagem cadastrado,
+      // copiado sem diferenças para as listas da guilda.
+      allow update: if isSelf(uid)
+        && isActive()
+        && resource.data.active == true
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['mainCharacter', 'mainCharacterId'])
+        && request.resource.data.mainCharacterId is string
+        && getAfter(characterPath(uid, request.resource.data.mainCharacterId)).data
+             == request.resource.data.mainCharacter;
+
+      // Nome de usuário: acompanha a troca feita na conta, no mesmo lote.
+      allow update: if isSelf(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['username'])
+        && request.resource.data.username == getAfter(userPath(uid)).data.username;
+
       allow delete: if false;
+
+      // ---------- Personagens do membro (ID gerado pelo app) ----------
+      // O membro adiciona, edita e remove os próprios personagens. O principal não pode ser
+      // removido, e editá-lo exige atualizar a cópia em `mainCharacter` no mesmo lote.
+      match /characters/{characterId} {
+        allow get, list: if isActive();
+
+        allow create, update: if isSelf(uid)
+          && isActive()
+          && get(memberPath(uid)).data.active == true
+          && characterId.matches('^[A-Za-z0-9]{1,40}$')
+          && request.resource.data.keys().hasOnly(characterFields().concat(['level']))
+          && validCharacter(request.resource.data)
+          && (getAfter(memberPath(uid)).data.get('mainCharacterId', null) != characterId
+            || getAfter(memberPath(uid)).data.mainCharacter == request.resource.data);
+
+        allow delete: if isSelf(uid)
+          && isActive()
+          && getAfter(memberPath(uid)).data.get('mainCharacterId', null) != characterId;
+      }
     }
 
     // ---------- Eventos ----------

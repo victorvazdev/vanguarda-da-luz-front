@@ -1,5 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { FIREBASE_AUTH, FirestoreClient } from '../firebase/firebase.providers';
+import {
+  applyEmailAction,
+  changePassword,
+  changeUsername,
+  requestEmailChange,
+  type EmailAction,
+  type SettingsResult,
+} from './account-settings';
 import { LoginThrottle } from './login-throttle';
 import { checkResetCode, requestPasswordReset, resetPassword, type Result } from './password-reset';
 import { signIn, type SignInResult } from './sign-in';
@@ -35,5 +43,25 @@ export class AccountService {
 
   resetPassword(code: string, newPassword: string): Promise<Result> {
     return resetPassword(this.auth, code, newPassword);
+  }
+
+  async changeUsername(username: string): Promise<SettingsResult> {
+    const uid = this.auth.currentUser?.uid;
+    if (!uid) return { ok: false, error: 'not-allowed' };
+    return changeUsername(await this.firestore.get(), uid, username);
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Promise<SettingsResult> {
+    return changePassword(this.auth, currentPassword, newPassword);
+  }
+
+  requestEmailChange(currentPassword: string, newEmail: string): Promise<SettingsResult> {
+    return requestEmailChange(this.auth, currentPassword, newEmail);
+  }
+
+  applyEmailAction(
+    code: string | null | undefined,
+  ): Promise<SettingsResult<{ action: EmailAction }>> {
+    return applyEmailAction(this.auth, code);
   }
 }

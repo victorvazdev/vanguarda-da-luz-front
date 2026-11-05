@@ -9,6 +9,7 @@ export const PATHS = {
   signIn: '/entrar',
   forgotPassword: '/recuperar-senha',
   resetPassword: '/redefinir-senha',
+  emailAction: '/confirmar-email',
   application: '/candidatura',
   account: '/minha-conta',
   calendar: '/calendario',

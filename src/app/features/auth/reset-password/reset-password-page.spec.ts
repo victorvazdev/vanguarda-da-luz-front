@@ -1,5 +1,5 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { AccountService } from '../../../core/auth/account.service';
 import type { Result } from '../../../core/auth/password-reset';
 import { ResetPasswordPage } from './reset-password-page';
@@ -90,5 +90,25 @@ describe('ResetPasswordPage (Recuperar a senha)', () => {
     await setup((a) => (a.reset = { ok: false, error: 'invalid-link' }));
     await submitWith('nova-senha-1');
     expect(h1()).toBe('Link inválido');
+  });
+});
+
+describe('ResetPasswordPage (links de troca de e-mail)', () => {
+  it('encaminha para a confirmação de e-mail, que usa a mesma URL de ação', async () => {
+    accounts = new AccountStub();
+    TestBed.configureTestingModule({
+      imports: [ResetPasswordPage],
+      providers: [provideRouter([]), { provide: AccountService, useValue: accounts }],
+    });
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const f = TestBed.createComponent(ResetPasswordPage);
+    f.componentRef.setInput('mode', 'verifyAndChangeEmail');
+    f.componentRef.setInput('oobCode', 'codigo-9');
+    await f.whenStable();
+    expect(navigate).toHaveBeenCalledWith(['/confirmar-email'], {
+      queryParams: { mode: 'verifyAndChangeEmail', oobCode: 'codigo-9' },
+      replaceUrl: true,
+    });
   });
 });
