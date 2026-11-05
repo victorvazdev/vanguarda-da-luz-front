@@ -1,12 +1,17 @@
+import { Component } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { Title } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { provideSessionStub } from '../../../core/auth/session.stub';
 import type { AttendanceResult, Attendee, MyAttendance } from '../../../core/data/attendance';
-import type { GuildEvent } from '../../../core/data/events';
+import type { EventActionResult, GuildEvent } from '../../../core/data/events';
 import { EventsService } from '../../../core/data/events.service';
 import { ConfirmService } from '../../../shared/ui/confirm-dialog/confirm.service';
+import { FlashService } from '../../../shared/ui/flash/flash.service';
 import { EventDetailPage } from './event-detail-page';
+
+@Component({ template: '' })
+class Blank {}
 
 class EventsStub {
   next: ((event: GuildEvent | null) => void) | null = null;
@@ -36,6 +41,14 @@ class EventsStub {
   cancelAttendance(id: string) {
     this.cancelled.push(id);
     return Promise.resolve(this.cancelResult);
+  }
+  deleteResult: EventActionResult = { ok: true };
+  deleted: string[] = [];
+  deleteCancelled(id: string) {
+    this.deleted.push(id);
+    // Como o Firestore: o listener do evento recebe `null` antes de a promessa resolver.
+    if (this.deleteResult.ok) this.next?.(null);
+    return Promise.resolve(this.deleteResult);
   }
 }
 
@@ -71,7 +84,7 @@ beforeEach(async () => {
   TestBed.configureTestingModule({
     imports: [EventDetailPage],
     providers: [
-      provideRouter([]),
+      provideRouter([{ path: '**', component: Blank }]),
       { provide: EventsService, useValue: events },
       { provide: ConfirmService, useValue: dialog },
       s.provider,
@@ -262,6 +275,60 @@ describe('EventDetailPage', () => {
       await fixture.whenStable();
       expect(text('.presence [role="alert"]')).toContain('já começou');
       expect(buttonNamed('Cancelar presença')).toBeTruthy();
+    });
+  });
+
+  describe('Excluir evento cancelado (administrador)', () => {
+    const cancelled: GuildEvent = { ...raid, status: 'cancelado' };
+    const removeButton = () =>
+      [...el.querySelectorAll<HTMLButtonElement>('button')].find(
+        (b) => b.textContent?.trim() === 'Excluir evento',
+      );
+
+    it('aparece somente para administradores e em eventos cancelados', async () => {
+      await emit(cancelled);
+      expect(removeButton()).toBeUndefined();
+      session.access.set('admin');
+      await emit(raid);
+      expect(removeButton()).toBeUndefined();
+      await emit(cancelled);
+      expect(removeButton()).toBeDefined();
+      expect(text('.event-detail__remove')).toContain('junto com a lista de confirmados');
+    });
+
+    it('pede confirmação e não exclui se o administrador mantiver o evento', async () => {
+      session.access.set('admin');
+      await emit(cancelled);
+      dialog.answer = false;
+      removeButton()!.click();
+      await fixture.whenStable();
+      expect(dialog.asked[0].title).toBe('Excluir evento?');
+      expect(events.deleted).toHaveLength(0);
+    });
+
+    it('exclui, volta ao calendário do mês do evento e informa o resultado', async () => {
+      session.access.set('admin');
+      await emit(cancelled);
+      removeButton()!.click();
+      await fixture.whenStable();
+      expect(events.deleted).toEqual(['raid']);
+      expect(TestBed.inject(Router).url).toBe('/calendario?mes=2099-11');
+      expect(TestBed.inject(FlashService).message()).toBe(
+        'Raid semanal foi excluído do calendário.',
+      );
+      expect(text('h1')).not.toBe('Evento não encontrado');
+    });
+
+    it('mostra o erro e mantém a página quando a exclusão é recusada', async () => {
+      session.access.set('admin');
+      await emit(cancelled);
+      events.deleteResult = { ok: false, error: 'not-allowed' };
+      removeButton()!.click();
+      await fixture.whenStable();
+      expect(text('.event-detail__remove [role="alert"]')).toBe(
+        'Você não tem permissão para excluir este evento.',
+      );
+      expect(removeButton()!.disabled).toBe(false);
     });
   });
 });

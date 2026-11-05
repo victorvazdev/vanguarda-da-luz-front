@@ -56,6 +56,7 @@ const MESSAGES: Record<Field, ErrorMessages> = {
 
 const ERRORS: Record<Exclude<EventActionError, 'past'>, string> = {
   cancelled: 'Este evento foi cancelado e não pode mais ser alterado. A lista foi atualizada.',
+  'not-cancelled': 'Somente eventos cancelados podem ser excluídos.',
   'not-found': 'Este evento não existe mais. A lista foi atualizada.',
   'not-allowed': 'Você não tem permissão para esta ação.',
   network: 'Não foi possível conectar. Verifique sua internet e tente novamente.',
@@ -79,7 +80,7 @@ interface EventView {
   source: GuildEvent;
 }
 
-/** História "Criar, editar e cancelar eventos". */
+/** História "Criar, editar, cancelar e excluir eventos". */
 @Component({
   selector: 'app-events-admin-page',
   imports: [ReactiveFormsModule, RouterLink],
@@ -215,6 +216,30 @@ export class EventsAdminPage {
       if (result.error === 'cancelled' || result.error === 'not-found') this.startNew();
     }
     this.focus('.event-form .form-alert');
+  }
+
+  /** Exclui um evento cancelado (com a lista de confirmados), após confirmação. */
+  protected async remove(event: EventView): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: 'Excluir evento?',
+      message: `${event.title} (${event.when}) sairá do calendário, junto com a lista de confirmados. Esta ação não pode ser desfeita.`,
+      confirmLabel: 'Excluir evento',
+      cancelLabel: 'Manter',
+      tone: 'danger',
+    });
+    if (!confirmed || this.busy()) return;
+
+    this.busy.set(event.id);
+    this.resetMessages();
+    const result = await this.events.deleteCancelled(event.id);
+    this.busy.set(null);
+    if (result.ok || result.error === 'not-found') {
+      this.status.set(`${event.title} foi excluído do calendário.`);
+      // O botão usado some com o evento; o foco vai para o título da lista.
+      this.focus('#titulo-eventos');
+    } else {
+      this.error.set(result.error === 'past' ? STARTED : ERRORS[result.error]);
+    }
   }
 
   protected async cancel(event: EventView): Promise<void> {

@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { beforeEach, describe, it } from 'vitest';
 import { account, asUser, asVisitor, seed, useRulesEnv } from './env';
@@ -183,11 +184,66 @@ describe('Cancelar evento', () => {
     await assertFails(cancel('ana', 'raid', { title: 'Outro' }));
   });
 
-  it('ninguém apaga eventos', async () => {
+  it('eventos ativos não são apagados, nem pelo administrador', async () => {
     await assertFails(deleteDoc(event('ana', 'raid')));
+    await assertFails(deleteDoc(event('ana', 'antigo')));
   });
 
   it('ninguém grava evento com ID escolhido fora das regras de criação', async () => {
     await assertFails(setDoc(event('tavia', 'novo'), newEvent('tavia')));
+  });
+});
+
+describe('Excluir evento cancelado', () => {
+  beforeEach(() =>
+    seed(env(), {
+      'events/cancelado-antigo': stored({ status: 'cancelado', startsAt: past() }),
+      'events/cancelado/attendees/tavia': { confirmedAt: new Date() },
+      'events/cancelado/attendees/kaelen': { confirmedAt: new Date() },
+    }),
+  );
+
+  const attendee = (uid: string, id: string, who: string) =>
+    doc(asUser(env(), uid), 'events', id, 'attendees', who);
+
+  /** Evento e lista de confirmados no mesmo lote, como o app faz. */
+  const removeWithAttendees = (uid: string, id: string) => {
+    const db = asUser(env(), uid);
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'events', id, 'attendees', 'tavia'));
+    batch.delete(doc(db, 'events', id, 'attendees', 'kaelen'));
+    batch.delete(doc(db, 'events', id));
+    return batch.commit();
+  };
+
+  it('administrador exclui o evento cancelado com a lista de confirmados', async () => {
+    await assertSucceeds(removeWithAttendees('ana', 'cancelado'));
+  });
+
+  it('exclui evento cancelado mesmo depois da data', async () => {
+    await assertSucceeds(deleteDoc(event('ana', 'cancelado-antigo')));
+  });
+
+  it('membro, conta pendente, desativada e visitante não excluem', async () => {
+    for (const uid of ['tavia', 'kaelen', 'brenna']) {
+      await assertFails(removeWithAttendees(uid, 'cancelado'));
+      await assertFails(deleteDoc(event(uid, 'cancelado')));
+    }
+    await assertFails(deleteDoc(doc(asVisitor(env()), 'events', 'cancelado')));
+  });
+
+  it('fora da exclusão, o evento cancelado mantém a lista de confirmados', async () => {
+    await assertFails(deleteDoc(attendee('ana', 'cancelado', 'tavia')));
+  });
+
+  it('presenças que sobraram de um evento já excluído podem ser apagadas pelo administrador', async () => {
+    await seed(env(), { 'events/sumiu/attendees/tavia': { confirmedAt: new Date() } });
+    await assertFails(deleteDoc(attendee('tavia', 'sumiu', 'tavia')));
+    await assertSucceeds(deleteDoc(attendee('ana', 'sumiu', 'tavia')));
+  });
+
+  it('o histórico de eventos ativos que já aconteceram não é apagado', async () => {
+    await seed(env(), { 'events/antigo/attendees/tavia': { confirmedAt: new Date() } });
+    await assertFails(deleteDoc(attendee('ana', 'antigo', 'tavia')));
   });
 });

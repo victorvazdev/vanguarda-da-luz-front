@@ -6,12 +6,15 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
   runTransaction,
   serverTimestamp,
   where,
+  writeBatch,
   type Firestore,
 } from 'firebase/firestore';
 import { toDate } from './applications';
@@ -38,7 +41,7 @@ export interface EventInput {
 export const EVENT_LIMITS = { title: 80, organizer: 40, description: 2000 } as const;
 
 export type EventActionError =
-  'past' | 'cancelled' | 'not-found' | 'not-allowed' | 'network' | 'unknown';
+  'past' | 'cancelled' | 'not-cancelled' | 'not-found' | 'not-allowed' | 'network' | 'unknown';
 interface EventActionFailure {
   ok: false;
   error: EventActionError;
@@ -202,6 +205,39 @@ export async function cancelEvent(
         cancelledBy: adminUid,
       });
     });
+    return { ok: true };
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+/** Escritas por lote do Firestore (limite de 500, com folga para a exclusão do evento). */
+const BATCH_SIZE = 450;
+
+/**
+ * Exclui um evento cancelado e a lista de confirmados (subcoleção, que o Firestore não apaga
+ * sozinho). As presenças saem no mesmo lote do evento; se houver mais do que cabe num lote, as
+ * restantes saem logo depois (as rules só permitem isso nessas duas situações).
+ */
+export async function deleteCancelledEvent(db: Firestore, id: string): Promise<EventActionResult> {
+  try {
+    const ref = doc(db, 'events', id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return { ok: false, error: 'not-found' };
+    if (eventFromData(id, snap.data()).status !== 'cancelado') {
+      return { ok: false, error: 'not-cancelled' };
+    }
+
+    const attendees = (await getDocs(collection(db, 'events', id, 'attendees'))).docs;
+    const first = writeBatch(db);
+    for (const a of attendees.slice(0, BATCH_SIZE)) first.delete(a.ref);
+    first.delete(ref);
+    await first.commit();
+    for (let i = BATCH_SIZE; i < attendees.length; i += BATCH_SIZE) {
+      const batch = writeBatch(db);
+      for (const a of attendees.slice(i, i + BATCH_SIZE)) batch.delete(a.ref);
+      await batch.commit();
+    }
     return { ok: true };
   } catch (error) {
     return actionError(error);

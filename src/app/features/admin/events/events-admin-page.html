@@ -1,6 +1,6 @@
 <div class="events-admin">
   <section class="events-admin__list" aria-labelledby="titulo-eventos">
-    <h1 id="titulo-eventos" class="admin__title">Próximos eventos</h1>
+    <h1 id="titulo-eventos" class="admin__title" tabindex="-1">Próximos eventos</h1>
     <p class="muted events-admin__zone">Horários de {{ timeZone }}</p>
     <button
       type="button"
@@ -69,6 +69,17 @@
                       (click)="cancel(event)"
                     >
                       Cancelar<span class="sr-only"> {{ event.title }}, {{ event.when }}</span>
+                    </button>
+                  </div>
+                } @else if (event.cancelled) {
+                  <div class="event-row__actions">
+                    <button
+                      type="button"
+                      class="btn btn--cancel"
+                      [disabled]="busy() !== null || saving()"
+                      (click)="remove(event)"
+                    >
+                      Excluir<span class="sr-only"> {{ event.title }}, {{ event.when }}</span>
                     </button>
                   </div>
                 }
