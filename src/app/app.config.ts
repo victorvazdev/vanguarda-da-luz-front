@@ -10,6 +10,7 @@ import {
   provideRouter,
   withComponentInputBinding,
   withInMemoryScrolling,
+  withViewTransitions,
 } from '@angular/router';
 import { routes } from './app.routes';
 import { provideFirebase } from './core/firebase/firebase.providers';
@@ -24,6 +25,8 @@ export const appConfig: ApplicationConfig = {
       routes,
       withComponentInputBinding(),
       withInMemoryScrolling({ scrollPositionRestoration: 'top', anchorScrolling: 'enabled' }),
+      // Transição suave entre páginas (API View Transitions; sem suporte, troca direto).
+      withViewTransitions({ skipInitialTransition: true }),
     ),
     { provide: TitleStrategy, useClass: GuildTitleStrategy },
     { provide: LOCALE_ID, useValue: 'pt-BR' },
