@@ -15,7 +15,7 @@
 
   @switch (state()) {
     @case ('loading') {
-      <p class="muted attendees__empty" role="status">Carregando…</p>
+      <p class="muted loading attendees__empty" role="status">Carregando…</p>
     }
     @case ('error') {
       <p class="form-alert" role="alert">Não foi possível carregar os confirmados.</p>
@@ -24,7 +24,11 @@
       @if (view().length) {
         <ul class="attendees__list">
           @for (person of view(); track person.uid) {
-            <li class="attendees__item" [attr.aria-busy]="busy() === person.uid">
+            <li
+              class="attendees__item"
+              [attr.aria-busy]="busy() === person.uid"
+              [attr.data-initial]="person.name.charAt(0)"
+            >
               <strong class="attendees__name">{{ person.name }}</strong>
               <span>{{ person.details }}</span>
               @if (person.meta) {

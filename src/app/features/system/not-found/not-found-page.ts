@@ -6,6 +6,10 @@ import { RouterLink } from '@angular/router';
   imports: [RouterLink],
   template: `
     <article class="container container--narrow page">
+      <div class="sigil" aria-hidden="true">
+        <img class="sigil__logo" src="images/logo-256.webp" alt="" width="120" height="120" />
+        <span class="sigil__spark"></span>
+      </div>
       <header class="page__header">
         <h1>Página não encontrada</h1>
         <p class="muted">O endereço acessado não existe ou foi removido.</p>

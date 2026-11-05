@@ -1,5 +1,22 @@
+@use '../../../../styles/mixins' as *;
+
 .event-detail {
+  position: relative;
+  isolation: isolate;
   padding-block: var(--space-6) var(--space-7);
+
+  // Faixa de luz no topo da página do evento.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: -1;
+    height: 320px;
+    background: radial-gradient(ellipse 70% 100% at 30% 0%, rgb(242 201 76 / 12%), transparent 70%);
+    // Esmaece as laterais para a luz não terminar num corte reto.
+    mask: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
+    pointer-events: none;
+  }
 }
 
 .event-detail__back {
@@ -39,7 +56,9 @@
 }
 
 .event-detail__title--cancelled {
+  background: none;
   color: var(--color-text-muted);
+  filter: none;
 }
 
 .event-detail__facts {
@@ -47,6 +66,14 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-4);
   margin: 0 0 var(--space-5);
+
+  // Cada fato num pequeno cartão com filete dourado à esquerda.
+  > div {
+    padding: var(--space-3) var(--space-4);
+    border-left: 2px solid var(--color-gold);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    background: linear-gradient(90deg, rgb(242 201 76 / 8%), transparent);
+  }
 
   dt {
     color: var(--color-text-muted);
@@ -83,9 +110,10 @@
   align-items: flex-start;
   gap: var(--space-3);
   margin-top: var(--space-5);
-  padding: var(--space-4) var(--space-4) var(--space-5);
-  border: 1px solid var(--color-border-field);
-  background: var(--color-surface);
+  @include card(var(--space-4) var(--space-4) var(--space-5));
+  @include card-corners;
+
+  position: relative;
 }
 
 .presence__title {

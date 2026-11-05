@@ -1,4 +1,6 @@
 // Formulários: campos, mensagens e páginas de conta.
+@use 'mixins' as *;
+
 :root {
   --color-error: var(--color-cancel); // 9,3:1 sobre o fundo
 }
@@ -30,6 +32,15 @@
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
+  transition:
+    border-color var(--dur-fast) ease,
+    box-shadow var(--dur) var(--ease-out),
+    background-color var(--dur) ease;
+
+  &::placeholder {
+    color: var(--color-text-muted);
+    opacity: 0.7;
+  }
 
   &:hover {
     border-color: var(--color-gold);
@@ -37,6 +48,9 @@
 
   &:focus-visible {
     outline-offset: 1px;
+    border-color: var(--color-gold);
+    background-color: var(--color-surface-raised);
+    box-shadow: var(--glow-sm);
   }
 
   &[aria-invalid='true'] {
@@ -64,16 +78,16 @@
   margin: 0;
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-error);
+  border-left-width: 4px;
   border-radius: var(--radius);
-  background: var(--color-surface);
+  background: rgb(242 164 136 / 8%);
   color: var(--color-error);
   font-weight: 600;
 }
 
 .notice {
-  padding: var(--space-4) var(--space-5);
-  border: 1px solid var(--color-border-field);
-  background: var(--color-surface);
+  @include card(var(--space-4) var(--space-5));
+
   text-align: left;
 
   p:last-child {
@@ -82,24 +96,51 @@
 }
 
 .notice__badge {
-  display: inline-block;
+  @extend .badge;
+  @extend .badge--warning;
+
   margin-bottom: var(--space-3);
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-gold);
-  color: var(--color-gold);
-  font-weight: 700;
 }
 
 // Telas de conta (cadastro, login, recuperação): coluna estreita e centralizada.
 .auth-page {
   width: min(100% - 2 * var(--gutter), 360px);
   margin-inline: auto;
+  position: relative;
+  isolation: isolate;
   padding-block: var(--space-6) var(--space-7);
   text-align: center;
 
+  // Raios atrás do logo (versão menor do hero da home).
+  &::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--space-6) + 36px);
+    left: 50%;
+    z-index: -1;
+    width: 300px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background:
+      repeating-conic-gradient(rgb(255 224 138 / 12%) 0deg 3deg, transparent 3deg 15deg),
+      var(--gradient-radiance);
+    mask: radial-gradient(circle, #000 15%, transparent 62%);
+    translate: -50% -50%;
+    animation: auth-rays 100s linear infinite;
+    pointer-events: none;
+  }
+
   .form {
+    @include card;
+
     margin-top: var(--space-5);
     text-align: left;
+  }
+}
+
+@keyframes auth-rays {
+  to {
+    rotate: 1turn;
   }
 }
 
@@ -107,6 +148,7 @@
   display: block;
   margin: 0 auto var(--space-4);
   border-radius: 50%;
+  filter: drop-shadow(0 0 16px rgb(242 201 76 / 40%));
 }
 
 .auth-page__title {
@@ -175,25 +217,48 @@ select.field__input {
   cursor: pointer;
 }
 
-// Selo de situação (Pendente, Aprovada, Recusada, Cancelado).
+// Selo de situação (Pendente, Aprovada, Recusada, Cancelado): fundo tingido,
+// borda e um ponto na cor do estado. `--badge` define a cor; o padrão é dourado.
 .badge {
-  display: inline-block;
+  --badge: var(--color-gold);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-gold);
-  color: var(--color-gold);
+  border: 1px solid color-mix(in srgb, var(--badge) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--badge) 12%, transparent);
+  color: var(--badge);
+  font-size: 0.875rem;
   font-weight: 700;
   line-height: 1.4;
+
+  &::before {
+    content: '';
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 6px currentColor;
+  }
 }
 
 .badge--success {
-  border-color: var(--color-heading);
-  background: var(--color-gold);
-  color: var(--color-on-gold);
+  --badge: var(--color-success);
+}
+
+.badge--warning {
+  --badge: var(--color-warning);
+}
+
+.badge--info {
+  --badge: var(--color-info);
 }
 
 .badge--danger {
-  border-color: var(--color-error);
-  color: var(--color-error);
+  --badge: var(--color-error);
 }
 
 // Lista de dados rótulo/valor (ex.: detalhes da candidatura).
@@ -247,14 +312,21 @@ select.field__input {
   background: var(--color-surface);
   cursor: pointer;
 
+  transition:
+    border-color var(--dur-fast) ease,
+    background-color var(--dur) ease,
+    box-shadow var(--dur) var(--ease-out);
+
   &:hover,
   &:has(:checked) {
     border-color: var(--color-gold);
   }
 
   &:has(:checked) {
+    background-color: rgb(242 201 76 / 10%);
     color: var(--color-heading);
     font-weight: 600;
+    box-shadow: var(--glow-sm);
   }
 
   &:has([aria-invalid='true']) {

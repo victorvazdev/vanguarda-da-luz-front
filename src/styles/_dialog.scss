@@ -1,14 +1,52 @@
-// Diálogo de confirmação.
+// Diálogo de confirmação: surge com fade e escala; o fundo escurece com desfoque.
+@use 'mixins' as *;
+
 .confirm {
   width: min(100% - 2 * var(--gutter), 440px);
-  padding: var(--space-5);
-  border: 1px solid var(--color-border-field);
-  border-radius: var(--radius);
-  background: var(--color-surface);
+  @include card;
+
   color: var(--color-text);
+  box-shadow: var(--shadow-card), var(--glow-md);
+  opacity: 0;
+  scale: 0.96;
+  translate: 0 8px;
+  transition:
+    opacity var(--dur) var(--ease-out),
+    scale var(--dur) var(--ease-out),
+    translate var(--dur) var(--ease-out),
+    overlay var(--dur) allow-discrete,
+    display var(--dur) allow-discrete;
+
+  &[open] {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+
+    @starting-style {
+      opacity: 0;
+      scale: 0.96;
+      translate: 0 8px;
+    }
+  }
 
   &::backdrop {
+    background: rgb(0 0 0 / 0%);
+    backdrop-filter: blur(0);
+    transition:
+      background-color var(--dur) ease,
+      backdrop-filter var(--dur) ease,
+      overlay var(--dur) allow-discrete,
+      display var(--dur) allow-discrete;
+  }
+
+  &[open]::backdrop {
     background: rgb(0 0 0 / 70%);
+    backdrop-filter: blur(3px);
+
+    @starting-style {
+      background: rgb(0 0 0 / 0%);
+      backdrop-filter: blur(0);
+    }
   }
 }
 

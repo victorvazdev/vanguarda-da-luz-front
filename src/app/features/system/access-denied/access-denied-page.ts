@@ -8,6 +8,10 @@ import { PATHS } from '../../../core/routing/paths';
   imports: [RouterLink],
   template: `
     <article class="container container--narrow page">
+      <div class="sigil" aria-hidden="true">
+        <img class="sigil__logo" src="images/logo-256.webp" alt="" width="120" height="120" />
+        <span class="sigil__spark"></span>
+      </div>
       <header class="page__header">
         <h1>Acesso restrito</h1>
         <p class="muted">

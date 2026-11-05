@@ -30,7 +30,7 @@ interface StatusView {
 const STATUS: Record<ApplicationStatus, StatusView> = {
   pendente: {
     badge: 'Pendente',
-    badgeClass: '',
+    badgeClass: 'badge--warning',
     title: 'Recebemos sua candidatura',
     text: 'Um administrador avaliará seu pedido. O resultado aparecerá aqui, e o calendário será liberado se você for aprovado.',
   },

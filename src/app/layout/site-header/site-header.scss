@@ -1,6 +1,59 @@
+@use '../../../styles/mixins' as *;
+
+// Fixo no topo, translúcido e com desfoque; ganha sombra e filete dourado
+// depois que a página rola (animação ligada à rolagem, sem JS).
+// O sticky fica no host: o pai do <header> tem a mesma altura dele e o prenderia.
+:host {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: block;
+  view-transition-name: site-header;
+}
+
 .site-header {
+  position: relative;
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg);
+  background: rgb(20 18 16 / 82%);
+  backdrop-filter: blur(10px) saturate(1.2);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 -1px;
+    height: 1px;
+    background: var(--gradient-border);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @supports (animation-timeline: scroll()) {
+    animation: header-raise linear both;
+    animation-timeline: scroll();
+    animation-range: 0 80px;
+
+    &::after {
+      animation: header-rule linear both;
+      animation-timeline: scroll();
+      animation-range: 0 80px;
+    }
+  }
+
+  @supports not (backdrop-filter: blur(1px)) {
+    background: var(--color-bg);
+  }
+}
+
+@keyframes header-raise {
+  to {
+    box-shadow: 0 8px 24px -12px rgb(0 0 0 / 80%);
+  }
+}
+
+@keyframes header-rule {
+  to {
+    opacity: 1;
+  }
 }
 
 .site-header__bar {
@@ -23,6 +76,14 @@
 
 .brand__logo {
   border-radius: 50%;
+  transition:
+    box-shadow var(--dur) var(--ease-out),
+    rotate var(--dur-slow) var(--ease-out);
+}
+
+.brand:hover .brand__logo {
+  box-shadow: var(--glow-md);
+  rotate: 8deg;
 }
 
 .brand__name {
@@ -39,10 +100,16 @@
   min-width: var(--tap);
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border-field);
+  border-radius: var(--radius);
   background: transparent;
   color: var(--color-text);
   font: inherit;
   cursor: pointer;
+  transition: border-color var(--dur-fast) ease;
+
+  &:hover {
+    border-color: var(--color-gold);
+  }
 }
 
 .menu-toggle__icon,
@@ -90,6 +157,8 @@
   font-size: 0.95rem;
   text-decoration: none;
 
+  @include grow-underline(9px);
+
   &:hover {
     color: var(--color-gold);
   }
@@ -97,14 +166,13 @@
 
 .nav__link--active {
   color: var(--color-gold);
-  text-decoration: underline;
-  text-underline-offset: 6px;
+  background-size: 100% 2px;
 }
 
 .nav__button {
   padding: 0;
   border: 0;
-  background: none;
+  background-color: transparent;
   font: inherit;
   font-size: 0.95rem;
   cursor: pointer;
@@ -133,5 +201,17 @@
   .nav__link,
   .nav__cta {
     width: 100%;
+  }
+
+  // Na lista vertical, o item ativo ganha uma barra à esquerda em vez do sublinhado.
+  .nav__link {
+    padding-left: var(--space-3);
+    border-left: 2px solid transparent;
+    background: none;
+  }
+
+  .nav__link--active {
+    border-left-color: var(--color-gold);
+    background: linear-gradient(90deg, rgb(242 201 76 / 10%), transparent);
   }
 }
