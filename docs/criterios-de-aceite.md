@@ -43,7 +43,7 @@ A guilda está presente em duas versões de World of Warcraft:
 **Como visitante**, quero ver informações de como ingressar, para que eu possa seguir os passos e fazer parte da guilda.
 
 - [ ] A página de ingresso pode ser acessada sem login.
-- [ ] A página apresenta os requisitos e os passos de ingresso em ordem.
+- [ ] A página apresenta os passos de ingresso em ordem.
 - [ ] A página informa que a entrada depende da aprovação de um administrador.
 - [ ] Um botão leva ao cadastro quando o visitante não está autenticado.
 - [ ] Um botão leva à candidatura quando o usuário cadastrado está autenticado.

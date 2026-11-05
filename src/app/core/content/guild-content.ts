@@ -8,7 +8,6 @@ export const GUILD = {
   tagline: 'Guilda de World of Warcraft',
   intro:
     'Conheça a guilda, leia as regras e envie sua candidatura. Depois de aprovado, você acompanha os eventos e confirma sua presença pelo site.',
-  requirements: '[REQUISITOS PARA ENTRAR NA GUILDA]',
 } as const;
 
 export const RULES = {
@@ -30,5 +29,5 @@ export const JOIN_STEPS = [
   { title: 'Leia as regras', text: 'Veja o que a guilda espera de cada integrante.' },
   { title: 'Crie sua conta', text: 'Informe nome de usuário, e-mail e senha.' },
   { title: 'Envie sua candidatura', text: 'Conte qual é seu personagem e por que quer entrar.' },
-  { title: 'Aguarde a avaliação', text: 'Acompanhe o resultado na sua conta.' },
+  { title: 'Aguarde o contato e avaliação', text: 'Acompanhe o resultado na sua conta.' },
 ] as const;
