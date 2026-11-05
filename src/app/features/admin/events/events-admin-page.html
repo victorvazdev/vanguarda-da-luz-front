@@ -43,7 +43,7 @@
                     @if (event.cancelled) {
                       <span class="badge badge--danger event-row__badge">Cancelado</span>
                     }
-                    {{ event.title }}
+                    <a [routerLink]="['/calendario', event.id]">{{ event.title }}</a>
                   </h2>
                   <p class="event-row__meta">{{ event.when }}</p>
                   <p class="event-row__meta muted">Organizador: {{ event.organizer }}</p>

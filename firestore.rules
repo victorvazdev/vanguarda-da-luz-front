@@ -356,6 +356,32 @@ service cloud.firestore {
         && request.resource.data.cancelledBy == request.auth.uid;
 
       allow delete: if false;
+
+      // ---------- Presenças (ID = uid de quem confirmou) ----------
+      // Cada conta ativa registra (ou cancela) somente a própria presença, uma vez por evento,
+      // em evento ativo e futuro. Administradores veem a lista e podem cancelar presenças.
+      function eventIsOpen() {
+        let event = get(/databases/$(database)/documents/events/$(eventId)).data;
+        return event.status == 'ativo' && event.startsAt > request.time;
+      }
+
+      match /attendees/{uid} {
+        allow get: if (isSelf(uid) && isActive()) || isAdmin();
+        allow list: if isAdmin();
+
+        // Criar (e nunca sobrescrever: uma segunda confirmação seria `update`, que é negado).
+        allow create: if isSelf(uid)
+          && isActive()
+          && eventIsOpen()
+          && request.resource.data.keys().hasOnly(['confirmedAt'])
+          && request.resource.data.confirmedAt == request.time;
+
+        allow update: if false;
+
+        // Cancelar a própria presença, ou (administrador) a de qualquer confirmado, enquanto
+        // o evento estiver ativo e futuro. Depois disso, a pessoa pode confirmar de novo.
+        allow delete: if ((isSelf(uid) && isActive()) || isAdmin()) && eventIsOpen();
+      }
     }
   }
 }

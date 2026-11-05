@@ -1,4 +1,5 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import type {
   CreateEventResult,
   EventActionResult,
@@ -73,6 +74,7 @@ beforeEach(async () => {
   TestBed.configureTestingModule({
     imports: [EventsAdminPage],
     providers: [
+      provideRouter([]),
       { provide: EventsService, useValue: events },
       { provide: ConfirmService, useValue: confirm },
     ],
@@ -127,6 +129,11 @@ describe('EventsAdminPage (Criar, editar e cancelar eventos)', () => {
     expect(text('.event-row__title')).toBe('Raid semanal');
     expect(text('.event-row__meta')).toBe('Sáb, 7 nov. 2099, 21:00');
     expect(text('.events-admin__zone')).toBe('Horários de Brasília');
+  });
+
+  it('o título leva ao detalhe do evento no calendário', async () => {
+    await emit([raid]);
+    expect(q('.event-row__title a')!.getAttribute('href')).toBe('/calendario/raid');
   });
 
   it('avisa quando não há eventos', async () => {

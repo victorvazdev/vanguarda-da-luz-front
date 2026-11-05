@@ -1,0 +1,122 @@
+<div class="container calendar-page">
+  <header class="calendar-page__header">
+    <div>
+      <h1 id="titulo-mes" class="calendar-page__title" aria-live="polite">{{ title() }}</h1>
+      <p class="muted calendar-page__zone">Horários de {{ timeZone }}</p>
+    </div>
+    <nav class="calendar-page__nav" aria-label="Navegar entre meses">
+      <a class="btn btn--outline" [routerLink]="paths.calendar" [queryParams]="{ mes: prev() }"
+        >Mês anterior</a
+      >
+      @if (!isThisMonth()) {
+        <a class="btn btn--outline" [routerLink]="paths.calendar" [queryParams]="{ mes: current }"
+          >Mês atual</a
+        >
+      }
+      <a class="btn btn--outline" [routerLink]="paths.calendar" [queryParams]="{ mes: next() }"
+        >Próximo mês</a
+      >
+    </nav>
+  </header>
+
+  @if (state() === 'error') {
+    <p class="form-alert" role="alert">
+      Não foi possível carregar os eventos. Recarregue a página.
+    </p>
+  }
+
+  <table class="calendar" aria-labelledby="titulo-mes" [attr.aria-busy]="state() === 'loading'">
+    <thead>
+      <tr>
+        @for (wd of weekdays; track wd.short) {
+          <th scope="col">
+            <abbr [title]="wd.long">{{ wd.short }}</abbr>
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (week of weeks(); track week[0].key) {
+        <tr>
+          @for (day of week; track day.key) {
+            @let events = byDay().get(day.key) ?? [];
+            <td
+              class="calendar__cell"
+              [class.calendar__cell--outside]="!day.inMonth"
+              [class.calendar__cell--has-events]="events.length"
+              [attr.aria-current]="day.isToday ? 'date' : null"
+            >
+              <span class="calendar__day" [class.calendar__day--today]="day.isToday">
+                <span aria-hidden="true">{{ day.day }}</span>
+                <span class="sr-only"
+                  >{{ day.label }}{{ day.isToday ? ', hoje' : ''
+                  }}{{
+                    events.length
+                      ? ', ' + events.length + (events.length === 1 ? ' evento' : ' eventos')
+                      : ''
+                  }}</span
+                >
+              </span>
+              @if (events.length) {
+                <span class="calendar__dot" aria-hidden="true"></span>
+                <ul class="calendar__events">
+                  @for (event of events; track event.id) {
+                    <li>
+                      <a
+                        class="calendar__event"
+                        [class.calendar__event--cancelled]="event.cancelled"
+                        [routerLink]="[paths.calendar, event.id]"
+                      >
+                        @if (event.cancelled) {
+                          <strong class="calendar__event-time">Cancelado</strong>&ngsp;
+                          <span class="calendar__event-title">{{ event.title }}</span>
+                          <span class="sr-only">, às {{ event.time }}</span>
+                        } @else {
+                          <strong class="calendar__event-time">{{ event.time }}</strong
+                          >&ngsp;
+                          <span class="calendar__event-title">{{ event.title }}</span>
+                        }
+                      </a>
+                    </li>
+                  }
+                </ul>
+              }
+            </td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  @if (state() === 'ready') {
+    @if (agenda().length) {
+      <section class="agenda" aria-labelledby="titulo-agenda">
+        <h2 id="titulo-agenda" class="agenda__title">Eventos de {{ title() }}</h2>
+        <ul class="agenda__list">
+          @for (event of agenda(); track event.id) {
+            <li>
+              <a
+                class="agenda__item"
+                [class.agenda__item--cancelled]="event.cancelled"
+                [routerLink]="[paths.calendar, event.id]"
+              >
+                <span class="agenda__when">{{ event.date }}, {{ event.time }}</span
+                >&ngsp;
+                <span class="agenda__name">
+                  @if (event.cancelled) {
+                    <span class="badge badge--danger agenda__badge">Cancelado</span>&ngsp;
+                  }
+                  <span class="agenda__name-text">{{ event.title }}</span>
+                </span>
+              </a>
+            </li>
+          }
+        </ul>
+      </section>
+    } @else {
+      <p class="muted calendar-page__empty">
+        Nenhum evento programado em {{ title().toLowerCase() }}.
+      </p>
+    }
+  }
+</div>

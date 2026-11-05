@@ -1,0 +1,129 @@
+<div class="container event-detail">
+  <a class="event-detail__back" [routerLink]="paths.calendar" [queryParams]="backParams()"
+    >Voltar ao calendário</a
+  >
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="muted" role="status">Carregando…</p>
+    }
+    @case ('not-found') {
+      <h1 class="event-detail__title">Evento não encontrado</h1>
+      <p class="muted">O endereço pode estar incorreto. Confira os eventos no calendário.</p>
+    }
+    @case ('error') {
+      <h1 class="event-detail__title">Evento</h1>
+      <p class="form-alert" role="alert">
+        Não foi possível carregar o evento. Recarregue a página.
+      </p>
+    }
+    @default {
+      @if (view(); as e) {
+        <div class="event-detail__layout">
+          <article class="event-detail__main" aria-labelledby="titulo-evento">
+            @if (e.cancelled) {
+              <p class="badge badge--danger event-detail__badge">Cancelado</p>
+            }
+            <h1
+              id="titulo-evento"
+              class="event-detail__title"
+              [class.event-detail__title--cancelled]="e.cancelled"
+            >
+              {{ e.title }}
+            </h1>
+
+            <dl class="event-detail__facts">
+              <div>
+                <dt>Data</dt>
+                <dd>{{ e.date }}</dd>
+              </div>
+              <div>
+                <dt>Horário</dt>
+                <dd>{{ e.time }}</dd>
+              </div>
+              <div>
+                <dt>Organizador</dt>
+                <dd>{{ e.organizer }}</dd>
+              </div>
+            </dl>
+
+            <h2 class="event-detail__subtitle">Descrição</h2>
+            <p class="event-detail__description">{{ e.description }}</p>
+
+            @if (e.cancelled) {
+              <p class="notice event-detail__notice">
+                Este evento foi cancelado pela administração da guilda.
+              </p>
+            }
+
+            @if (!e.cancelled && attendance() !== undefined) {
+              <section class="presence" aria-labelledby="titulo-presenca">
+                @if (attendance()) {
+                  <h2 id="titulo-presenca" class="presence__title">
+                    <span class="badge badge--success">Presença confirmada</span>
+                  </h2>
+                  <p id="presenca-status" class="presence__text" role="status" tabindex="-1">
+                    {{
+                      e.upcoming
+                        ? 'Você confirmou presença neste evento.'
+                        : 'Você confirmou presença neste evento, que já aconteceu.'
+                    }}
+                  </p>
+                  @if (attendanceError(); as message) {
+                    <p class="form-alert presence__error" role="alert">{{ message }}</p>
+                  }
+                  @if (e.upcoming) {
+                    <button
+                      type="button"
+                      class="btn btn--outline"
+                      [disabled]="confirming()"
+                      [attr.aria-busy]="confirming()"
+                      (click)="cancelPresence()"
+                    >
+                      {{ confirming() ? 'Cancelando…' : 'Cancelar presença' }}
+                    </button>
+                  }
+                } @else if (e.upcoming) {
+                  <h2 id="titulo-presenca" class="presence__title">
+                    Você vai participar deste evento?
+                  </h2>
+                  @if (presenceNotice(); as notice) {
+                    <p id="presenca-status" class="presence__text" role="status" tabindex="-1">
+                      {{ notice }}
+                    </p>
+                  }
+                  @if (attendanceError(); as message) {
+                    <p class="form-alert presence__error" role="alert">{{ message }}</p>
+                  }
+                  <button
+                    type="button"
+                    class="btn btn--primary"
+                    [disabled]="confirming()"
+                    [attr.aria-busy]="confirming()"
+                    (click)="confirmPresence()"
+                  >
+                    {{ confirming() ? 'Confirmando…' : 'Confirmar presença' }}
+                  </button>
+                } @else {
+                  <h2 id="titulo-presenca" class="presence__title">Evento encerrado</h2>
+                  <p class="presence__text muted">
+                    Este evento já aconteceu. Não é mais possível confirmar presença.
+                  </p>
+                }
+              </section>
+            }
+          </article>
+
+          @if (isAdmin()) {
+            <app-attendees-panel
+              class="event-detail__side"
+              [eventId]="id()"
+              [eventTitle]="e.title"
+              [open]="!e.cancelled && e.upcoming"
+            />
+          }
+        </div>
+      }
+    }
+  }
+</div>

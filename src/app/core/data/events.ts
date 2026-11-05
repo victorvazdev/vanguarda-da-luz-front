@@ -103,6 +103,40 @@ export function watchEventsFrom(
   );
 }
 
+/** Acompanha, em ordem cronológica, os eventos que começam em [from, to). */
+export function watchEventsBetween(
+  db: Firestore,
+  from: Date,
+  to: Date,
+  next: (events: GuildEvent[]) => void,
+  error: (e: unknown) => void,
+): () => void {
+  return onSnapshot(
+    query(
+      collection(db, 'events'),
+      where('startsAt', '>=', Timestamp.fromDate(from)),
+      where('startsAt', '<', Timestamp.fromDate(to)),
+      orderBy('startsAt'),
+    ),
+    (snap) => next(snap.docs.map((d) => eventFromData(d.id, d.data()))),
+    error,
+  );
+}
+
+/** Acompanha um evento; `null` quando não existe. */
+export function watchEvent(
+  db: Firestore,
+  id: string,
+  next: (event: GuildEvent | null) => void,
+  error: (e: unknown) => void,
+): () => void {
+  return onSnapshot(
+    doc(db, 'events', id),
+    (snap) => next(snap.exists() ? eventFromData(snap.id, snap.data()) : null),
+    error,
+  );
+}
+
 export async function createEvent(
   db: Firestore,
   adminUid: string,

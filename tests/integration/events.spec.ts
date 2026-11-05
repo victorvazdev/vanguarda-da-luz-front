@@ -5,6 +5,8 @@ import {
   cancelEvent,
   createEvent,
   updateEvent,
+  watchEvent,
+  watchEventsBetween,
   watchEventsFrom,
   type EventInput,
   type GuildEvent,
@@ -186,5 +188,75 @@ describe('Criar, editar e cancelar eventos (emuladores)', () => {
       ok: false,
       error: 'not-allowed',
     });
+  });
+});
+
+describe('Acessar o calendário de eventos (emuladores)', () => {
+  it('membro recebe somente os eventos do intervalo do mês, inclusive os cancelados', async () => {
+    const admin = await firstAdmin();
+    const tavia = await approvedMember(admin, 'Tavia');
+    const base = Date.now() + 2 * DAY;
+    const ids: string[] = [];
+    for (const [title, offset] of [
+      ['Antes', 0],
+      ['Dentro', 5],
+      ['Cancelado', 6],
+      ['Depois', 12],
+    ] as const) {
+      const r = await createEvent(
+        admin.db,
+        admin.uid,
+        input({ title, startsAt: new Date(base + offset * DAY) }),
+      );
+      if (!r.ok) throw new Error(r.error);
+      ids.push(r.id);
+    }
+    await cancelEvent(admin.db, admin.uid, ids[2]);
+
+    const events = await new Promise<GuildEvent[]>((resolve, reject) => {
+      const stop = watchEventsBetween(
+        tavia.db,
+        new Date(base + DAY),
+        new Date(base + 12 * DAY),
+        (list) => (stop(), resolve(list)),
+        reject,
+      );
+    });
+    expect(events.map((e) => [e.title, e.status])).toEqual([
+      ['Dentro', 'ativo'],
+      ['Cancelado', 'cancelado'],
+    ]);
+  });
+
+  it('membro abre o detalhe de um evento; inexistente vem como null', async () => {
+    const admin = await firstAdmin();
+    const tavia = await approvedMember(admin, 'Tavia');
+    const created = await createEvent(admin.db, admin.uid, input());
+    if (!created.ok) throw new Error(created.error);
+    const one = (id: string) =>
+      new Promise<GuildEvent | null>((resolve, reject) => {
+        const stop = watchEvent(tavia.db, id, (e) => (stop(), resolve(e)), reject);
+      });
+    expect(await one(created.id)).toMatchObject({
+      title: 'Raid semanal',
+      organizer: 'Maren',
+      description: '[DESCRIÇÃO DO EVENTO]',
+    });
+    expect(await one('nao-existe')).toBeNull();
+  });
+
+  it('conta pendente não lê o calendário', async () => {
+    await firstAdmin();
+    const kaelen = await register('Kaelen');
+    const error = await new Promise<unknown>((resolve) => {
+      watchEventsBetween(
+        kaelen.db,
+        new Date(),
+        new Date(Date.now() + DAY),
+        () => resolve(null),
+        resolve,
+      );
+    });
+    expect((error as { code?: string })?.code).toBe('permission-denied');
   });
 });

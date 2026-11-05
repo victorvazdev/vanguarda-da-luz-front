@@ -1,0 +1,51 @@
+<aside class="attendees" aria-labelledby="titulo-confirmados">
+  <h2 id="titulo-confirmados" class="attendees__title">
+    Confirmados: {{ state() === 'ready' ? view().length : '…' }}
+  </h2>
+  <p class="attendees__note">Visível para administradores</p>
+
+  <div aria-live="polite">
+    @if (status(); as message) {
+      <p id="confirmados-status" class="attendees__status" tabindex="-1">{{ message }}</p>
+    }
+  </div>
+  @if (error(); as message) {
+    <p class="form-alert attendees__status" role="alert">{{ message }}</p>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="muted attendees__empty" role="status">Carregando…</p>
+    }
+    @case ('error') {
+      <p class="form-alert" role="alert">Não foi possível carregar os confirmados.</p>
+    }
+    @default {
+      @if (view().length) {
+        <ul class="attendees__list">
+          @for (person of view(); track person.uid) {
+            <li class="attendees__item" [attr.aria-busy]="busy() === person.uid">
+              <strong class="attendees__name">{{ person.name }}</strong>
+              <span>{{ person.details }}</span>
+              @if (person.meta) {
+                <span class="attendees__meta">{{ person.meta }}</span>
+              }
+              @if (open()) {
+                <button
+                  type="button"
+                  class="btn btn--outline attendees__remove"
+                  [disabled]="busy() !== null"
+                  (click)="remove(person)"
+                >
+                  Cancelar presença<span class="sr-only"> de {{ person.name }}</span>
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted attendees__empty">Ainda não há confirmados.</p>
+      }
+    }
+  }
+</aside>

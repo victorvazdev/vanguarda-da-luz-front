@@ -61,6 +61,10 @@
   font-size: 0.8125rem;
 }
 
+.event-row__title a {
+  color: inherit;
+}
+
 .event-row--cancelled .event-row__title {
   color: var(--color-text-muted);
 }

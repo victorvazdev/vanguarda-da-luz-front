@@ -140,10 +140,12 @@ try {
 }
 
 const adminUids = [];
+const uids = {};
 for (const p of PEOPLE) {
   const key = p.username.toLowerCase();
   const email = `${key}@vanguarda.test`;
   const uid = await account(email);
+  uids[p.username] = uid;
   await put(`usernames/${key}`, { uid });
   await put(`users/${uid}`, {
     username: p.username,
@@ -195,5 +197,9 @@ for (const [id, title, startsAt, cancelled] of EVENTS) {
     ...(cancelled ? { cancelledAt: daysAgo(1), cancelledBy: adminUids[0] } : {}),
   });
 }
-console.log(`${EVENTS.length} eventos (1 cancelado, 1 passado)`);
+// Presenças confirmadas na primeira raid (protótipo: Maren, Dorvan e Tavia).
+for (const [i, name] of ['Maren', 'Dorvan', 'Tavia'].entries()) {
+  await put(`events/seed-raid-1/attendees/${uids[name]}`, { confirmedAt: daysAgo(3 - i) });
+}
+console.log(`${EVENTS.length} eventos (1 cancelado, 1 passado) e 3 presenças na próxima raid`);
 console.log(`\nSenha de todas as contas: ${PASSWORD}`);

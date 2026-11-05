@@ -15,6 +15,7 @@ import {
   Validators,
   type ValidatorFn,
 } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import {
   EVENT_LIMITS,
   isChangeable,
@@ -81,7 +82,7 @@ interface EventView {
 /** História "Criar, editar e cancelar eventos". */
 @Component({
   selector: 'app-events-admin-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './events-admin-page.html',
   styleUrl: './events-admin-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -278,6 +278,8 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 - [ ] A lista mostra o nome, o personagem principal, a classe e a função de cada confirmado.
 - [ ] A lista reflete confirmações e cancelamentos já registrados.
 - [ ] Uma mensagem é exibida quando ainda não há confirmados.
+- [ ] O administrador pode cancelar a presença de um confirmado, com confirmação, enquanto o evento estiver futuro e ativo.
+- [ ] A pessoa que teve a presença cancelada pode confirmar novamente enquanto o evento estiver futuro e ativo.
 
 ### Gerenciar procurados
 

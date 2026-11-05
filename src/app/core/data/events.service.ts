@@ -1,10 +1,22 @@
 import { Injectable, inject } from '@angular/core';
+import type { Firestore } from 'firebase/firestore';
 import { SessionService } from '../auth/session.service';
 import { FirestoreClient } from '../firebase/firebase.providers';
+import {
+  cancelAttendance,
+  confirmAttendance,
+  watchAttendees,
+  watchMyAttendance,
+  type Attendee,
+  type AttendanceResult,
+  type MyAttendance,
+} from './attendance';
 import {
   cancelEvent,
   createEvent,
   updateEvent,
+  watchEvent,
+  watchEventsBetween,
   watchEventsFrom,
   type CreateEventResult,
   type EventActionResult,
@@ -23,15 +35,24 @@ export class EventsService {
     next: (events: GuildEvent[]) => void,
     error: (e: unknown) => void,
   ): () => void {
-    let stop: (() => void) | null = null;
-    let stopped = false;
-    void this.firestore.get().then((db) => {
-      if (!stopped) stop = watchEventsFrom(db, from, next, error);
-    }, error);
-    return () => {
-      stopped = true;
-      stop?.();
-    };
+    return this.whenReady((db) => watchEventsFrom(db, from, next, error), error);
+  }
+
+  watchBetween(
+    from: Date,
+    to: Date,
+    next: (events: GuildEvent[]) => void,
+    error: (e: unknown) => void,
+  ): () => void {
+    return this.whenReady((db) => watchEventsBetween(db, from, to, next, error), error);
+  }
+
+  watchOne(
+    id: string,
+    next: (event: GuildEvent | null) => void,
+    error: (e: unknown) => void,
+  ): () => void {
+    return this.whenReady((db) => watchEvent(db, id, next, error), error);
   }
 
   async create(input: EventInput): Promise<CreateEventResult> {
@@ -44,6 +65,51 @@ export class EventsService {
 
   async cancel(id: string): Promise<EventActionResult> {
     return cancelEvent(await this.firestore.get(), this.uid(), id);
+  }
+
+  /** Presença da pessoa autenticada no evento. */
+  watchMyAttendance(
+    eventId: string,
+    next: (attendance: MyAttendance | null) => void,
+    error: (e: unknown) => void,
+  ): () => void {
+    const uid = this.uid();
+    return this.whenReady((db) => watchMyAttendance(db, eventId, uid, next, error), error);
+  }
+
+  async confirmAttendance(eventId: string): Promise<AttendanceResult> {
+    return confirmAttendance(await this.firestore.get(), eventId, this.uid());
+  }
+
+  async cancelAttendance(eventId: string): Promise<AttendanceResult> {
+    return cancelAttendance(await this.firestore.get(), eventId, this.uid());
+  }
+
+  /** Confirmados do evento (somente administradores). */
+  watchAttendees(
+    eventId: string,
+    next: (attendees: Attendee[]) => void,
+    error: (e: unknown) => void,
+  ): () => void {
+    return this.whenReady((db) => watchAttendees(db, eventId, next, error), error);
+  }
+
+  /** Administrador cancela a presença de um confirmado. */
+  async removeAttendee(eventId: string, uid: string): Promise<AttendanceResult> {
+    return cancelAttendance(await this.firestore.get(), eventId, uid);
+  }
+
+  /** Inicia o listener quando o Firestore (carregado sob demanda) estiver pronto. */
+  private whenReady(start: (db: Firestore) => () => void, error: (e: unknown) => void) {
+    let stop: (() => void) | null = null;
+    let stopped = false;
+    void this.firestore.get().then((db) => {
+      if (!stopped) stop = start(db);
+    }, error);
+    return () => {
+      stopped = true;
+      stop?.();
+    };
   }
 
   private uid(): string {
