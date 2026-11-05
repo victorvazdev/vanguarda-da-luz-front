@@ -1,0 +1,142 @@
+<section class="content-admin" aria-labelledby="titulo-guilda-admin">
+  <h1 id="titulo-guilda-admin" class="admin__title">Informações da guilda</h1>
+  <p class="muted content-admin__intro">
+    O que for salvo aqui aparece na página inicial, em "Nossa história". Campos em branco não são
+    exibidos.
+    @if (updatedAt(); as date) {
+      Última atualização em {{ date }}.
+    }
+  </p>
+
+  @switch (info()) {
+    @case (undefined) {
+      <p class="muted loading" role="status">Carregando…</p>
+    }
+    @case (null) {
+      <p class="form-alert" role="alert">
+        Não foi possível carregar as informações. Recarregue a página.
+      </p>
+    }
+    @default {
+      <form class="form content-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <div aria-live="polite">
+          @if (status(); as message) {
+            <p class="notice">{{ message }}</p>
+          }
+        </div>
+        @if (formError(); as message) {
+          <p class="form-alert" role="alert" tabindex="-1">{{ message }}</p>
+        }
+
+        <p id="guilda-formatacao" class="field__hint content-form__hint">
+          Formatação: deixe uma linha em branco entre parágrafos, comece a linha com "- " para criar
+          uma lista e use **negrito** ou *itálico*.
+        </p>
+
+        <div class="field">
+          <label class="field__label" for="guilda-history">História</label>
+          <textarea
+            id="guilda-history"
+            class="field__input field__input--textarea content-form__long"
+            formControlName="history"
+            rows="10"
+            [attr.maxlength]="limits.history"
+            [attr.aria-invalid]="!!fieldError('history')"
+            [attr.aria-describedby]="describedBy('history', 'guilda-formatacao')"
+          ></textarea>
+          @if (fieldError('history'); as message) {
+            <p id="guilda-history-erro" class="field__error">{{ message }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="guilda-values">Valores</label>
+          <textarea
+            id="guilda-values"
+            class="field__input field__input--textarea"
+            formControlName="values"
+            rows="6"
+            [attr.maxlength]="limits.values"
+            [attr.aria-invalid]="!!fieldError('values')"
+            [attr.aria-describedby]="describedBy('values', 'guilda-formatacao')"
+          ></textarea>
+          @if (fieldError('values'); as message) {
+            <p id="guilda-values-erro" class="field__error">{{ message }}</p>
+          }
+        </div>
+
+        <fieldset class="choices">
+          <legend class="field__label">Facção</legend>
+          <div class="choices__options">
+            @for (f of factions; track f.id) {
+              <label class="choice">
+                <input
+                  class="choice__input"
+                  type="radio"
+                  formControlName="faction"
+                  [value]="f.id"
+                />
+                {{ f.label }}
+              </label>
+            }
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label class="field__label" for="guilda-retailServer">Servidor no Retail</label>
+          <input
+            id="guilda-retailServer"
+            class="field__input"
+            type="text"
+            formControlName="retailServer"
+            autocomplete="off"
+            [attr.maxlength]="limits.retailServer"
+            [attr.aria-invalid]="!!fieldError('retailServer')"
+            [attr.aria-describedby]="describedBy('retailServer')"
+          />
+          @if (fieldError('retailServer'); as message) {
+            <p id="guilda-retailServer-erro" class="field__error">{{ message }}</p>
+          }
+        </div>
+
+        <fieldset
+          class="choices"
+          formGroupName="foreverRulesets"
+          aria-describedby="guilda-rulesets-dica"
+        >
+          <legend class="field__label">Rulesets no WoW Forever</legend>
+          <p id="guilda-rulesets-dica" class="field__hint">Marque todos em que a guilda joga.</p>
+          <div class="choices__options">
+            @for (r of rulesets; track r.id) {
+              <label class="choice">
+                <input class="choice__input" type="checkbox" [formControlName]="r.id" />
+                {{ r.label }}
+              </label>
+            }
+          </div>
+        </fieldset>
+
+        <div class="content-form__actions">
+          <button
+            type="submit"
+            class="btn btn--primary"
+            [disabled]="saving()"
+            [attr.aria-busy]="saving()"
+          >
+            {{ saving() ? 'Salvando…' : 'Salvar informações' }}
+          </button>
+          @if (form.dirty) {
+            <button
+              type="button"
+              class="btn btn--outline"
+              [disabled]="saving()"
+              (click)="discard()"
+            >
+              Descartar alterações
+            </button>
+          }
+        </div>
+      </form>
+    }
+  }
+</section>

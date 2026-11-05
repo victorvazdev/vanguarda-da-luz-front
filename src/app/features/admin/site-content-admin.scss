@@ -1,0 +1,52 @@
+@use '../../../styles/mixins' as *;
+
+// Formulários de conteúdo do site (informações da guilda e redes sociais).
+.content-admin .admin__title {
+  margin-bottom: var(--space-2);
+}
+
+.content-admin__intro {
+  max-width: 60ch;
+  margin: 0 0 var(--space-5);
+}
+
+.content-form {
+  @include card;
+
+  max-width: 720px;
+}
+
+.content-form__hint {
+  margin: 0;
+}
+
+.content-form__long {
+  min-height: 14rem;
+}
+
+.content-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+@media (max-width: 520px) {
+  .content-form__actions .btn {
+    flex: 1;
+  }
+}
+
+// Campo do link com o botão "Apagar" ao lado.
+.social-field {
+  display: flex;
+  gap: var(--space-2);
+
+  .field__input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .btn {
+    flex: none;
+  }
+}

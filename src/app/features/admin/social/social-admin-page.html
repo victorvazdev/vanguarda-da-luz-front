@@ -1,0 +1,84 @@
+<section class="content-admin" aria-labelledby="titulo-redes-admin">
+  <h1 id="titulo-redes-admin" class="admin__title">Redes sociais</h1>
+  <p class="muted content-admin__intro">
+    Os links aparecem no rodapé de todas as páginas públicas. Uma rede com o link em branco não é
+    exibida.
+  </p>
+
+  @switch (links()) {
+    @case (undefined) {
+      <p class="muted loading" role="status">Carregando…</p>
+    }
+    @case (null) {
+      <p class="form-alert" role="alert">
+        Não foi possível carregar os links. Recarregue a página.
+      </p>
+    }
+    @default {
+      <form class="form content-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <div aria-live="polite">
+          @if (status(); as message) {
+            <p class="notice">{{ message }}</p>
+          }
+        </div>
+        @if (formError(); as message) {
+          <p class="form-alert" role="alert" tabindex="-1">{{ message }}</p>
+        }
+
+        @for (n of networks; track n.id) {
+          <div class="field">
+            <label class="field__label" [for]="'rede-' + n.id">{{ n.name }}</label>
+            <div class="social-field">
+              <input
+                class="field__input"
+                type="url"
+                inputmode="url"
+                autocomplete="off"
+                placeholder="https://"
+                [id]="'rede-' + n.id"
+                [formControlName]="n.id"
+                [attr.maxlength]="maxLength"
+                [attr.aria-invalid]="!!fieldError(n.id)"
+                [attr.aria-describedby]="fieldError(n.id) ? 'rede-' + n.id + '-erro' : null"
+              />
+              @if (form.controls[n.id].value) {
+                <button
+                  type="button"
+                  class="btn btn--outline"
+                  [disabled]="saving()"
+                  (click)="clear(n.id, n.name)"
+                >
+                  Apagar<span class="sr-only"> link do {{ n.name }}</span>
+                </button>
+              }
+            </div>
+            @if (fieldError(n.id); as message) {
+              <p [id]="'rede-' + n.id + '-erro'" class="field__error">{{ message }}</p>
+            }
+          </div>
+        }
+
+        <div class="content-form__actions">
+          <button
+            type="submit"
+            class="btn btn--primary"
+            [disabled]="saving()"
+            [attr.aria-busy]="saving()"
+          >
+            {{ saving() ? 'Salvando…' : 'Salvar links' }}
+          </button>
+          @if (form.dirty) {
+            <button
+              type="button"
+              class="btn btn--outline"
+              [disabled]="saving()"
+              (click)="discard()"
+            >
+              Descartar alterações
+            </button>
+          }
+        </div>
+      </form>
+    }
+  }
+</section>

@@ -113,6 +113,18 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/events/events-admin-page').then((m) => m.EventsAdminPage),
       },
+      {
+        path: 'guilda',
+        title: 'Informações da guilda',
+        loadComponent: () =>
+          import('./features/admin/guild/guild-admin-page').then((m) => m.GuildAdminPage),
+      },
+      {
+        path: 'redes-sociais',
+        title: 'Redes sociais',
+        loadComponent: () =>
+          import('./features/admin/social/social-admin-page').then((m) => m.SocialAdminPage),
+      },
     ],
   },
   {

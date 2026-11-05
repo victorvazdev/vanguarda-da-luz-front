@@ -1,10 +1,10 @@
 # Critérios de Aceite — Vanguarda da Luz
 
-Nov 4, 2026 · @Victor Vaz de Oliveira
+Nov 5, 2026 · @Victor Vaz de Oliveira
 
 ## Visão geral
 
-As 26 histórias abaixo têm critérios verificáveis, agrupados por área. Uma história só está pronta quando todos os seus critérios forem atendidos.
+As 28 histórias abaixo têm critérios verificáveis, agrupados por área. Uma história só está pronta quando todos os seus critérios forem atendidos.
 
 | Perfil | Situação | Acesso |
 | --- | --- | --- |
@@ -50,9 +50,10 @@ A guilda está presente em duas versões de World of Warcraft:
 
 **Como visitante**, quero ver quais são as redes sociais, para que eu possa aprender mais sobre a guilda por esses meios.
 
-- [ ] Os links das redes sociais ficam visíveis em todas as páginas públicas.
+- [ ] Os links das redes sociais ficam visíveis no rodapé de todas as páginas públicas.
 - [ ] Cada link identifica a rede por nome ou ícone com texto alternativo.
 - [ ] Cada link abre o perfil oficial correspondente em uma nova aba.
+- [ ] Os links exibidos são os definidos no painel administrativo.
 - [ ] Redes sem link cadastrado não são exibidas.
 
 ### Conhecer a guilda
@@ -61,6 +62,8 @@ A guilda está presente em duas versões de World of Warcraft:
 
 - [ ] A página pode ser acessada sem login e a partir do menu principal.
 - [ ] A página apresenta a história, os valores, a facção, o servidor no Retail e os rulesets no WoW Forever.
+- [ ] As informações exibidas são as definidas no painel administrativo.
+- [ ] Uma informação sem conteúdo cadastrado não é exibida.
 - [ ] A página oferece um link para as instruções de ingresso.
 
 ### Ler as regras
@@ -252,6 +255,29 @@ A guilda está presente em duas versões de World of Warcraft:
 ## Administração
 
 Todas as ações desta seção exigem permissão de administrador, verificada no servidor. Uma tentativa sem permissão é recusada e não altera os dados.
+
+### Editar informações da guilda
+
+**Como administrador**, quero escrever a história, os valores, a facção e onde a guilda joga no painel administrativo, para que a página de apresentação fique atualizada sem alterar o código do site.
+
+- [ ] O painel administrativo oferece um formulário com a história, os valores, a facção, o nome do servidor no Retail e os rulesets no WoW Forever.
+- [ ] O formulário abre com as informações atuais.
+- [ ] A história e os valores aceitam texto com parágrafos e formatação básica.
+- [ ] A facção é escolhida entre Aliança e Horda.
+- [ ] O nome do servidor no Retail é um texto livre.
+- [ ] Os rulesets no WoW Forever são escolhidos entre Normal e JxJ, e mais de um pode ser marcado.
+- [ ] As alterações salvas aparecem imediatamente na página de apresentação.
+- [ ] A página de apresentação informa a data da última atualização e o administrador responsável fica registrado.
+
+### Gerenciar redes sociais
+
+**Como administrador**, quero modificar os links das redes sociais no painel administrativo, para que o rodapé do site aponte sempre para os perfis oficiais da guilda.
+
+- [ ] O painel administrativo lista as redes sociais disponíveis com o link atual de cada uma.
+- [ ] O administrador pode adicionar, alterar ou apagar o link de cada rede.
+- [ ] O link deve ser uma URL válida começando com https://; um link inválido exibe uma mensagem junto ao campo e impede o salvamento.
+- [ ] Uma rede com o link apagado deixa de aparecer no rodapé.
+- [ ] As alterações salvas aparecem imediatamente no rodapé de todas as páginas públicas.
 
 ### Adicionar artigo
 

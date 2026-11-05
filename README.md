@@ -63,7 +63,7 @@ tests/rules/          testes das Security Rules
 tests/integration/    fluxos contra os emuladores (cadastro, …)
 ```
 
-Textos da guilda ainda pendentes ficam entre colchetes em `src/app/core/content/guild-content.ts`.
+Textos fixos da guilda ainda pendentes ficam entre colchetes em `src/app/core/content/guild-content.ts`. História, valores, facção, servidor no Retail, rulesets no WoW Forever e os links das redes sociais são editados no site, em **Administração > Guilda** e **Administração > Redes sociais** (documentos `site/guild` e `site/social` no Firestore). Até o primeiro salvamento, o rodapé usa os links oficiais definidos em `src/app/core/content/site-content.ts`, e a página inicial mostra somente a facção (Aliança) e os rulesets (Normal e JxJ).
 
 ## Produção
 
@@ -85,5 +85,6 @@ O primeiro administrador é definido manualmente, uma única vez:
    - crie `members/{uid}` com `username` (igual ao de `users`), `active` = `true`, `joinedAt` (data atual), `approvedBy` (o próprio `uid`) e o mapa `mainCharacter` com os campos de personagem da candidatura (`game`, `characterName`, `characterClass`, `characterRole` e `server` ou `characterSurname` + `ruleset`). O nível não entra aqui: depois, em **Minha conta**, edite o personagem principal e informe o nível.
    - crie `config/admins` com o campo `activeAdminUids` (array) contendo o seu `uid`. Essa lista guarda os administradores ativos e impede que a guilda fique sem nenhum.
 3. Saia e entre novamente. O menu **Administração** aparece.
+4. Em **Administração > Guilda**, escreva a história, os valores e o servidor no Retail.
 
 A partir daí, novos membros e administradores são definidos pelo próprio site.

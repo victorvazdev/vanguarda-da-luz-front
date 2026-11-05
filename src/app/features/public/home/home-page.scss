@@ -293,6 +293,16 @@
   font-size: clamp(1.5rem, 4vw, 1.75rem);
 }
 
+.band__text {
+  display: block;
+}
+
+.band__updated {
+  margin: var(--space-4) 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
 .facts {
   margin: 0;
 }
