@@ -6,6 +6,28 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  scrollbar-color: var(--color-border-field) var(--color-bg-deep);
+  // Âncoras e foco não ficam escondidos sob o header fixo.
+  scroll-padding-top: 72px;
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-on-gold);
+}
+
+// Atmosfera: brilho quente no topo, vinheta nas bordas e um grão sutil.
+// Fica atrás de todo o conteúdo e não recebe cliques.
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .9 0 0 0 0 .7 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgb(242 201 76 / 9%), transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 55%, var(--color-bg-deep) 100%);
 }
 
 body {
@@ -42,8 +64,21 @@ h3 {
   line-height: 1.2;
 }
 
+// Títulos de página em dourado metálico. O texto continua selecionável e,
+// em modo de alto contraste, volta à cor sólida.
 h1 {
   font-size: clamp(2rem, 6vw, 2.5rem);
+  background: var(--gradient-heading);
+  background-clip: text;
+  color: transparent;
+  // Sombra separada do texto para não "vazar" pelo gradiente recortado.
+  filter: drop-shadow(0 2px 10px rgb(242 201 76 / 18%));
+
+  @media (forced-colors: active) {
+    background: none;
+    color: CanvasText;
+    filter: none;
+  }
 }
 
 p {
@@ -65,11 +100,14 @@ a {
   outline-offset: 3px;
 }
 
+// Com movimento reduzido, as animações vão direto ao estado final. Rodar uma
+// única vez evita que as infinitas (raios, partículas) pisquem em 0,01 ms.
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
@@ -105,6 +143,86 @@ a {
 
 .muted {
   color: var(--color-text-muted);
+}
+
+// Divisor ornamental: linha que some nas pontas com um losango dourado no meio.
+// Uso: <div class="divider" role="presentation"></div>
+.divider {
+  position: relative;
+  height: 1px;
+  margin-block: var(--space-6);
+  border: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-border-field) 30%,
+    var(--color-gold) 50%,
+    var(--color-border-field) 70%,
+    transparent
+  );
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 9px;
+    height: 9px;
+    background: var(--color-gold);
+    box-shadow: var(--glow-sm);
+    translate: -50% -50%;
+    rotate: 45deg;
+  }
+}
+
+// Estado de carregamento: losango dourado pulsando e texto com brilho deslizante.
+// Uso: <p class="muted loading" role="status">Carregando…</p>
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  &::before {
+    content: '';
+    flex: none;
+    width: 9px;
+    height: 9px;
+    background: var(--color-gold);
+    box-shadow: var(--glow-sm);
+    rotate: 45deg;
+    animation: loading-pulse 1.2s ease-in-out infinite;
+  }
+
+  @supports (background-clip: text) {
+    background: linear-gradient(
+        90deg,
+        var(--color-text-muted) 40%,
+        var(--color-gold-light) 50%,
+        var(--color-text-muted) 60%
+      )
+      0 0 / 250% 100%;
+    background-clip: text;
+    color: transparent;
+    animation: loading-shimmer 1.6s linear infinite;
+
+    @media (forced-colors: active) {
+      background: none;
+      color: CanvasText;
+    }
+  }
+}
+
+@keyframes loading-pulse {
+  50% {
+    opacity: 0.35;
+    scale: 0.7;
+  }
+}
+
+@keyframes loading-shimmer {
+  to {
+    background-position: -150% 0;
+  }
 }
 
 .eyebrow {

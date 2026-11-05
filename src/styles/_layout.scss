@@ -1,3 +1,5 @@
+@use 'mixins' as *;
+
 .container {
   width: min(100% - 2 * var(--gutter), var(--container));
   margin-inline: auto;
@@ -20,6 +22,21 @@
 
   h1 {
     margin-bottom: var(--space-2);
+  }
+
+  // Filete ornamental sob o cabeçalho, alinhado à esquerda.
+  &::after {
+    content: '';
+    display: block;
+    width: min(100%, 220px);
+    height: 1px;
+    margin-top: var(--space-4);
+    background: linear-gradient(
+      90deg,
+      var(--color-gold),
+      var(--color-border-field) 45%,
+      transparent
+    );
   }
 }
 
@@ -102,6 +119,9 @@
 }
 
 .status-card {
+  @include card-corners;
+
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -165,6 +185,8 @@
   color: var(--color-text);
   text-decoration: none;
 
+  @include grow-underline(0px);
+
   &:hover {
     color: var(--color-gold);
   }
@@ -173,6 +195,5 @@
 .tabs__link--active {
   color: var(--color-gold);
   font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 6px;
+  background-size: 100% 2px;
 }

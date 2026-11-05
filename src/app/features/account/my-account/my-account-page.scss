@@ -1,3 +1,5 @@
+@use '../../../../styles/mixins' as *;
+
 // Minha conta: candidatura, personagens e dados da conta.
 .account {
   width: min(100% - 2 * var(--gutter), 640px);
@@ -67,9 +69,13 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  @include card(var(--space-4));
+
+  transition: box-shadow var(--dur) var(--ease-out);
+
+  &:hover {
+    box-shadow: var(--shadow-card), var(--glow-sm);
+  }
 
   p {
     margin: 0;
@@ -105,9 +111,9 @@
 }
 
 .character-form {
+  @include card;
+
   margin-top: var(--space-5);
-  padding: var(--space-5);
-  border: 1px solid var(--color-border);
 }
 
 @media (max-width: 560px) {

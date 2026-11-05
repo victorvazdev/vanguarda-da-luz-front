@@ -1,0 +1,59 @@
+// Mixins compartilhados entre os estilos globais e os dos componentes.
+// Nos componentes: @use '<caminho relativo>/styles/mixins' as *;
+
+// Cartão: superfície elevada com borda em gradiente (bronze → dourado → bronze).
+// A borda usa duas camadas de fundo (padding-box e border-box), então não
+// combine com outro `background` no mesmo elemento.
+@mixin card($padding: var(--space-5)) {
+  padding: $padding;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(var(--color-surface-raised), var(--color-surface)) padding-box,
+    var(--gradient-border) border-box;
+  box-shadow: var(--shadow-card);
+
+  @media (forced-colors: active) {
+    border-color: CanvasText;
+  }
+}
+
+// Cantos ornamentais em "L" dourado (superior esquerdo e inferior direito).
+// O elemento precisa de `position: relative`.
+@mixin card-corners($size: 14px) {
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    width: $size;
+    height: $size;
+    pointer-events: none;
+  }
+
+  &::before {
+    top: 6px;
+    left: 6px;
+    border-top: 2px solid var(--color-gold);
+    border-left: 2px solid var(--color-gold);
+  }
+
+  &::after {
+    right: 6px;
+    bottom: 6px;
+    border-right: 2px solid var(--color-gold);
+    border-bottom: 2px solid var(--color-gold);
+  }
+}
+
+// Sublinhado que cresce do centro ao passar o mouse e fica cheio quando ativo.
+@mixin grow-underline($offset: 8px) {
+  background: linear-gradient(var(--color-gold), var(--color-gold)) center calc(100% - #{$offset}) /
+    0% 2px no-repeat;
+  transition:
+    background-size var(--dur) var(--ease-out),
+    color var(--dur-fast) ease;
+
+  &:hover {
+    background-size: 100% 2px;
+  }
+}

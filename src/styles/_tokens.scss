@@ -14,6 +14,61 @@
   --color-cancel: #f2a488;
   --color-on-gold: #141210;
 
+  // Profundidade: fundo mais escuro (vinheta) e superfície elevada (cartões)
+  --color-bg-deep: #0d0b09;
+  --color-surface-raised: #241f18; // texto atenuado: 10,6:1
+
+  // Dourado em camadas (metal). Contraste sobre o fundo: claro 14,5:1; profundo 7:1
+  --color-gold-light: #ffe08a;
+  --color-gold-deep: #c9962b;
+  --color-bronze: #8a5a1c; // só decorativo (bordas, sombras)
+
+  // Azul da Aliança, segunda cor de destaque
+  --color-azure: #7fa8ff; // texto: 8:1 sobre o fundo
+  --color-azure-deep: #1b2a4a; // só fundos
+
+  // Estados (texto ≥ 8:1 sobre o fundo)
+  --color-success: #9be08f;
+  --color-warning: #f2b04c;
+  --color-info: var(--color-azure);
+
+  // Gradientes
+  --gradient-gold: linear-gradient(
+    135deg,
+    var(--color-gold-light) 0%,
+    var(--color-gold) 45%,
+    var(--color-gold-deep) 100%
+  );
+  --gradient-heading: linear-gradient(
+    180deg,
+    var(--color-heading) 15%,
+    var(--color-gold-light) 55%,
+    var(--color-gold) 100%
+  );
+  --gradient-border: linear-gradient(
+    90deg,
+    var(--color-bronze),
+    var(--color-gold) 50%,
+    var(--color-bronze)
+  );
+  --gradient-radiance: radial-gradient(
+    circle at center,
+    rgb(242 201 76 / 16%) 0%,
+    rgb(242 201 76 / 5%) 45%,
+    transparent 70%
+  );
+
+  // Brilho e sombra
+  --glow-sm: 0 0 12px rgb(242 201 76 / 30%);
+  --glow-md: 0 0 28px rgb(242 201 76 / 35%);
+  --shadow-card: 0 1px 0 rgb(255 246 223 / 4%) inset, 0 10px 30px -12px rgb(0 0 0 / 70%);
+
+  // Movimento
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast: 150ms;
+  --dur: 250ms;
+  --dur-slow: 600ms;
+
   // Tipografia
   --font-heading: 'Cinzel', 'Times New Roman', serif;
   --font-body: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -31,7 +86,8 @@
   --container: 900px;
   --container-narrow: 660px;
   --gutter: 16px;
-  --radius: 2px;
+  --radius: 4px;
+  --radius-lg: 10px;
 
   // Acessibilidade
   --tap: 44px; // alvo de toque mínimo
