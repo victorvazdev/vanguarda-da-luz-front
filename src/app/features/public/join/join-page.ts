@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SessionService } from '../../../core/auth/session.service';
-import { GUILD, JOIN_STEPS } from '../../../core/content/guild-content';
+import { JOIN_STEPS } from '../../../core/content/guild-content';
 import { PATHS, joinPathFor } from '../../../core/routing/paths';
 
 /** História "Ver como ingressar". */
@@ -14,7 +14,6 @@ import { PATHS, joinPathFor } from '../../../core/routing/paths';
 export class JoinPage {
   private readonly session = inject(SessionService);
 
-  protected readonly requirements = GUILD.requirements;
   protected readonly steps = JOIN_STEPS;
   protected readonly rulesPath = PATHS.rules;
 

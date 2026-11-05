@@ -20,15 +20,16 @@ describe('JoinPage (Ver como ingressar)', () => {
     expect(el.textContent).toContain('A entrada depende da aprovação de um administrador.');
   });
 
-  it('apresenta requisitos e os 4 passos em ordem', async () => {
+  it('apresenta os 4 passos em ordem, sem a seção de requisitos', async () => {
     const el = await render('visitor');
-    expect(el.querySelector('#titulo-requisitos')).toBeTruthy();
+    expect(el.querySelector('#titulo-requisitos')).toBeNull();
+    expect(el.textContent).not.toContain('Requisitos');
     const steps = [...el.querySelectorAll('ol li strong')].map((s) => s.textContent?.trim());
     expect(steps).toEqual([
       'Leia as regras',
       'Crie sua conta',
       'Envie sua candidatura',
-      'Aguarde a avaliação',
+      'Aguarde o contato e avaliação',
     ]);
   });
 
