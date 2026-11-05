@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { RulesPage } from './rules-page';
 
 describe('RulesPage (Ler as regras)', () => {
-  it('exibe regras numeradas, identificáveis e a data de atualização', async () => {
+  it('exibe regras numeradas e identificáveis, sem data de atualização', async () => {
     TestBed.configureTestingModule({ imports: [RulesPage], providers: [provideRouter([])] });
     const fixture = TestBed.createComponent(RulesPage);
     await fixture.whenStable();
@@ -13,7 +13,7 @@ describe('RulesPage (Ler as regras)', () => {
     expect(items).toHaveLength(10);
     expect(items[0].id).toBe('regra-1');
     expect(items[9].id).toBe('regra-10');
-    expect(el.textContent).toContain('Última atualização: [DATA]');
+    expect(el.textContent).not.toContain('Última atualização');
     expect(el.querySelector('a[href="/como-ingressar"]')).toBeTruthy();
   });
 });

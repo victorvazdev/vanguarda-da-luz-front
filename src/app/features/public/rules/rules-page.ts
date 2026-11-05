@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { RULES } from '../../../core/content/guild-content';
 import { PATHS } from '../../../core/routing/paths';
 import { RulesList } from '../../../shared/ui/rules-list/rules-list';
 
@@ -12,6 +11,5 @@ import { RulesList } from '../../../shared/ui/rules-list/rules-list';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RulesPage {
-  protected readonly rules = RULES;
   protected readonly joinPath = PATHS.join;
 }

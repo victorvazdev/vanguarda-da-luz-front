@@ -74,7 +74,6 @@ A guilda está presente em duas versões de World of Warcraft:
 
 - [ ] A página de regras pode ser acessada sem login.
 - [ ] As regras são exibidas em seções ou itens identificáveis.
-- [ ] A página informa a data da última atualização.
 - [ ] A página de ingresso oferece um link para as regras.
 - [ ] No cadastro e na candidatura, o link das regras abre um modal com as regras completas, sem sair da página e sem perder os dados já preenchidos.
 - [ ] O modal fecha pelo botão, pela tecla Esc e por um clique no fundo.
