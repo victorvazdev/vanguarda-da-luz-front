@@ -1,5 +1,89 @@
+@use '../../../../styles/mixins' as *;
+
+// Hero: luz radiando do brasão, partículas subindo e o texto entrando em sequência.
 .hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   padding-block: var(--space-7);
+
+  // Clarão quente atrás do brasão (lado direito no desktop).
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -20% -10% -20% 35%;
+    z-index: -1;
+    background: radial-gradient(
+      circle at 55% 50%,
+      rgb(242 201 76 / 18%),
+      rgb(242 201 76 / 6%) 35%,
+      transparent 65%
+    );
+    pointer-events: none;
+  }
+}
+
+// Entrada escalonada: sobretítulo, título, intro e ações.
+.hero__text > * {
+  animation: hero-rise var(--dur-slow) var(--ease-out) both;
+
+  @for $i from 1 through 4 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{80ms + ($i - 1) * 110ms};
+    }
+  }
+}
+
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+
+// Partículas de luz subindo pelo hero.
+.motes {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mote {
+  position: absolute;
+  bottom: -10px;
+  left: var(--x);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: var(--color-gold-light);
+  box-shadow:
+    0 0 6px var(--color-gold),
+    0 0 12px rgb(242 201 76 / 60%);
+  opacity: 0;
+  animation: mote-float var(--duration) linear var(--delay) infinite;
+}
+
+@keyframes mote-float {
+  10% {
+    opacity: 0.8;
+  }
+
+  70% {
+    opacity: 0.5;
+  }
+
+  to {
+    opacity: 0;
+    translate: var(--drift) -110vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motes {
+    display: none;
+  }
 }
 
 .hero__grid {
@@ -13,6 +97,34 @@
   margin: var(--space-2) 0 var(--space-4);
   font-size: clamp(2.5rem, 8vw, 3.75rem);
   line-height: 1.05;
+  // Reflexo que atravessa o título uma vez, sobre o dourado metálico global.
+  background:
+    linear-gradient(110deg, transparent 35%, rgb(255 255 255 / 85%) 50%, transparent 65%) 120% 0 /
+      250% 100% no-repeat,
+    var(--gradient-heading);
+  background-clip: text;
+}
+
+// Mesma especificidade do escalonamento acima, declarada depois: sobe e, em
+// seguida, recebe o reflexo.
+.hero__text > .hero__title {
+  animation:
+    hero-rise var(--dur-slow) var(--ease-out) 190ms both,
+    title-sheen 1.6s var(--ease-out) 700ms both;
+}
+
+@keyframes title-sheen {
+  from {
+    background-position:
+      120% 0,
+      0 0;
+  }
+
+  to {
+    background-position:
+      -120% 0,
+      0 0;
+  }
 }
 
 .hero__intro {
@@ -31,24 +143,52 @@
   aspect-ratio: 1;
 }
 
+// Raios de luz girando bem devagar, desvanecendo nas bordas.
+.emblem__rays {
+  position: absolute;
+  inset: -38%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgb(255 224 138 / 16%) 0deg 3deg,
+    transparent 3deg 15deg
+  );
+  mask: radial-gradient(circle, #000 22%, rgb(0 0 0 / 50%) 42%, transparent 68%);
+  animation: spin 90s linear infinite;
+  pointer-events: none;
+}
+
 .emblem__ring {
   position: absolute;
   inset: 0;
   border: 1px solid var(--color-border-field);
   border-radius: 50%;
+  box-shadow:
+    0 0 24px rgb(242 201 76 / 12%),
+    inset 0 0 24px rgb(242 201 76 / 8%);
 
+  // Anel pontilhado girando no sentido contrário.
   &::after {
     content: '';
     position: absolute;
     inset: 9%;
-    border: 2px dotted var(--color-border);
+    border: 2px dotted var(--color-border-field);
     border-radius: 50%;
+    animation: spin 120s linear infinite reverse;
+  }
+}
+
+@keyframes spin {
+  to {
+    rotate: 1turn;
   }
 }
 
 .emblem__tick {
   position: absolute;
   background: var(--color-gold);
+  box-shadow: var(--glow-sm);
+  animation: tick-pulse 3s ease-in-out infinite;
 
   &--top,
   &--bottom {
@@ -88,12 +228,57 @@
   width: 74%;
   height: auto;
   border-radius: 50%;
+  animation: halo-breathe 4.5s ease-in-out infinite;
 }
 
+@keyframes tick-pulse {
+  50% {
+    opacity: 0.45;
+    box-shadow: none;
+  }
+}
+
+// Halo do brasão "respirando".
+@keyframes halo-breathe {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 14px rgb(242 201 76 / 30%));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 34px rgb(242 201 76 / 55%));
+  }
+}
+
+// Faixa da história: treliça heráldica sutil e um brilho no canto.
 .band {
+  position: relative;
   padding-block: var(--space-7);
   border-block: 1px solid var(--color-border);
-  background: var(--color-surface);
+  background:
+    radial-gradient(ellipse 60% 80% at 100% 0%, rgb(242 201 76 / 7%), transparent 70%),
+    repeating-linear-gradient(45deg, rgb(242 201 76 / 3.5%) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(-45deg, rgb(242 201 76 / 3.5%) 0 1px, transparent 1px 28px),
+    var(--color-surface);
+
+  // Filetes dourados nas bordas superior e inferior.
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    height: 1px;
+    background: var(--gradient-border);
+    opacity: 0.7;
+  }
+
+  &::before {
+    top: -1px;
+  }
+
+  &::after {
+    bottom: -1px;
+  }
 }
 
 .band__grid {
@@ -127,14 +312,32 @@
 }
 
 .facts__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 1.0625rem;
   color: var(--color-gold);
 }
 
+.facts__icon {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  padding: 5px;
+  border: 1px solid var(--color-border-field);
+  border-radius: 50%;
+  background: rgb(242 201 76 / 8%);
+  fill: none;
+  stroke: var(--color-gold);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .facts__value {
-  margin: var(--space-1) 0 0;
+  margin: var(--space-1) 0 0 calc(30px + var(--space-3));
   color: var(--color-text-muted);
 }
 
@@ -143,6 +346,12 @@
 }
 
 .cta__bar {
+  @include card(var(--space-6));
+  @include card-corners(18px);
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -152,6 +361,24 @@
   p {
     margin: 0;
   }
+}
+
+// Raios saindo do lado do botão no banner de convite.
+.cta__glow {
+  position: absolute;
+  top: 50%;
+  right: -120px;
+  z-index: -1;
+  width: 420px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(rgb(255 224 138 / 10%) 0deg 3deg, transparent 3deg 14deg),
+    var(--gradient-radiance);
+  mask: radial-gradient(circle, #000 15%, transparent 65%);
+  translate: 0 -50%;
+  animation: spin 120s linear infinite;
+  pointer-events: none;
 }
 
 @media (max-width: 760px) {
@@ -173,5 +400,13 @@
   .band,
   .cta {
     padding-block: var(--space-6);
+  }
+
+  .hero::before {
+    inset: -10% -30% 40%;
+  }
+
+  .cta__bar {
+    padding: var(--space-5);
   }
 }
