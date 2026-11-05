@@ -1,0 +1,45 @@
+<header class="site-header">
+  <div class="container site-header__bar">
+    <a class="brand" [routerLink]="homePath">
+      <img class="brand__logo" src="images/logo-256.webp" alt="" width="34" height="34" />
+      <span class="brand__name">{{ guildName }}</span>
+    </a>
+
+    <button
+      type="button"
+      class="menu-toggle"
+      aria-controls="menu-principal"
+      [attr.aria-expanded]="menuOpen()"
+      (click)="toggleMenu()"
+    >
+      <span class="menu-toggle__icon" aria-hidden="true"></span>
+      Menu
+    </button>
+
+    <nav id="menu-principal" class="nav" aria-label="Principal" [class.nav--open]="menuOpen()">
+      <ul class="nav__list">
+        @for (item of items(); track item.path) {
+          <li>
+            @if (item.kind === 'cta') {
+              <a class="btn btn--primary nav__cta" [routerLink]="item.path">{{ item.label }}</a>
+            } @else {
+              <a
+                class="nav__link"
+                [routerLink]="item.path"
+                routerLinkActive="nav__link--active"
+                ariaCurrentWhenActive="page"
+                [routerLinkActiveOptions]="{ exact: !!item.exact }"
+                >{{ item.label }}</a
+              >
+            }
+          </li>
+        }
+        @if (canSignOut()) {
+          <li>
+            <button type="button" class="nav__link nav__button" (click)="signOut()">Sair</button>
+          </li>
+        }
+      </ul>
+    </nav>
+  </div>
+</header>

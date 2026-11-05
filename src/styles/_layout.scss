@@ -1,0 +1,178 @@
+.container {
+  width: min(100% - 2 * var(--gutter), var(--container));
+  margin-inline: auto;
+}
+
+.container--narrow {
+  width: min(100% - 2 * var(--gutter), var(--container-narrow));
+}
+
+.page {
+  padding-block: var(--space-6) var(--space-7);
+
+  > section {
+    margin-bottom: var(--space-5);
+  }
+}
+
+.page__header {
+  margin-bottom: var(--space-5);
+
+  h1 {
+    margin-bottom: var(--space-2);
+  }
+}
+
+.section-title {
+  margin-bottom: var(--space-3);
+  color: var(--color-gold);
+  font-size: 1.25rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+// Lista numerada com números dourados em Cinzel (passos de ingresso, regras).
+.numbered {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: numbered;
+}
+
+.numbered__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) 0 var(--space-4) 3rem;
+  border-bottom: 1px solid var(--color-border);
+  counter-increment: numbered;
+  scroll-margin-top: var(--space-5);
+
+  &::before {
+    content: counter(numbered);
+    position: absolute;
+    top: var(--space-3);
+    left: 0;
+    color: var(--color-gold);
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  &:target {
+    background: var(--color-surface);
+  }
+}
+
+.numbered__title {
+  color: var(--color-heading);
+}
+
+.numbered--ruled {
+  border-top: 1px solid var(--color-border);
+
+  .numbered__item:last-child {
+    border-bottom: 1px solid var(--color-border);
+  }
+}
+
+.page__title {
+  margin-bottom: var(--space-5);
+}
+
+// Cartão de situação (Minha conta).
+.application-status {
+  width: min(100% - 2 * var(--gutter), 540px);
+  padding-block: var(--space-6) var(--space-7);
+
+  .details {
+    margin-top: var(--space-5);
+  }
+}
+
+.status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+
+  .badge {
+    margin-bottom: var(--space-2);
+  }
+
+  p {
+    margin: 0;
+  }
+
+  .btn {
+    margin-top: var(--space-3);
+  }
+}
+
+.status-card__title {
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+// Área administrativa: abas e títulos.
+.admin {
+  padding-block: var(--space-6) var(--space-7);
+}
+
+.admin__title {
+  margin-bottom: var(--space-5);
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+}
+
+.admin__feedback {
+  margin-bottom: var(--space-4);
+}
+
+.admin__section {
+  margin-top: var(--space-6);
+}
+
+.tabs {
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabs__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tabs__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  color: var(--color-text);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-gold);
+  }
+}
+
+.tabs__link--active {
+  color: var(--color-gold);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}

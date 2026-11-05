@@ -1,0 +1,213 @@
+.calendar-page {
+  padding-block: var(--space-6) var(--space-7);
+}
+
+.calendar-page__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.calendar-page__title {
+  margin: 0;
+  font-size: clamp(1.75rem, 5vw, 2.5rem);
+}
+
+.calendar-page__zone {
+  margin: var(--space-1) 0 0;
+}
+
+.calendar-page__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.calendar-page__empty {
+  margin-top: var(--space-4);
+}
+
+// Grade do mês (protótipo, página 9).
+.calendar {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  th {
+    padding: var(--space-2) var(--space-2);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-gold);
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  abbr {
+    text-decoration: none;
+  }
+}
+
+.calendar__cell {
+  height: 94px;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.calendar__cell--outside {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.calendar__day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  line-height: 1.4;
+}
+
+.calendar__day--today {
+  padding-inline: var(--space-1);
+  background: var(--color-heading);
+  color: var(--color-on-gold);
+  font-weight: 700;
+}
+
+.calendar__events {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calendar__event {
+  display: flex;
+  flex-direction: column;
+  min-height: var(--tap);
+  justify-content: center;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-gold);
+  border-radius: 2px;
+  background: var(--color-gold);
+  color: var(--color-on-gold);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+
+  &:hover {
+    background: var(--color-heading);
+  }
+}
+
+.calendar__event-time {
+  font-weight: 700;
+}
+
+.calendar__event--cancelled {
+  border-style: dashed;
+  background: transparent;
+  color: var(--color-text);
+
+  .calendar__event-title {
+    text-decoration: line-through;
+  }
+
+  &:hover {
+    background: var(--color-surface);
+  }
+}
+
+.calendar__dot {
+  display: none;
+}
+
+// Lista de eventos do mês: substitui os cartões da grade no celular.
+.agenda {
+  display: none;
+  margin-top: var(--space-5);
+}
+
+.agenda__title {
+  margin: 0 0 var(--space-3);
+  font-size: 1.25rem;
+}
+
+.agenda__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.agenda__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: var(--tap);
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.agenda__when {
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.agenda__name-text {
+  color: var(--color-gold);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.agenda__badge {
+  margin-right: var(--space-2);
+  font-size: 0.8125rem;
+}
+
+.agenda__item--cancelled .agenda__name-text {
+  color: var(--color-text);
+  text-decoration: line-through;
+}
+
+@media (max-width: 720px) {
+  .calendar__cell {
+    height: 52px;
+    padding: var(--space-1);
+    text-align: center;
+  }
+
+  .calendar th {
+    padding: var(--space-2) var(--space-1);
+    text-align: center;
+  }
+
+  .calendar__events {
+    display: none;
+  }
+
+  .calendar__dot {
+    display: block;
+    width: 8px;
+    height: 8px;
+    margin: var(--space-1) auto 0;
+    border-radius: 50%;
+    background: var(--color-gold);
+  }
+
+  .agenda {
+    display: block;
+  }
+}

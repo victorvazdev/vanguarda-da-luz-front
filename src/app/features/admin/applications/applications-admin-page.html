@@ -1,0 +1,91 @@
+<section aria-labelledby="titulo-candidaturas">
+  <h1 id="titulo-candidaturas" class="admin__title">
+    Candidaturas pendentes: {{ state() === 'ready' ? applications().length : '…' }}
+  </h1>
+
+  <div aria-live="polite">
+    @if (status(); as message) {
+      <p class="notice admin__feedback">{{ message }}</p>
+    }
+  </div>
+  @if (error(); as message) {
+    <p class="form-alert admin__feedback" role="alert">{{ message }}</p>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="muted" role="status">Carregando…</p>
+    }
+    @case ('error') {
+      <p class="form-alert" role="alert">
+        Não foi possível carregar as candidaturas. Recarregue a página.
+      </p>
+    }
+    @default {
+      @if (applications().length) {
+        <ul class="review-list">
+          @for (card of applications(); track card.uid) {
+            <li class="review-card" [attr.aria-busy]="busy() === card.uid">
+              <div class="review-card__body">
+                <h2 class="review-card__name">{{ card.name }}</h2>
+                <p class="review-card__meta">{{ card.classRole }}</p>
+                <p class="review-card__meta">{{ card.where }}</p>
+                <p class="review-card__motivation">{{ card.motivation }}</p>
+                <p class="review-card__small muted">Conta: {{ card.account }}</p>
+                <p class="review-card__small muted">
+                  Enviada em {{ card.submittedAt }}
+                  @if (card.previousRejections) {
+                    · recusada anteriormente
+                    {{
+                      card.previousRejections === 1 ? '1 vez' : card.previousRejections + ' vezes'
+                    }}
+                  }
+                </p>
+              </div>
+              <div class="review-card__actions">
+                <button
+                  type="button"
+                  class="btn btn--primary"
+                  [disabled]="busy() !== null"
+                  (click)="approve(card)"
+                >
+                  Aprovar<span class="sr-only"> {{ card.name }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn--cancel"
+                  [disabled]="busy() !== null"
+                  (click)="reject(card)"
+                >
+                  Recusar<span class="sr-only"> {{ card.name }}</span>
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted">Nenhuma candidatura pendente.</p>
+      }
+
+      @if (waiting().length) {
+        <section class="admin__section" aria-labelledby="titulo-aguardando">
+          <h2 id="titulo-aguardando" class="section-title">
+            Cadastros sem candidatura pendente: {{ waiting().length }}
+          </h2>
+          <p class="muted">
+            Contas que ainda não enviaram candidatura ou que tiveram a candidatura recusada. A
+            avaliação fica disponível quando enviarem uma nova candidatura.
+          </p>
+          <ul class="waiting-list">
+            @for (account of waiting(); track account.uid) {
+              <li>
+                <strong>{{ account.username }}</strong>
+                <span class="muted"> · {{ account.email }} · {{ account.situation }}</span>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    }
+  }
+</section>

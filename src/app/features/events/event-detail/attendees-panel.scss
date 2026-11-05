@@ -1,0 +1,62 @@
+// Protótipo, página 10: painel "Confirmados" à direita do detalhe.
+.attendees {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.attendees__title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.attendees__note {
+  margin: var(--space-1) 0 0;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.attendees__status {
+  margin: var(--space-3) 0 0;
+  font-size: 0.9375rem;
+}
+
+.attendees__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attendees__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
+
+  &:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+}
+
+.attendees__name {
+  color: var(--color-heading);
+}
+
+.attendees__meta {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.attendees__remove {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+}
+
+.attendees__empty {
+  margin: var(--space-3) 0 0;
+}

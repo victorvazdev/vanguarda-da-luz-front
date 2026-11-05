@@ -1,0 +1,33 @@
+.site-footer {
+  border-top: 1px solid var(--color-border);
+  padding-block: var(--space-5);
+  font-size: 0.875rem;
+}
+
+.site-footer__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+}
+
+.site-footer__name {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.social__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+}

@@ -1,0 +1,272 @@
+// Formulários: campos, mensagens e páginas de conta.
+:root {
+  --color-error: var(--color-cancel); // 9,3:1 sobre o fundo
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field__label {
+  color: var(--color-heading);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.field__input {
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-field);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+
+  &:hover {
+    border-color: var(--color-gold);
+  }
+
+  &:focus-visible {
+    outline-offset: 1px;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--color-error);
+  }
+}
+
+.field__hint,
+.field__error {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.field__hint {
+  color: var(--color-text-muted);
+}
+
+.field__error {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.form-alert {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.notice {
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border-field);
+  background: var(--color-surface);
+  text-align: left;
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.notice__badge {
+  display: inline-block;
+  margin-bottom: var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-gold);
+  color: var(--color-gold);
+  font-weight: 700;
+}
+
+// Telas de conta (cadastro, login, recuperação): coluna estreita e centralizada.
+.auth-page {
+  width: min(100% - 2 * var(--gutter), 360px);
+  margin-inline: auto;
+  padding-block: var(--space-6) var(--space-7);
+  text-align: center;
+
+  .form {
+    margin-top: var(--space-5);
+    text-align: left;
+  }
+}
+
+.auth-page__logo {
+  display: block;
+  margin: 0 auto var(--space-4);
+  border-radius: 50%;
+}
+
+.auth-page__title {
+  font-size: clamp(1.625rem, 5vw, 1.75rem);
+  outline: none;
+}
+
+.auth-page__subtitle {
+  margin: var(--space-2) 0 0;
+}
+
+.auth-page__switch {
+  margin: var(--space-5) 0 0;
+}
+
+.auth-page__done {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.field__label-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+}
+
+// Link ao lado do label (ex.: "Esqueci minha senha"), com área de toque de 44 px.
+.field__aside {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  margin-block: calc((var(--tap) - 1.4em) / -2);
+  font-size: 0.875rem;
+}
+
+.field__input--textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+select.field__input {
+  cursor: pointer;
+}
+
+// Caixa de seleção com área de toque de 44 px.
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap);
+}
+
+.checkbox__input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-gold);
+  cursor: pointer;
+}
+
+.checkbox__label {
+  cursor: pointer;
+}
+
+// Selo de situação (Pendente, Aprovada, Recusada, Cancelado).
+.badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-gold);
+  color: var(--color-gold);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.badge--success {
+  border-color: var(--color-heading);
+  background: var(--color-gold);
+  color: var(--color-on-gold);
+}
+
+.badge--danger {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+// Lista de dados rótulo/valor (ex.: detalhes da candidatura).
+.details {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+
+  dt {
+    color: var(--color-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    color: var(--color-heading);
+    font-weight: 700;
+  }
+}
+
+// Grupo de opções (radio), ex.: Jogo e Ruleset.
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    margin-bottom: var(--space-2);
+    padding: 0;
+  }
+}
+
+.choices__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border-field);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  cursor: pointer;
+
+  &:hover,
+  &:has(:checked) {
+    border-color: var(--color-gold);
+  }
+
+  &:has(:checked) {
+    color: var(--color-heading);
+    font-weight: 600;
+  }
+
+  &:has([aria-invalid='true']) {
+    border-color: var(--color-error);
+  }
+}
+
+.choice__input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-gold);
+  cursor: pointer;
+}

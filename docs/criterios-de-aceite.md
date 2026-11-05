@@ -13,10 +13,22 @@ As 26 histórias abaixo têm critérios verificáveis, agrupados por área. Uma 
 | Membro | Aprovado por um administrador | Funcionalidades de membros |
 | Administrador | Permissão administrativa | Funcionalidades de membros e área administrativa |
 
+**Jogos**
+
+A guilda está presente em duas versões de World of Warcraft:
+
+| Jogo | Personagem | Onde joga | Classes |
+| --- | --- | --- | --- |
+| World of Warcraft Retail | Nome | Servidor | As 13 classes atuais |
+| World of Warcraft Forever | Nome e sobrenome | Ruleset: Normal ou JxJ | As 9 classes do Classic |
+
 **Premissas a validar**
 
 - O cadastro cria uma conta pendente; ela não concede acesso imediato às funcionalidades de membros.
 - A candidatura é enviada por um usuário cadastrado e aprovada na mesma fila dos cadastros.
+- Cada usuário tem uma candidatura por vez, para um dos dois jogos. Ao ser aprovada, ela vira o personagem principal do membro.
+- A recusa vale para a candidatura: a conta continua pendente e o usuário pode enviar uma nova candidatura.
+- Somente uma conta desativada é impedida de entrar.
 - A senha tem no mínimo 8 caracteres.
 - O link de recuperação de senha vale por 1 hora e pode ser usado uma única vez.
 - A listagem de artigos exibe 10 itens por página.
@@ -45,10 +57,10 @@ As 26 histórias abaixo têm critérios verificáveis, agrupados por área. Uma 
 
 ### Conhecer a guilda
 
-**Como visitante**, quero conhecer a história, os valores e o servidor da guilda, para que eu possa decidir se quero fazer parte dela.
+**Como visitante**, quero conhecer a história, os valores e onde a guilda joga, para que eu possa decidir se quero fazer parte dela.
 
 - [ ] A página pode ser acessada sem login e a partir do menu principal.
-- [ ] A página apresenta a história, os valores, a facção e o servidor da guilda.
+- [ ] A página apresenta a história, os valores, a facção, o servidor no Retail e os rulesets no WoW Forever.
 - [ ] A página oferece um link para as instruções de ingresso.
 
 ### Ler as regras
@@ -136,7 +148,9 @@ As 26 histórias abaixo têm critérios verificáveis, agrupados por área. Uma 
 - [ ] Credenciais válidas autenticam o usuário e o levam à página adequada ao seu perfil.
 - [ ] Credenciais inválidas exibem uma mensagem genérica, sem indicar qual dado está incorreto.
 - [ ] Uma conta pendente entra, mas não acessa as funcionalidades de membros.
-- [ ] Uma conta recusada ou desativada não entra e recebe uma mensagem explicativa.
+- [ ] Uma conta desativada não entra e recebe uma mensagem explicativa.
+- [ ] Uma conta desativada durante o uso tem a sessão encerrada e recebe a mesma mensagem.
+- [ ] Um usuário com candidatura recusada entra e vê o resultado na própria conta.
 - [ ] Tentativas repetidas de login são limitadas.
 - [ ] A página oferece um link para recuperar a senha.
 
@@ -154,15 +168,20 @@ As 26 histórias abaixo têm critérios verificáveis, agrupados por área. Uma 
 
 ### Enviar candidatura
 
-**Como membro**, quero enviar uma candidatura, para que eu possa solicitar minha entrada na guilda pelo site.
+**Como usuário cadastrado**, quero enviar uma candidatura, para que eu possa solicitar minha entrada na guilda pelo site.
 
 - [ ] Somente um usuário autenticado e pendente pode enviar a candidatura.
-- [ ] O formulário solicita o nome do personagem, o servidor, a classe, a função e o motivo do interesse.
+- [ ] O usuário escolhe o jogo: World of Warcraft Retail ou World of Warcraft Forever.
+- [ ] No Retail, o formulário solicita o nome do personagem e o servidor.
+- [ ] No WoW Forever, o formulário solicita o nome e o sobrenome do personagem e o ruleset, Normal ou JxJ.
+- [ ] Nos dois jogos, o formulário solicita a classe, a função e o motivo do interesse.
+- [ ] A classe e a função são escolhidas entre as opções válidas do jogo escolhido.
 - [ ] O usuário deve confirmar que leu as regras antes de enviar.
 - [ ] Campos obrigatórios vazios exibem mensagens junto ao campo.
 - [ ] Após o envio, a candidatura aparece para os administradores como pendente.
 - [ ] O usuário consegue acompanhar se a candidatura está pendente, aprovada ou recusada.
 - [ ] Não é possível enviar uma nova candidatura enquanto houver outra pendente.
+- [ ] Após uma recusa, o usuário pode enviar uma nova candidatura, partindo dos dados anteriores, e a decisão anterior fica registrada.
 
 ### Editar perfil e personagens
 
@@ -170,8 +189,8 @@ As 26 histórias abaixo têm critérios verificáveis, agrupados por área. Uma 
 
 - [ ] O membro pode editar somente o próprio perfil.
 - [ ] O membro pode adicionar, editar e remover personagens.
-- [ ] Cada personagem possui nome, classe, função e nível.
-- [ ] A classe e a função são escolhidas entre opções válidas.
+- [ ] Cada personagem possui jogo, nome, classe, função e nível; no Retail, também o servidor; no WoW Forever, também o sobrenome e o ruleset.
+- [ ] A classe e a função são escolhidas entre as opções válidas do jogo.
 - [ ] O nível aceita somente valores numéricos dentro do limite do jogo.
 - [ ] Um personagem deve ser marcado como principal quando houver ao menos um cadastrado.
 - [ ] As alterações salvas aparecem imediatamente no perfil e na lista de membros.
@@ -259,6 +278,8 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 - [ ] A lista mostra o nome, o personagem principal, a classe e a função de cada confirmado.
 - [ ] A lista reflete confirmações e cancelamentos já registrados.
 - [ ] Uma mensagem é exibida quando ainda não há confirmados.
+- [ ] O administrador pode cancelar a presença de um confirmado, com confirmação, enquanto o evento estiver futuro e ativo.
+- [ ] A pessoa que teve a presença cancelada pode confirmar novamente enquanto o evento estiver futuro e ativo.
 
 ### Gerenciar procurados
 
@@ -284,20 +305,23 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 
 **Como administrador**, quero aprovar ou recusar cadastros, para que somente integrantes da guilda acessem as funcionalidades de membros.
 
-- [ ] Uma lista mostra os cadastros pendentes e suas candidaturas, quando houver.
+- [ ] Uma lista mostra os cadastros pendentes e suas candidaturas, quando houver, com o jogo de cada uma.
 - [ ] O administrador pode ver os dados antes de decidir.
 - [ ] Ao aprovar, o usuário passa a ser membro e acessa as funcionalidades de membros.
-- [ ] Ao recusar, o usuário continua sem acesso às funcionalidades de membros.
-- [ ] O usuário é informado do resultado.
+- [ ] Ao aprovar, os dados da candidatura viram o personagem principal do membro.
+- [ ] Ao recusar, o usuário continua sem acesso às funcionalidades de membros e pode enviar uma nova candidatura.
+- [ ] O usuário é informado do resultado na própria conta, sem e-mail automático.
 - [ ] A decisão registra o administrador responsável e a data.
 
 ### Gerenciar membros e permissões
 
-**Como administrador**, quero gerenciar os membros e suas permissões, para que o acesso continue adequado quando alguém mudar de função ou sair da guilda.
+**Como administrador**, quero gerenciar os membros e suas permissões, para que o acesso continue adequado quando alguém mudar de função, sair ou voltar para a guilda.
 
 - [ ] Uma lista mostra os membros, sua situação e sua permissão, com busca por nome.
 - [ ] O administrador pode alterar a permissão entre membro e administrador.
 - [ ] O administrador pode desativar um membro, com confirmação.
 - [ ] Um membro desativado perde o acesso e sai da lista pública.
+- [ ] O administrador pode reativar um membro desativado, com confirmação.
+- [ ] Um membro reativado volta a acessar as funcionalidades de membros e a lista pública, sempre com a permissão de membro, mesmo que antes fosse administrador.
 - [ ] A alteração de permissão vale a partir da próxima requisição do usuário.
 - [ ] O sistema impede remover ou desativar o último administrador ativo.
