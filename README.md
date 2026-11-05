@@ -88,3 +88,16 @@ O primeiro administrador é definido manualmente, uma única vez:
 4. Em **Administração > Guilda**, escreva a história, os valores e o servidor no Retail.
 
 A partir daí, novos membros e administradores são definidos pelo próprio site.
+
+### Exclusão de conta
+
+A pessoa exclui a própria conta em **Minha conta > Excluir conta**, sem Cloud Functions (plano Spark). O processo roda no navegador, em etapas que podem ser retomadas (ver `src/app/core/auth/account-deletion.ts`):
+
+1. `users/{uid}.status` passa a `excluindo`: a conta perde o acesso de membro, sai de `config/admins` (o último administrador ativo não pode sair) e `members/{uid}.active` fica `false`.
+2. As presenças em eventos futuros e ativos são apagadas.
+3. Num único lote: `applications/{uid}` e `usernames/{chave}` são apagados, `members/{uid}` perde o `username` e recebe `deletedAt`, e `users/{uid}` vira o registro mínimo `{ status: 'excluido', deletedAt }`.
+4. O login é excluído do Firebase Authentication.
+
+As Security Rules exigem login recente (`auth_time` de até 5 minutos) nas etapas 1 e 3. Se o processo parar no meio, a pessoa só consegue concluir a exclusão no próximo login. Personagens (`members/{uid}/characters`) e presenças em eventos passados continuam, sem dados pessoais.
+
+Se a última etapa falhar e a pessoa não voltar, o e-mail fica no Authentication sem nenhum outro dado. Para removê-lo, procure em **Firestore** a conta com `status` = `excluido` e apague o usuário com o mesmo UID em **Authentication > Usuários**.

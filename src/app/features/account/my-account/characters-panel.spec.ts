@@ -50,6 +50,7 @@ const character = (over: Partial<Character> = {}): Character => ({
   ruleset: null,
   characterClass: 'paladino',
   characterRole: 'cura',
+  professions: ['alquimia'],
   level: 80,
   isMain: true,
   ...over,
@@ -153,6 +154,8 @@ describe('CharactersPanel (Editar perfil e personagens)', () => {
     type('personagem-characterClass', 'druida');
     await fixture.whenStable();
     type('personagem-characterRole', 'tanque');
+    await choose('Couraria');
+    await choose('Esfolamento');
     type('personagem-level', '61');
     await submit();
     expect(text()).toContain('Informe um número inteiro dentro do limite.');
@@ -171,6 +174,7 @@ describe('CharactersPanel (Editar perfil e personagens)', () => {
           ruleset: 'normal',
           characterClass: 'druida',
           characterRole: 'tanque',
+          professions: ['couraria', 'esfolamento'],
           level: 60,
         },
         false,
@@ -178,6 +182,41 @@ describe('CharactersPanel (Editar perfil e personagens)', () => {
     ]);
     expect(text()).toContain('Personagem adicionado.');
     expect(el.querySelector('.character-form')).toBeNull();
+  });
+
+  it('mostra as profissões na lista, inclusive de personagens que ainda não as informaram', async () => {
+    await emit([
+      character(),
+      { ...alt, professions: null },
+      character({ id: 'c3', characterName: 'Tavia', professions: [], isMain: false }),
+    ]);
+    expect(card('c1').textContent).toContain('Alquimia');
+    expect(card('c2').textContent).toContain('Profissões não informadas');
+    expect(card('c3').textContent).toContain('Sem profissão');
+  });
+
+  it('edita as profissões respeitando o limite e permite informar que não tem profissão', async () => {
+    await emit([character()]);
+    await click(button(card('c1'), 'Editar'));
+    await choose('Herborismo');
+    const blocked = [
+      ...el.querySelectorAll<HTMLInputElement>('label.choice input[type=checkbox]'),
+    ].filter((i) => i.disabled);
+    expect(blocked).toHaveLength(9);
+    el.querySelector<HTMLInputElement>('#personagem-professions-nenhuma')!.click();
+    await fixture.whenStable();
+    await submit();
+    expect(stub.saved[0][1]).toMatchObject({ professions: [] });
+  });
+
+  it('personagem antigo, sem profissões, precisa informá-las ao ser editado', async () => {
+    await emit([character({ professions: null })]);
+    await click(button(card('c1'), 'Editar'));
+    await submit();
+    expect(text()).toContain(
+      'Selecione as profissões ou marque que o personagem não tem profissão.',
+    );
+    expect(stub.saved).toHaveLength(0);
   });
 
   it('exige os campos obrigatórios', async () => {

@@ -47,6 +47,8 @@ async function approvedMember(username: string): Promise<Person> {
     server: 'Azralon',
     characterClass: 'sacerdote',
     characterRole: 'cura',
+    professions: ['alquimia'],
+    battleTag: 'Jogador#1234',
     motivation: 'Quero entrar.',
   });
   const result = await approveApplication(admin.db, admin.uid, m.uid);
@@ -146,7 +148,14 @@ describe('Editar perfil: personagens (emuladores)', () => {
   it('parte do principal da candidatura, sem nível, até o membro salvá-lo', async () => {
     const tavia = await approvedMember('Tavia');
     const [legacy] = await charactersWhen(tavia, (l) => l.length > 0);
-    expect(legacy).toMatchObject({ id: null, isMain: true, level: null, characterName: 'Tavia' });
+    // O principal vindo da candidatura já traz as profissões dela.
+    expect(legacy).toMatchObject({
+      id: null,
+      isMain: true,
+      level: null,
+      characterName: 'Tavia',
+      professions: ['alquimia'],
+    });
 
     const saved = await saveCharacter(
       tavia.db,
@@ -158,6 +167,7 @@ describe('Editar perfil: personagens (emuladores)', () => {
         server: 'Azralon',
         characterClass: 'sacerdote',
         characterRole: 'cura',
+        professions: ['alquimia', 'herborismo'],
         level: 80,
       },
       true,
@@ -165,7 +175,11 @@ describe('Editar perfil: personagens (emuladores)', () => {
     expect(saved.ok).toBe(true);
     const list = await charactersWhen(tavia, (l) => l.some((c) => c.id !== null));
     expect(list).toHaveLength(1);
-    expect(list[0]).toMatchObject({ isMain: true, level: 80 });
+    expect(list[0]).toMatchObject({
+      isMain: true,
+      level: 80,
+      professions: ['alquimia', 'herborismo'],
+    });
     const member = await adminGet(`members/${tavia.uid}`);
     expect(member?.['mainCharacterId']).toBe(list[0].id);
   });
@@ -182,6 +196,7 @@ describe('Editar perfil: personagens (emuladores)', () => {
         server: 'Azralon',
         characterClass: 'sacerdote',
         characterRole: 'cura',
+        professions: ['alquimia', 'herborismo'],
         level: 80,
       },
       true,
@@ -197,6 +212,7 @@ describe('Editar perfil: personagens (emuladores)', () => {
         ruleset: 'normal',
         characterClass: 'druida',
         characterRole: 'tanque',
+        professions: [],
         level: 42,
       },
       false,

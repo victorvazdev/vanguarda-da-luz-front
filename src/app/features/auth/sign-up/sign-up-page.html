@@ -97,6 +97,18 @@
         }
       </div>
 
+      <p class="field__hint">
+        Antes de enviar a candidatura, conheça as
+        <button
+          type="button"
+          class="link-button"
+          aria-haspopup="dialog"
+          (click)="rulesModal.open()"
+        >
+          regras da guilda</button
+        >.
+      </p>
+
       <button
         type="submit"
         class="btn btn--primary btn--block"
@@ -108,5 +120,6 @@
     </form>
 
     <p class="auth-page__switch">Já tem uma conta? <a [routerLink]="paths.signIn">Entrar</a></p>
+    <app-rules-modal #rulesModal />
   }
 </div>

@@ -265,3 +265,13 @@
     scale: 0.6;
   }
 }
+
+// Aviso no topo da página (ex.: após excluir a conta).
+.flash {
+  padding-top: var(--space-5);
+}
+
+.flash__message {
+  margin: 0;
+  border-left: 4px solid var(--color-success);
+}

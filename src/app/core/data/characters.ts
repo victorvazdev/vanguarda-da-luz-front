@@ -21,6 +21,7 @@ import {
   type CharacterClass,
   type CharacterRole,
   type Game,
+  type Profession,
   type Ruleset,
 } from '../models/wow';
 import type { GameCharacter } from './applications';
@@ -29,6 +30,8 @@ import type { MainCharacter } from './members-admin';
 export type CharacterInput = GameCharacter & {
   characterClass: CharacterClass;
   characterRole: CharacterRole;
+  /** Profissões primárias; `[]` quando o personagem não tem profissão. */
+  professions: Profession[];
   level: number;
 };
 
@@ -42,6 +45,8 @@ export interface Character {
   ruleset: Ruleset | null;
   characterClass: CharacterClass;
   characterRole: CharacterRole;
+  /** `null` em personagens salvos antes da escolha de profissões existir. */
+  professions: Profession[] | null;
   level: number | null;
   isMain: boolean;
 }
@@ -58,6 +63,7 @@ export function characterData(input: CharacterInput): Record<string, unknown> {
   const common = {
     characterClass: input.characterClass,
     characterRole: input.characterRole,
+    professions: input.professions,
     level: input.level,
   };
   return input.game === 'retail'
@@ -86,6 +92,7 @@ function fromData(id: string | null, data: Record<string, unknown>, isMain: bool
     ruleset: (data['ruleset'] as Ruleset | undefined) ?? null,
     characterClass: data['characterClass'] as CharacterClass,
     characterRole: data['characterRole'] as CharacterRole,
+    professions: Array.isArray(data['professions']) ? (data['professions'] as Profession[]) : null,
     level: typeof data['level'] === 'number' ? data['level'] : null,
     isMain,
   };

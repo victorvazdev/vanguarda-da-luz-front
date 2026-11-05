@@ -4,7 +4,7 @@ Nov 5, 2026 · @Victor Vaz de Oliveira
 
 ## Visão geral
 
-As 28 histórias abaixo têm critérios verificáveis, agrupados por área. Uma história só está pronta quando todos os seus critérios forem atendidos.
+As 29 histórias abaixo têm critérios verificáveis, agrupados por área. Uma história só está pronta quando todos os seus critérios forem atendidos.
 
 | Perfil | Situação | Acesso |
 | --- | --- | --- |
@@ -33,6 +33,8 @@ A guilda está presente em duas versões de World of Warcraft:
 - O link de recuperação de senha vale por 1 hora e pode ser usado uma única vez.
 - A listagem de artigos exibe 10 itens por página.
 - O site mantém ao menos um administrador ativo.
+- O BattleTag é um dado privado: somente a própria pessoa e os administradores o veem.
+- Cada personagem tem no máximo 2 profissões primárias, nos dois jogos; o WoW Forever (Classic) não tem Escrivania nem Joalheria.
 
 ## Conteúdo público da guilda
 
@@ -74,6 +76,10 @@ A guilda está presente em duas versões de World of Warcraft:
 - [ ] As regras são exibidas em seções ou itens identificáveis.
 - [ ] A página informa a data da última atualização.
 - [ ] A página de ingresso oferece um link para as regras.
+- [ ] No cadastro e na candidatura, o link das regras abre um modal com as regras completas, sem sair da página e sem perder os dados já preenchidos.
+- [ ] O modal fecha pelo botão, pela tecla Esc e por um clique no fundo.
+- [ ] Ao abrir, o foco entra no modal e permanece nele enquanto estiver aberto; ao fechar, volta ao link.
+- [ ] O texto das regras é o mesmo da página de regras, mantido em um único lugar.
 
 ### Ver a lista de membros
 
@@ -177,8 +183,11 @@ A guilda está presente em duas versões de World of Warcraft:
 - [ ] O usuário escolhe o jogo: World of Warcraft Retail ou World of Warcraft Forever.
 - [ ] No Retail, o formulário solicita o nome do personagem e o servidor.
 - [ ] No WoW Forever, o formulário solicita o nome e o sobrenome do personagem e o ruleset, Normal ou JxJ.
-- [ ] Nos dois jogos, o formulário solicita a classe, a função e o motivo do interesse.
+- [ ] Nos dois jogos, o formulário solicita a classe, a função, as profissões, o BattleTag e o motivo do interesse.
 - [ ] A classe e a função são escolhidas entre as opções válidas do jogo escolhido.
+- [ ] As profissões são escolhidas entre as profissões primárias do jogo escolhido, no máximo 2; é possível informar que o personagem não tem profissão.
+- [ ] O BattleTag é obrigatório e segue o formato Nome#1234 (3 a 12 letras ou números, começando por letra, e 4 a 6 dígitos); vazio ou inválido bloqueia o envio e exibe a mensagem junto ao campo, também validado no servidor.
+- [ ] O BattleTag não aparece em páginas públicas nem nas listas de membros.
 - [ ] O usuário deve confirmar que leu as regras antes de enviar.
 - [ ] Campos obrigatórios vazios exibem mensagens junto ao campo.
 - [ ] Após o envio, a candidatura aparece para os administradores como pendente.
@@ -209,7 +218,8 @@ A guilda está presente em duas versões de World of Warcraft:
 **Personagens**
 
 - [ ] O membro pode adicionar, editar e remover personagens.
-- [ ] Cada personagem possui jogo, nome, classe, função e nível; no Retail, também o servidor; no WoW Forever, também o sobrenome e o ruleset.
+- [ ] Cada personagem possui jogo, nome, classe, função, profissões e nível; no Retail, também o servidor; no WoW Forever, também o sobrenome e o ruleset.
+- [ ] As profissões seguem as mesmas regras da candidatura; personagens salvos antes da escolha de profissões continuam válidos e informam as profissões ao serem editados.
 - [ ] A classe e a função são escolhidas entre as opções válidas do jogo.
 - [ ] O nível aceita somente números inteiros de 1 até o limite do jogo: 90 no Retail e 60 no WoW Forever.
 - [ ] O personagem da candidatura aprovada é o primeiro personagem principal; o perfil pede que o membro informe o nível dele.
@@ -218,6 +228,23 @@ A guilda está presente em duas versões de World of Warcraft:
 - [ ] O personagem principal não pode ser removido; para removê-lo, o membro escolhe outro principal antes.
 - [ ] A remoção de um personagem exige confirmação.
 - [ ] As alterações salvas aparecem imediatamente no perfil e na lista de membros.
+
+### Excluir a conta
+
+**Como usuário cadastrado ou membro**, quero excluir minha conta, para que meus dados pessoais deixem de ser guardados pela guilda.
+
+- [ ] "Minha conta" oferece a opção "Excluir conta" para contas pendentes e ativas.
+- [ ] Um modal explica o que será removido e o que será mantido.
+- [ ] A exclusão exige confirmação explícita e a senha atual (nova autenticação), também verificada no servidor.
+- [ ] São removidos o login no Firebase Authentication, o e-mail, o nome de usuário, a candidatura (com BattleTag e motivo) e os demais dados privados da conta.
+- [ ] O nome de usuário e o e-mail ficam livres para uma nova conta.
+- [ ] As presenças em eventos futuros e ativos são canceladas e saem das listas de confirmados.
+- [ ] Os personagens e o histórico de eventos passados são mantidos, sem nome de usuário, e-mail ou outro dado pessoal; nos eventos passados, a presença aparece como "Conta excluída", com o personagem principal.
+- [ ] As telas de histórico continuam funcionando depois da exclusão.
+- [ ] O último administrador ativo não pode excluir a conta e recebe uma mensagem explicando o motivo.
+- [ ] Após a exclusão, a sessão é encerrada e a pessoa vai para a página inicial, que informa que a conta foi excluída.
+- [ ] Se a exclusão for interrompida, a conta perde o acesso de membro e, no próximo login, só é possível concluir a exclusão, que continua de onde parou.
+- [ ] Somente a própria pessoa pode excluir a sua conta; tentativas de outras pessoas, inclusive administradores, são recusadas pelo servidor.
 
 ## Eventos
 
@@ -353,9 +380,9 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 **Como administrador**, quero aprovar ou recusar cadastros, para que somente integrantes da guilda acessem as funcionalidades de membros.
 
 - [ ] Uma lista mostra os cadastros pendentes e suas candidaturas, quando houver, com o jogo de cada uma.
-- [ ] O administrador pode ver os dados antes de decidir.
+- [ ] O administrador pode ver os dados antes de decidir, incluindo as profissões e o BattleTag.
 - [ ] Ao aprovar, o usuário passa a ser membro e acessa as funcionalidades de membros.
-- [ ] Ao aprovar, os dados da candidatura viram o personagem principal do membro.
+- [ ] Ao aprovar, os dados da candidatura viram o personagem principal do membro, com as profissões e sem o BattleTag.
 - [ ] Ao recusar, o usuário continua sem acesso às funcionalidades de membros e pode enviar uma nova candidatura.
 - [ ] O usuário é informado do resultado na própria conta, sem e-mail automático.
 - [ ] A decisão registra o administrador responsável e a data.

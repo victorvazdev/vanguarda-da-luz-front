@@ -43,6 +43,8 @@ async function approvedMember(admin: Person, username: string): Promise<Person> 
     server: 'Azralon',
     characterClass: 'sacerdote',
     characterRole: 'cura',
+    professions: ['alquimia'],
+    battleTag: 'Jogador#1234',
     motivation: 'Quero entrar.',
   });
   const result = await approveApplication(admin.db, admin.uid, m.uid);

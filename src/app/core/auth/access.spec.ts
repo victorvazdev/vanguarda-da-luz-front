@@ -38,6 +38,11 @@ describe('resolveAccess', () => {
     expect(resolveAccess({}, account({ status: 'ativo', role: 'admin' }))).toBe('admin');
   });
 
+  it('exclusão em andamento ou concluída só permite concluir a exclusão', () => {
+    expect(resolveAccess({}, account({ status: 'excluindo', role: 'admin' }))).toBe('deleting');
+    expect(resolveAccess({}, account({ status: 'excluido' }))).toBe('deleting');
+  });
+
   it('conta desativada é bloqueada, mesmo se for admin', () => {
     expect(resolveAccess({}, account({ status: 'desativado', role: 'admin' }))).toBe('blocked');
   });

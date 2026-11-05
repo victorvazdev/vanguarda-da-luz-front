@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
+  FormControl,
   NonNullableFormBuilder,
   ReactiveFormsModule,
   Validators,
@@ -34,6 +35,7 @@ import {
   isClassInGame,
   isGame,
   isValidCombination,
+  professionsText,
   roleLabel,
   rolesFor,
   rulesetLabel,
@@ -43,6 +45,13 @@ import {
   type Ruleset,
 } from '../../../core/models/wow';
 import { firstError, type ErrorMessages } from '../../../shared/forms/field-errors';
+import {
+  PROFESSIONS_MESSAGES,
+  ProfessionsField,
+  professionsInGame,
+  professionsRequired,
+  type ProfessionsValue,
+} from '../../../shared/forms/professions-field/professions-field';
 import { characterNameFormat } from '../../../shared/forms/validators';
 import { ConfirmService } from '../../../shared/ui/confirm-dialog/confirm.service';
 
@@ -54,6 +63,7 @@ type Field =
   | 'ruleset'
   | 'characterClass'
   | 'characterRole'
+  | 'professions'
   | 'level';
 
 const NAME_FORMAT = 'Use de 2 a 12 letras, sem espaços ou números.';
@@ -66,6 +76,7 @@ const MESSAGES: Record<Field, ErrorMessages> = {
   ruleset: { required: 'Selecione o ruleset.' },
   characterClass: { required: 'Selecione a classe.' },
   characterRole: { required: 'Selecione a função.' },
+  professions: PROFESSIONS_MESSAGES,
   level: { required: 'Informe o nível.', level: 'Informe um número inteiro dentro do limite.' },
 };
 
@@ -96,6 +107,7 @@ interface CharacterView {
   key: string;
   name: string;
   details: string;
+  professions: string;
   level: string;
   isMain: boolean;
   needsLevel: boolean;
@@ -105,7 +117,7 @@ interface CharacterView {
 /** História "Editar perfil e personagens": personagens do membro e o principal. */
 @Component({
   selector: 'app-characters-panel',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ProfessionsField],
   templateUrl: './characters-panel.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -142,6 +154,7 @@ export class CharactersPanel {
         ]
           .filter(Boolean)
           .join(' · '),
+        professions: professionsText(c.professions),
         level: c.level === null ? 'Nível não informado' : `Nível ${c.level}`,
         isMain: c.isMain,
         needsLevel: c.level === null,
@@ -161,6 +174,7 @@ export class CharactersPanel {
     ruleset: [{ value: '' as Ruleset | '', disabled: true }, [Validators.required]],
     characterClass: [{ value: '' as CharacterClass | '', disabled: true }, [Validators.required]],
     characterRole: [{ value: '' as CharacterRole | '', disabled: true }, [Validators.required]],
+    professions: new FormControl<ProfessionsValue>(null, [professionsRequired, professionsInGame]),
     level: [null as number | null, [Validators.required, levelInRange]],
     asMain: [false],
   });
@@ -207,6 +221,7 @@ export class CharactersPanel {
         controls.characterClass.setValue('');
       }
       this.dropInvalidRole();
+      controls.professions.updateValueAndValidity();
       controls.level.updateValueAndValidity();
     });
     controls.characterClass.valueChanges
@@ -329,6 +344,7 @@ export class CharactersPanel {
         ruleset: target.ruleset ?? '',
         characterClass: target.characterClass,
         characterRole: target.characterRole,
+        professions: target.professions,
         level: target.level,
       });
     } else {
@@ -352,6 +368,7 @@ export class CharactersPanel {
       characterName: v.characterName,
       characterClass: v.characterClass as CharacterClass,
       characterRole: v.characterRole as CharacterRole,
+      professions: v.professions ?? [],
       level: Number(v.level),
     };
     if (v.game === 'retail') return { ...common, game: 'retail', server: v.server };
@@ -371,7 +388,7 @@ export class CharactersPanel {
     this.error.set(null);
   }
 
-  private gameOrNull(): Game | null {
+  protected gameOrNull(): Game | null {
     const game = this.game();
     return isGame(game) ? game : null;
   }

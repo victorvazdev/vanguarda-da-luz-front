@@ -2,7 +2,10 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AccountService } from '../../../core/auth/account.service';
 import type { SignUpInput, SignUpResult } from '../../../core/auth/sign-up';
+import { stubDialog } from '../../../shared/ui/modal/dialog.stub';
 import { SignUpPage } from './sign-up-page';
+
+stubDialog();
 
 class AccountStub {
   calls: SignUpInput[] = [];
@@ -143,5 +146,24 @@ describe('SignUpPage (Cadastrar-se)', () => {
 
   it('oferece link para entrar', () => {
     expect(el.querySelector('a[href="/entrar"]')?.textContent).toContain('Entrar');
+  });
+
+  it('abre as regras completas em um modal, sem sair da página nem perder os dados', async () => {
+    await fill({ usuario: 'Tavia' });
+    const link = [...el.querySelectorAll<HTMLButtonElement>('button')].find((b) =>
+      b.textContent?.includes('regras da guilda'),
+    )!;
+    link.focus();
+    link.click();
+    await fixture.whenStable();
+    const dialog = el.querySelector<HTMLDialogElement>('app-rules-modal dialog')!;
+    expect(dialog.open).toBe(true);
+    expect(dialog.querySelectorAll('ol li')).toHaveLength(10);
+
+    dialog.dispatchEvent(new Event('cancel', { cancelable: true }));
+    await fixture.whenStable();
+    expect(dialog.open).toBe(false);
+    expect(document.activeElement).toBe(link);
+    expect(el.querySelector<HTMLInputElement>('#cadastro-usuario')!.value).toBe('Tavia');
   });
 });

@@ -13,6 +13,7 @@ import {
   characterDisplayName,
   classLabel,
   gameLabel,
+  professionsText,
   roleLabel,
   rulesetLabel,
 } from '../../../core/models/wow';
@@ -31,6 +32,8 @@ interface ApplicationCard {
   name: string;
   classRole: string;
   where: string;
+  professions: string;
+  battleTag: string;
   motivation: string;
   account: string;
   submittedAt: string;
@@ -45,6 +48,8 @@ function toCard(account: PendingAccount, app: Application): ApplicationCard {
     name: characterDisplayName(app),
     classRole: `${classLabel(app.characterClass)}, ${roleLabel(app.characterRole).toLowerCase()}`,
     where: `${gameLabel(app.game)} · ${place}`,
+    professions: professionsText(app.professions),
+    battleTag: app.battleTag ?? 'Não informado',
     motivation: app.motivation,
     account: `${account.username} · ${account.email}`,
     submittedAt: formatBrasiliaDate(app.submittedAt),

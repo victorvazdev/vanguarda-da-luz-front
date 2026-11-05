@@ -24,6 +24,8 @@ const forever: ApplicationInput = {
   ruleset: 'jxj',
   characterClass: 'sacerdote',
   characterRole: 'cura',
+  professions: ['alquimia'],
+  battleTag: 'Jogador#1234',
   motivation: 'Quero jogar com a guilda.',
 };
 

@@ -334,6 +334,37 @@ select.field__input {
   }
 }
 
+// Opção indisponível (ex.: limite de profissões atingido).
+.choice--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+
+  &:hover {
+    border-color: var(--color-border-field);
+  }
+
+  .choice__input {
+    cursor: not-allowed;
+  }
+}
+
+// Botão com aparência de link no meio do texto (ex.: abrir as regras em um modal).
+.link-button {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-gold);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-heading);
+  }
+}
+
 .choice__input {
   flex: none;
   width: 18px;

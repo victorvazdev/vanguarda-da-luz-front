@@ -21,6 +21,7 @@ export const PATHS = {
 export function landingPathFor(access: ResolvedAccess): string {
   switch (access) {
     case 'pending':
+    case 'deleting':
       return PATHS.account;
     case 'member':
     case 'admin':

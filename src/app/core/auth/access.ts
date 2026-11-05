@@ -1,5 +1,8 @@
-/** Situação da conta guardada em `users/{uid}`. */
-export type AccountStatus = 'pendente' | 'ativo' | 'desativado';
+/**
+ * Situação da conta guardada em `users/{uid}`. `excluindo` e `excluido` marcam uma exclusão
+ * de conta em andamento (ver core/auth/account-deletion.ts).
+ */
+export type AccountStatus = 'pendente' | 'ativo' | 'desativado' | 'excluindo' | 'excluido';
 
 /** Permissão do membro na guilda. */
 export type Permission = 'membro' | 'admin';
@@ -15,8 +18,10 @@ export interface UserAccount {
  * Perfil efetivo de quem está navegando.
  * - `loading`: ainda resolvendo o login ou o documento da conta.
  * - `blocked`: conta desativada; a sessão deve ser encerrada.
+ * - `deleting`: exclusão da conta iniciada e não concluída; só é possível concluí-la.
  */
-export type AccessLevel = 'loading' | 'visitor' | 'pending' | 'member' | 'admin' | 'blocked';
+export type AccessLevel =
+  'loading' | 'visitor' | 'pending' | 'member' | 'admin' | 'blocked' | 'deleting';
 export type ResolvedAccess = Exclude<AccessLevel, 'loading'>;
 
 /**
@@ -35,6 +40,9 @@ export function resolveAccess(
   switch (account.status) {
     case 'desativado':
       return 'blocked';
+    case 'excluindo':
+    case 'excluido':
+      return 'deleting';
     case 'ativo':
       return account.role === 'admin' ? 'admin' : 'member';
     default:

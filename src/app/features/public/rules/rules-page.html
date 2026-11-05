@@ -4,11 +4,7 @@
     <p class="muted">Última atualização: {{ rules.updatedAt }}</p>
   </header>
 
-  <ol class="numbered numbered--ruled" aria-label="Regras">
-    @for (rule of rules.items; track $index) {
-      <li class="numbered__item" [id]="'regra-' + ($index + 1)">{{ rule }}</li>
-    }
-  </ol>
+  <app-rules-list />
 
   <div class="actions">
     <a class="btn btn--primary" [routerLink]="joinPath">Ver como ingressar</a>

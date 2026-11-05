@@ -20,6 +20,8 @@ const valid = (): Record<string, unknown> => ({
   server: 'Azralon',
   characterClass: 'paladino',
   characterRole: 'cura',
+  professions: ['alquimia', 'herborismo'],
+  battleTag: 'Elaris#1234',
   motivation: 'Quero participar das raids semanais.',
   rulesAccepted: true,
   status: 'pendente',
@@ -100,6 +102,67 @@ describe('Candidatura: envio', () => {
     const data: Record<string, unknown> = { ...validForever(), ...over };
     for (const [k, v] of Object.entries(over)) if (v === undefined) delete data[k];
     await assertFails(apply(asUser(env(), 'alice'), 'alice', data));
+  });
+
+  describe('BattleTag', () => {
+    it.each(['Elaris#1234', 'Élaris2#98765', 'Abc#123456'])('aceita %s', async (battleTag) => {
+      await assertSucceeds(apply(asUser(env(), 'alice'), 'alice', { ...valid(), battleTag }));
+    });
+
+    it.each([
+      ['ausente', undefined],
+      ['vazio', ''],
+      ['sem número', 'Elaris'],
+      ['número curto', 'Elaris#123'],
+      ['número longo', 'Elaris#1234567'],
+      ['nome curto', 'El#1234'],
+      ['nome longo', 'Elarisaurora1#1234'],
+      ['começa com número', '1Elaris#1234'],
+      ['com espaço', 'Ela ris#1234'],
+      ['com símbolo', 'Ela_ris#1234'],
+      ['não é texto', 1234],
+    ])('recusa BattleTag %s', async (_name, battleTag) => {
+      const data: Record<string, unknown> = { ...valid(), battleTag };
+      if (battleTag === undefined) delete data['battleTag'];
+      await assertFails(apply(asUser(env(), 'alice'), 'alice', data));
+    });
+  });
+
+  describe('Profissões', () => {
+    it.each([
+      ['nenhuma (lista vazia)', []],
+      ['uma', ['mineracao']],
+      ['duas do Retail', ['joalheria', 'escrivania']],
+    ])('aceita %s', async (_name, professions) => {
+      await assertSucceeds(apply(asUser(env(), 'alice'), 'alice', { ...valid(), professions }));
+    });
+
+    it('aceita duas profissões do Classic no Forever', async () => {
+      await assertSucceeds(
+        apply(asUser(env(), 'alice'), 'alice', {
+          ...validForever(),
+          professions: ['ferraria', 'mineracao'],
+        }),
+      );
+    });
+
+    it.each([
+      ['mais de duas', ['alquimia', 'herborismo', 'mineracao']],
+      ['repetida', ['alquimia', 'alquimia']],
+      ['inexistente', ['pesca']],
+      ['secundária', ['culinaria']],
+      ['não é lista', 'alquimia'],
+    ])('recusa profissões: %s', async (_name, professions) => {
+      await assertFails(apply(asUser(env(), 'alice'), 'alice', { ...valid(), professions }));
+    });
+
+    it('recusa no Forever profissões que só existem no Retail', async () => {
+      for (const p of ['joalheria', 'escrivania']) {
+        await assertFails(
+          apply(asUser(env(), 'alice'), 'alice', { ...validForever(), professions: [p] }),
+        );
+      }
+    });
   });
 
   it('exige aceitar as regras', async () => {

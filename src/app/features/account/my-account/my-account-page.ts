@@ -10,14 +10,15 @@ import { SessionService } from '../../../core/auth/session.service';
 import { AccountSettingsPanel } from './account-settings-panel';
 import { ApplicationStatusPanel } from './application-status';
 import { CharactersPanel } from './characters-panel';
+import { DeleteAccountPanel } from './delete-account-panel';
 
 /**
  * "Minha conta": acompanhamento da candidatura (conta pendente), personagens (membros)
- * e dados da conta (nome de usuário, e-mail e senha).
+ * dados da conta (nome de usuário, e-mail e senha) e exclusão da conta.
  */
 @Component({
   selector: 'app-my-account-page',
-  imports: [AccountSettingsPanel, ApplicationStatusPanel, CharactersPanel],
+  imports: [AccountSettingsPanel, ApplicationStatusPanel, CharactersPanel, DeleteAccountPanel],
   templateUrl: './my-account-page.html',
   styleUrl: './my-account-page.scss',
   // Os estilos valem para os painéis filhos.
@@ -27,4 +28,5 @@ import { CharactersPanel } from './characters-panel';
 export class MyAccountPage {
   private readonly session = inject(SessionService);
   protected readonly isMember = computed(() => isMemberAccess(this.session.access()));
+  protected readonly deleting = computed(() => this.session.access() === 'deleting');
 }

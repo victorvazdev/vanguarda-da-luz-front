@@ -127,6 +127,96 @@ export function isValidCombination(game: Game, classId: string, roleId: string):
     ?.roles.includes(roleId as CharacterRole);
 }
 
+export type Profession =
+  | 'alfaiataria'
+  | 'alquimia'
+  | 'couraria'
+  | 'encantamento'
+  | 'engenharia'
+  | 'escrivania'
+  | 'esfolamento'
+  | 'ferraria'
+  | 'herborismo'
+  | 'joalheria'
+  | 'mineracao';
+
+/** Profissões primárias que um personagem pode ter ao mesmo tempo (nos dois jogos). */
+export const MAX_PROFESSIONS = 2;
+
+const PROFESSION_LABELS: Record<Profession, string> = {
+  alfaiataria: 'Alfaiataria',
+  alquimia: 'Alquimia',
+  couraria: 'Couraria',
+  encantamento: 'Encantamento',
+  engenharia: 'Engenharia',
+  escrivania: 'Escrivania',
+  esfolamento: 'Esfolamento',
+  ferraria: 'Ferraria',
+  herborismo: 'Herborismo',
+  joalheria: 'Joalheria',
+  mineracao: 'Mineração',
+};
+
+/**
+ * Profissões primárias por jogo (igual às Security Rules). O Classic não tem
+ * Escrivania nem Joalheria.
+ */
+const PROFESSIONS_BY_GAME: Record<Game, readonly Profession[]> = {
+  retail: [
+    'alfaiataria',
+    'alquimia',
+    'couraria',
+    'encantamento',
+    'engenharia',
+    'escrivania',
+    'esfolamento',
+    'ferraria',
+    'herborismo',
+    'joalheria',
+    'mineracao',
+  ],
+  forever: [
+    'alfaiataria',
+    'alquimia',
+    'couraria',
+    'encantamento',
+    'engenharia',
+    'esfolamento',
+    'ferraria',
+    'herborismo',
+    'mineracao',
+  ],
+};
+
+export function professionsFor(
+  game: Game | null | undefined,
+): readonly { id: Profession; label: string }[] {
+  return game ? PROFESSIONS_BY_GAME[game].map((id) => ({ id, label: PROFESSION_LABELS[id] })) : [];
+}
+
+export function professionLabel(id: string): string {
+  return PROFESSION_LABELS[id as Profession] ?? id;
+}
+
+/** Lista sem repetições, dentro do limite e somente com profissões do jogo. */
+export function isValidProfessions(game: Game, professions: readonly string[]): boolean {
+  return (
+    professions.length <= MAX_PROFESSIONS &&
+    new Set(professions).size === professions.length &&
+    professions.every((p) => (PROFESSIONS_BY_GAME[game] as readonly string[]).includes(p))
+  );
+}
+
+/**
+ * Texto das profissões: `[]` = o jogador informou que não tem profissão;
+ * `null` = personagem salvo antes da escolha de profissões existir.
+ */
+export function professionsText(professions: readonly string[] | null | undefined): string {
+  if (!professions) return 'Profissões não informadas';
+  if (!professions.length) return 'Sem profissão';
+  return professions.map(professionLabel).join(', ');
+}
+
 /** Nome exibido do personagem: no Forever, nome e sobrenome. */
 export function characterDisplayName(character: {
   characterName: string;

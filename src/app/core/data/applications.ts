@@ -16,6 +16,7 @@ import {
   type CharacterClass,
   type CharacterRole,
   type Game,
+  type Profession,
   type Ruleset,
 } from '../models/wow';
 
@@ -29,6 +30,10 @@ export type GameCharacter =
 export type ApplicationInput = GameCharacter & {
   characterClass: CharacterClass;
   characterRole: CharacterRole;
+  /** Profissões primárias; `[]` quando o personagem não tem profissão. */
+  professions: Profession[];
+  /** Dado privado: visível somente para a própria pessoa e os administradores. */
+  battleTag: string;
   motivation: string;
 };
 
@@ -51,6 +56,10 @@ export interface Application {
   ruleset: Ruleset | null;
   characterClass: CharacterClass;
   characterRole: CharacterRole;
+  /** `null` em candidaturas enviadas antes da escolha de profissões existir. */
+  professions: Profession[] | null;
+  /** `null` em candidaturas enviadas antes de o BattleTag ser exigido. */
+  battleTag: string | null;
   motivation: string;
   status: ApplicationStatus;
   submittedAt: Date;
@@ -82,6 +91,8 @@ export function fromData(uid: string, data: Record<string, unknown>): Applicatio
     ruleset: (data['ruleset'] as Ruleset | undefined) ?? null,
     characterClass: data['characterClass'] as CharacterClass,
     characterRole: data['characterRole'] as CharacterRole,
+    professions: Array.isArray(data['professions']) ? (data['professions'] as Profession[]) : null,
+    battleTag: typeof data['battleTag'] === 'string' ? data['battleTag'] : null,
     motivation: data['motivation'] as string,
     status: data['status'] as ApplicationStatus,
     // Sem data ainda = escrita local aguardando o servidor.
@@ -145,6 +156,8 @@ export async function submitApplication(
     ...character,
     characterClass: input.characterClass,
     characterRole: input.characterRole,
+    professions: input.professions,
+    battleTag: input.battleTag.trim(),
     motivation: input.motivation.trim(),
     rulesAccepted: true,
     status: 'pendente',

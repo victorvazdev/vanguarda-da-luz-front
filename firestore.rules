@@ -51,6 +51,30 @@ service cloud.firestore {
       return /databases/$(database)/documents/members/$(uid)/characters/$(characterId);
     }
 
+    // Pode alterar os próprios dados (nome, e-mail): conta pendente ou ativa.
+    function canEditOwnData() {
+      return myAccount().status in ['pendente', 'ativo'];
+    }
+
+    // Exclusão da conta em andamento (ver "Exclusão de conta" em /users).
+    function isDeleting() {
+      return signedIn()
+        && exists(userPath(request.auth.uid))
+        && myAccount().status == 'excluindo';
+    }
+
+    // Membro excluindo a conta: ainda cancela as próprias presenças em eventos futuros.
+    function isDeletingMember() {
+      return isDeleting() && exists(memberPath(request.auth.uid));
+    }
+
+    // Login feito há no máximo 5 minutos (nova autenticação antes de excluir a conta).
+    function recentLogin() {
+      return request.auth.token.auth_time is int
+        && request.time < timestamp.value(request.auth.token.auth_time * 1000)
+                          + duration.value(5, 'm');
+    }
+
     function isAdmin() {
       return signedIn()
         && exists(userPath(request.auth.uid))
@@ -77,13 +101,13 @@ service cloud.firestore {
           // ...no cadastro (a conta ainda não existia)...
           !exists(userPath(request.auth.uid))
           // ...ou na troca de nome de uma conta que não está desativada.
-          || (myAccount().status != 'desativado' && myAccount().usernameKey != usernameKey)
+          || (canEditOwnData() && myAccount().usernameKey != usernameKey)
         );
 
-      // Troca de nome: o dono libera o nome antigo quando a conta deixa de usá-lo.
+      // Troca de nome ou exclusão da conta: o dono libera o nome quando a conta deixa de usá-lo.
       allow delete: if signedIn()
         && resource.data.uid == request.auth.uid
-        && getAfter(userPath(request.auth.uid)).data.usernameKey != usernameKey;
+        && getAfter(userPath(request.auth.uid)).data.get('usernameKey', null) != usernameKey;
 
       allow update: if false;
     }
@@ -142,7 +166,7 @@ service cloud.firestore {
       // muda, o novo nome é reservado e o antigo é liberado no mesmo lote; o membro, se
       // existir, recebe o novo nome.
       allow update: if isSelf(uid)
-        && resource.data.status != 'desativado'
+        && resource.data.status in ['pendente', 'ativo']
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['username', 'usernameKey'])
         && request.resource.data.username is string
@@ -156,9 +180,44 @@ service cloud.firestore {
       // Troca de e-mail: o Firebase Auth confirma o novo endereço; a conta só copia o
       // e-mail que está no token de quem fez login.
       allow update: if isSelf(uid)
-        && resource.data.status != 'desativado'
+        && resource.data.status in ['pendente', 'ativo']
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email'])
         && request.resource.data.email == request.auth.token.email;
+
+      // ---------- Exclusão de conta (pela própria pessoa, sem Cloud Functions) ----------
+      // Feita em etapas, cada uma retomável: (1) a conta passa a 'excluindo', sai da lista
+      // de admins e o membro sai das listas; (2) as presenças em eventos futuros são
+      // canceladas; (3) num único lote, a candidatura e o nome de usuário são apagados, o
+      // membro perde o nome de usuário e a conta vira um registro mínimo 'excluido', sem
+      // dados pessoais; (4) o app exclui o login no Firebase Authentication.
+      // Personagens e presenças passadas ficam, sem nenhum dado pessoal.
+
+      // (1) Início: conta pendente ou ativa, com nova autenticação. O último administrador
+      // ativo não pode sair (a lista de admins nunca fica vazia).
+      allow update: if isSelf(uid)
+        && recentLogin()
+        && resource.data.status in ['pendente', 'ativo']
+        && request.resource.data.status == 'excluindo'
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'deletionStartedAt'])
+        && request.resource.data.deletionStartedAt == request.time
+        && (!existsAfter(adminsPath()) || !(uid in getAfter(adminsPath()).data.activeAdminUids))
+        && (!existsAfter(memberPath(uid)) || getAfter(memberPath(uid)).data.active == false);
+
+      // (3) Conclusão: só sobra o registro mínimo, depois de apagar a candidatura e o nome de
+      // usuário e de tirar o nome de usuário do membro, tudo no mesmo lote.
+      allow update: if isSelf(uid)
+        && recentLogin()
+        && resource.data.status == 'excluindo'
+        && request.resource.data.keys().hasOnly(['status', 'deletedAt'])
+        && request.resource.data.status == 'excluido'
+        && request.resource.data.deletedAt == request.time
+        && !existsAfter(applicationPath(uid))
+        && (!existsAfter(usernamePath(resource.data.usernameKey))
+          || getAfter(usernamePath(resource.data.usernameKey)).data.uid != uid)
+        && (!existsAfter(memberPath(uid))
+          || (getAfter(memberPath(uid)).data.active == false
+            && !('username' in getAfter(memberPath(uid)).data)));
 
       allow delete: if false;
     }
@@ -222,6 +281,28 @@ service cloud.firestore {
       };
     }
 
+    // Profissões primárias por jogo (igual a src/app/core/models/wow.ts). O Classic não tem
+    // Escrivania nem Joalheria.
+    function professionsFor(game) {
+      return {
+        'retail': ['alfaiataria', 'alquimia', 'couraria', 'encantamento', 'engenharia',
+                   'escrivania', 'esfolamento', 'ferraria', 'herborismo', 'joalheria',
+                   'mineracao'],
+        'forever': ['alfaiataria', 'alquimia', 'couraria', 'encantamento', 'engenharia',
+                    'esfolamento', 'ferraria', 'herborismo', 'mineracao']
+      }[game];
+    }
+
+    // Opcional (personagens salvos antes da escolha de profissões). Quando presente: até 2
+    // profissões do jogo, sem repetição; lista vazia = o personagem não tem profissão.
+    function validProfessions(d) {
+      return !('professions' in d)
+        || (d.professions is list
+          && d.professions.size() <= 2
+          && d.professions.toSet().size() == d.professions.size()
+          && d.professions.hasOnly(professionsFor(d.game)));
+    }
+
     function validName(value) {
       return value is string && value.size() >= 2 && value.size() <= 12;
     }
@@ -234,7 +315,7 @@ service cloud.firestore {
 
     // Retail: nome + servidor (texto). Forever: nome + sobrenome + ruleset (Normal ou JxJ).
     function validGameCharacter(d) {
-      return (d.game == 'retail'
+      return ((d.game == 'retail'
           && d.server is string && d.server.size() >= 1 && d.server.size() <= 40
           && !('characterSurname' in d) && !('ruleset' in d)
           && validClassAndRole(retailRoles(), d))
@@ -242,12 +323,21 @@ service cloud.firestore {
           && validName(d.characterSurname)
           && d.ruleset in ['normal', 'jxj']
           && !('server' in d)
-          && validClassAndRole(foreverRoles(), d));
+          && validClassAndRole(foreverRoles(), d)))
+        && validProfessions(d);
+    }
+
+    // BattleTag: 3 a 12 letras ou números, começando por letra, + '#' + 4 a 6 dígitos
+    // (igual a BATTLETAG_PATTERN em src/app/shared/forms/validators.ts). Dado privado: fica
+    // somente na candidatura, nunca no membro.
+    function validBattleTag(value) {
+      return value is string && value.matches('\\p{L}[\\p{L}\\p{N}]{2,11}#[0-9]{4,6}');
     }
 
     function validApplication(d) {
       return validName(d.characterName)
         && validGameCharacter(d)
+        && validBattleTag(d.battleTag)
         && d.motivation is string
         && d.motivation.size() >= 1 && d.motivation.size() <= 1000
         && d.rulesAccepted == true
@@ -257,8 +347,8 @@ service cloud.firestore {
 
     function applicationFields() {
       return ['game', 'characterName', 'characterSurname', 'server', 'ruleset',
-              'characterClass', 'characterRole', 'motivation', 'rulesAccepted',
-              'status', 'submittedAt'];
+              'characterClass', 'characterRole', 'professions', 'battleTag', 'motivation',
+              'rulesAccepted', 'status', 'submittedAt'];
     }
 
     function previousDecision() {
@@ -303,13 +393,16 @@ service cloud.firestore {
             && getAfter(userPath(uid)).data.status == 'pendente')
         );
 
-      allow delete: if false;
+      // Exclusão da conta (etapa 3): a própria pessoa apaga a candidatura (BattleTag, motivo).
+      allow delete: if isSelf(uid)
+        && isDeleting()
+        && getAfter(userPath(uid)).data.status == 'excluido';
     }
 
     // ---------- Membros (dados visíveis aos membros; sem e-mail) ----------
     function characterFields() {
       return ['game', 'characterName', 'characterSurname', 'server', 'ruleset',
-              'characterClass', 'characterRole'];
+              'characterClass', 'characterRole', 'professions'];
     }
 
     // Nível máximo por jogo (igual a MAX_LEVEL em src/app/core/models/wow.ts).
@@ -327,6 +420,8 @@ service cloud.firestore {
 
     match /members/{uid} {
       allow get, list: if isActive();
+      // Durante a exclusão, a própria pessoa ainda lê o seu membro.
+      allow get: if isSelf(uid) && isDeleting();
 
       // Criado na aprovação: o personagem principal é cópia fiel do personagem da candidatura.
       allow create: if isAdmin()
@@ -365,6 +460,23 @@ service cloud.firestore {
       allow update: if isSelf(uid)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['username'])
         && request.resource.data.username == getAfter(userPath(uid)).data.username;
+
+      // Exclusão da conta (etapa 1): o membro sai das listas junto com a conta.
+      allow update: if isSelf(uid)
+        && resource.data.active == true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['active'])
+        && request.resource.data.active == false
+        && getAfter(userPath(uid)).data.status == 'excluindo';
+
+      // Exclusão da conta (etapa 3): personagens ficam, sem o nome de usuário.
+      allow update: if isSelf(uid)
+        && isDeleting()
+        && getAfter(userPath(uid)).data.status == 'excluido'
+        && resource.data.active == false
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['username', 'deletedAt'])
+        && !('username' in request.resource.data)
+        && request.resource.data.deletedAt == request.time;
 
       allow delete: if false;
 
@@ -465,7 +577,9 @@ service cloud.firestore {
     }
 
     match /events/{eventId} {
-      allow get, list: if isActive();
+      // Durante a exclusão da conta, o membro ainda encontra os eventos futuros em que
+      // confirmou presença, para cancelá-la.
+      allow get, list: if isActive() || isDeletingMember();
 
       allow create: if isAdmin()
         && request.resource.data.keys().hasOnly(
@@ -525,7 +639,9 @@ service cloud.firestore {
 
         // Cancelar a própria presença, ou (administrador) a de qualquer confirmado, enquanto
         // o evento estiver ativo e futuro. Depois disso, a pessoa pode confirmar de novo.
-        allow delete: if ((isSelf(uid) && isActive()) || isAdmin()) && eventIsOpen();
+        // Na exclusão da conta, a própria pessoa cancela as presenças em eventos futuros.
+        allow delete: if ((isSelf(uid) && (isActive() || isDeleting())) || isAdmin())
+          && eventIsOpen();
       }
     }
   }

@@ -45,6 +45,7 @@
                 }
               </p>
               <p class="character__details">{{ c.details }}</p>
+              <p class="character__details">{{ c.professions }}</p>
               <p class="character__details" [class.character__warning]="c.needsLevel">
                 {{ c.level }}
               </p>
@@ -262,6 +263,13 @@
               }
             </div>
           </div>
+
+          <app-professions-field
+            formControlName="professions"
+            idPrefix="personagem-professions"
+            [game]="gameOrNull()"
+            [error]="fieldError('professions')"
+          />
 
           @if (!editingMain() && !mainPending()) {
             <div class="checkbox">

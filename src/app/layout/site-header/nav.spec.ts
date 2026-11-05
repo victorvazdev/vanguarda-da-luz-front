@@ -41,5 +41,12 @@ describe('showsSignOut', () => {
     expect(showsSignOut('pending')).toBe(true);
     expect(showsSignOut('member')).toBe(true);
     expect(showsSignOut('admin')).toBe(true);
+    expect(showsSignOut('deleting')).toBe(true);
+  });
+});
+
+describe('navItemsFor (exclusão em andamento)', () => {
+  it('mostra somente Minha conta', () => {
+    expect(navItemsFor('deleting').map((i) => i.label)).toEqual(['Minha conta']);
   });
 });
