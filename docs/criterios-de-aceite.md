@@ -33,7 +33,7 @@ A guilda está presente em duas versões de World of Warcraft:
 - O link de recuperação de senha vale por 1 hora e pode ser usado uma única vez.
 - A listagem de artigos exibe 10 itens por página.
 - O site mantém ao menos um administrador ativo.
-- O BattleTag é um dado privado: somente a própria pessoa e os administradores o veem.
+- O BattleTag é um dado privado da conta: somente a própria pessoa e os administradores o veem.
 - Cada personagem tem no máximo 2 profissões primárias, nos dois jogos; o WoW Forever (Classic) não tem Escrivania nem Joalheria.
 
 ## Conteúdo público da guilda
@@ -187,7 +187,8 @@ A guilda está presente em duas versões de World of Warcraft:
 - [ ] A classe e a função são escolhidas entre as opções válidas do jogo escolhido.
 - [ ] As profissões são escolhidas entre as profissões primárias do jogo escolhido, no máximo 2; é possível informar que o personagem não tem profissão.
 - [ ] O BattleTag é obrigatório e segue o formato Nome#1234 (3 a 12 letras ou números, começando por letra, e 4 a 6 dígitos); vazio ou inválido bloqueia o envio e exibe a mensagem junto ao campo, também validado no servidor.
-- [ ] O BattleTag não aparece em páginas públicas nem nas listas de membros.
+- [ ] O BattleTag fica na conta: a candidatura parte do BattleTag já informado, e um novo envio o atualiza.
+- [ ] O BattleTag não aparece em páginas públicas nem nas listas vistas pelos membros.
 - [ ] O usuário deve confirmar que leu as regras antes de enviar.
 - [ ] Campos obrigatórios vazios exibem mensagens junto ao campo.
 - [ ] Após o envio, a candidatura aparece para os administradores como pendente.
@@ -212,7 +213,9 @@ A guilda está presente em duas versões de World of Warcraft:
 - [ ] Depois da troca de e-mail, a sessão é encerrada e o usuário entra novamente com o novo e-mail.
 - [ ] A senha pode ser alterada mediante a senha atual, e a nova senha segue as regras do cadastro.
 - [ ] Uma senha atual incorreta impede a alteração do e-mail ou da senha e exibe uma mensagem junto ao campo.
-- [ ] Um usuário cadastrado que aguarda aprovação também pode alterar o nome de usuário, o e-mail e a senha.
+- [ ] O BattleTag pode ser informado ou alterado em "Minha conta", seguindo o mesmo formato da candidatura; um formato inválido exibe a mensagem junto ao campo e é recusado também no servidor.
+- [ ] Somente a própria pessoa altera o seu BattleTag.
+- [ ] Um usuário cadastrado que aguarda aprovação também pode alterar o nome de usuário, o BattleTag, o e-mail e a senha.
 - [ ] Uma conta desativada não altera nenhum dado.
 
 **Personagens**
@@ -236,7 +239,7 @@ A guilda está presente em duas versões de World of Warcraft:
 - [ ] "Minha conta" oferece a opção "Excluir conta" para contas pendentes e ativas.
 - [ ] Um modal explica o que será removido e o que será mantido.
 - [ ] A exclusão exige confirmação explícita e a senha atual (nova autenticação), também verificada no servidor.
-- [ ] São removidos o login no Firebase Authentication, o e-mail, o nome de usuário, a candidatura (com BattleTag e motivo) e os demais dados privados da conta.
+- [ ] São removidos o login no Firebase Authentication, o e-mail, o nome de usuário, o BattleTag, a candidatura (com o motivo) e os demais dados privados da conta.
 - [ ] O nome de usuário e o e-mail ficam livres para uma nova conta.
 - [ ] As presenças em eventos futuros e ativos são canceladas e saem das listas de confirmados.
 - [ ] Os personagens e o histórico de eventos passados são mantidos, sem nome de usuário, e-mail ou outro dado pessoal; nos eventos passados, a presença aparece como "Conta excluída", com o personagem principal.
@@ -391,7 +394,8 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 
 **Como administrador**, quero gerenciar os membros e suas permissões, para que o acesso continue adequado quando alguém mudar de função, sair ou voltar para a guilda.
 
-- [ ] Uma lista mostra os membros, sua situação e sua permissão, com busca por nome.
+- [ ] Uma lista mostra os membros, seu BattleTag, sua situação e sua permissão, com busca por nome.
+- [ ] Um membro que ainda não informou o BattleTag aparece como "Não informado".
 - [ ] O administrador pode alterar a permissão entre membro e administrador.
 - [ ] O administrador pode desativar um membro, com confirmação.
 - [ ] Um membro desativado perde o acesso e sai da lista pública.

@@ -40,11 +40,12 @@
       @if (view().length) {
         <table id="membros-tabela" class="members-table">
           <caption class="sr-only">
-            Membros da guilda, com situação, permissão e ações
+            Membros da guilda, com BattleTag, situação, permissão e ações
           </caption>
           <thead>
             <tr>
               <th scope="col">Personagem</th>
+              <th scope="col">BattleTag</th>
               <th scope="col">Situação</th>
               <th scope="col">Permissão</th>
               <th scope="col">Ações</th>
@@ -65,6 +66,7 @@
                   </span>
                   <span class="members-table__details">{{ row.details }}</span>
                 </th>
+                <td data-label="BattleTag" class="members-table__battletag">{{ row.battleTag }}</td>
                 <td data-label="Situação">{{ row.active ? 'Ativo' : 'Desativado' }}</td>
                 <td data-label="Permissão">
                   @if (row.active) {

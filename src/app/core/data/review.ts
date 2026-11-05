@@ -18,6 +18,8 @@ export interface PendingAccount {
   uid: string;
   username: string;
   email: string;
+  /** BattleTag da conta (`null` se ainda não informado). */
+  battleTag: string | null;
   createdAt: Date | null;
   /** Candidatura aguardando avaliação. */
   application: Application | null;
@@ -45,7 +47,7 @@ export const CHARACTER_FIELDS = [
  * Candidaturas pendentes primeiro, da mais recente para a mais antiga (como no protótipo).
  */
 export function buildQueue(
-  accounts: { uid: string; username: string; email: string; createdAt: Date | null }[],
+  accounts: Omit<PendingAccount, 'application' | 'rejectedAt'>[],
   applications: Application[],
 ): PendingAccount[] {
   const byUid = new Map(applications.map((a) => [a.uid, a]));
@@ -85,6 +87,7 @@ export function watchQueue(
         uid: d.id,
         username: d.get('username') as string,
         email: d.get('email') as string,
+        battleTag: (d.get('battleTag') as string | undefined) ?? null,
         createdAt: toDate(d.get('createdAt')),
       }));
       emit();

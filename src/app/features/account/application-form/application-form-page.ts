@@ -18,6 +18,7 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ACCOUNT_MESSAGES } from '../../../core/auth/messages';
+import { SessionService } from '../../../core/auth/session.service';
 import {
   canSubmit,
   type ApplicationInput,
@@ -112,6 +113,7 @@ const GAME_ONLY_FIELDS: Record<Game, readonly ('server' | 'characterSurname' | '
 })
 export class ApplicationFormPage implements OnInit {
   private readonly applications = inject(ApplicationsService);
+  private readonly session = inject(SessionService);
   private readonly router = inject(Router);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
@@ -196,10 +198,12 @@ export class ApplicationFormPage implements OnInit {
           characterClass: current.characterClass,
           characterRole: current.characterRole,
           professions: current.professions,
-          battleTag: current.battleTag ?? '',
           motivation: current.motivation,
         });
       }
+      // O BattleTag é da conta: parte do atual (ou do que ficou numa candidatura antiga).
+      const battleTag = this.session.account()?.battleTag ?? current?.battleTag;
+      if (battleTag) this.form.controls.battleTag.setValue(battleTag);
     } catch {
       this.error.set('Não foi possível carregar sua candidatura. Recarregue a página.');
     }

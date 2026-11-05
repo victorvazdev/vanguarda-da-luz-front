@@ -49,6 +49,55 @@
   </form>
 
   <form
+    id="conta-battleTag"
+    class="form account__form"
+    [formGroup]="forms.battleTag"
+    (ngSubmit)="saveBattleTag()"
+    novalidate
+    aria-labelledby="titulo-battletag"
+  >
+    <h3 id="titulo-battletag" class="account__subtitle">BattleTag</h3>
+    @if (errors().battleTag; as message) {
+      <p class="form-alert" role="alert" tabindex="-1">{{ message }}</p>
+    }
+    <div class="field">
+      <label class="field__label" for="conta-battleTag-input">BattleTag</label>
+      <input
+        id="conta-battleTag-input"
+        class="field__input"
+        type="text"
+        formControlName="battleTag"
+        autocomplete="off"
+        autocapitalize="none"
+        spellcheck="false"
+        maxlength="19"
+        placeholder="Nome#1234"
+        [attr.aria-invalid]="!!fieldError('battleTag', 'battleTag')"
+        [attr.aria-describedby]="describedBy('battleTag', 'battleTag', 'conta-battleTag-dica')"
+      />
+      <p id="conta-battleTag-dica" class="field__hint">
+        Visível somente para você e para os administradores.
+      </p>
+      @if (fieldError('battleTag', 'battleTag'); as message) {
+        <p id="conta-battleTag-battleTag-erro" class="field__error">{{ message }}</p>
+      }
+    </div>
+    <div aria-live="polite">
+      @if (success().battleTag; as message) {
+        <p class="notice">{{ message }}</p>
+      }
+    </div>
+    <button
+      type="submit"
+      class="btn btn--primary"
+      [disabled]="saving() !== null"
+      [attr.aria-busy]="saving() === 'battleTag'"
+    >
+      {{ saving() === 'battleTag' ? 'Salvando…' : 'Salvar BattleTag' }}
+    </button>
+  </form>
+
+  <form
     id="conta-email"
     class="form account__form"
     [formGroup]="forms.email"

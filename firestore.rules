@@ -184,6 +184,13 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email'])
         && request.resource.data.email == request.auth.token.email;
 
+      // BattleTag (dado privado da conta: lido somente pela pessoa e pelos administradores).
+      // A própria pessoa informa ou altera, com a conta pendente ou ativa.
+      allow update: if isSelf(uid)
+        && resource.data.status in ['pendente', 'ativo']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['battleTag'])
+        && validBattleTag(request.resource.data.battleTag);
+
       // ---------- Exclusão de conta (pela própria pessoa, sem Cloud Functions) ----------
       // Feita em etapas, cada uma retomável: (1) a conta passa a 'excluindo', sai da lista
       // de admins e o membro sai das listas; (2) as presenças em eventos futuros são
@@ -328,8 +335,8 @@ service cloud.firestore {
     }
 
     // BattleTag: 3 a 12 letras ou números, começando por letra, + '#' + 4 a 6 dígitos
-    // (igual a BATTLETAG_PATTERN em src/app/shared/forms/validators.ts). Dado privado: fica
-    // somente na candidatura, nunca no membro.
+    // (igual a BATTLETAG_PATTERN em src/app/shared/forms/validators.ts). Dado privado da conta
+    // (`users/{uid}.battleTag`); nunca vai para o membro.
     function validBattleTag(value) {
       return value is string && value.matches('\\p{L}[\\p{L}\\p{N}]{2,11}#[0-9]{4,6}');
     }
@@ -337,7 +344,8 @@ service cloud.firestore {
     function validApplication(d) {
       return validName(d.characterName)
         && validGameCharacter(d)
-        && validBattleTag(d.battleTag)
+        // Obrigatório na candidatura: já informado na conta ou gravado nela no mesmo envio.
+        && validBattleTag(getAfter(userPath(request.auth.uid)).data.get('battleTag', null))
         && d.motivation is string
         && d.motivation.size() >= 1 && d.motivation.size() <= 1000
         && d.rulesAccepted == true
@@ -347,8 +355,8 @@ service cloud.firestore {
 
     function applicationFields() {
       return ['game', 'characterName', 'characterSurname', 'server', 'ruleset',
-              'characterClass', 'characterRole', 'professions', 'battleTag', 'motivation',
-              'rulesAccepted', 'status', 'submittedAt'];
+              'characterClass', 'characterRole', 'professions', 'motivation', 'rulesAccepted',
+              'status', 'submittedAt'];
     }
 
     function previousDecision() {
@@ -436,7 +444,9 @@ service cloud.firestore {
         && request.resource.data.mainCharacter.keys().hasOnly(characterFields())
         && getAfter(applicationPath(uid)).data
              .diff(request.resource.data.mainCharacter).affectedKeys()
-             .hasOnly(applicationFields().concat(['history', 'decidedBy', 'decidedAt'])
+             .hasOnly(applicationFields()
+                         // `battleTag`: candidaturas antigas, de quando ele ficava nelas.
+                         .concat(['history', 'decidedBy', 'decidedAt', 'battleTag'])
                        .removeAll(characterFields()));
 
       // Desativação ou reativação do membro, sempre junto com a conta.

@@ -12,6 +12,8 @@ export interface UserAccount {
   email: string;
   status: AccountStatus;
   role: Permission;
+  /** Dado privado: visível somente para a própria pessoa e os administradores. */
+  battleTag?: string;
 }
 
 /**

@@ -24,11 +24,12 @@ import {
   CONFIRM_PASSWORD_MESSAGES,
   PASSWORD_MESSAGES,
   PASSWORD_MIN_LENGTH,
+  battleTagFormat,
   passwordsMatch,
   usernameFormat,
 } from '../../../shared/forms/validators';
 
-type Section = 'username' | 'email' | 'password';
+type Section = 'username' | 'battleTag' | 'email' | 'password';
 
 const CURRENT_PASSWORD: ErrorMessages = {
   required: 'Informe a senha atual.',
@@ -41,6 +42,12 @@ const MESSAGES = {
       required: 'Informe o nome de usuário.',
       usernameFormat: 'Use de 3 a 20 caracteres: letras sem acento, números, _ ou -.',
       taken: 'Este nome de usuário já está em uso.',
+    },
+  },
+  battleTag: {
+    battleTag: {
+      required: 'Informe seu BattleTag.',
+      battleTag: 'Use o formato Nome#1234: de 3 a 12 letras ou números, começando por letra.',
     },
   },
   email: {
@@ -93,6 +100,7 @@ export class AccountSettingsPanel {
   protected readonly saving = signal<Section | null>(null);
   protected readonly submitted = signal<Record<Section, boolean>>({
     username: false,
+    battleTag: false,
     email: false,
     password: false,
   });
@@ -101,6 +109,7 @@ export class AccountSettingsPanel {
 
   protected readonly forms = {
     username: this.fb.group({ username: ['', [Validators.required, usernameFormat]] }),
+    battleTag: this.fb.group({ battleTag: ['', [Validators.required, battleTagFormat]] }),
     email: this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       currentPassword: ['', [Validators.required]],
@@ -125,6 +134,16 @@ export class AccountSettingsPanel {
         if (!control.dirty) control.setValue(username);
       });
     });
+
+    // Preenche o BattleTag atual, se já informado.
+    effect(() => {
+      const battleTag = this.session.account()?.battleTag;
+      if (battleTag === undefined) return;
+      untracked(() => {
+        const control = this.forms.battleTag.controls.battleTag;
+        if (!control.dirty) control.setValue(battleTag);
+      });
+    });
   }
 
   protected fieldError(section: Section, field: string): string | null {
@@ -146,6 +165,14 @@ export class AccountSettingsPanel {
     if (!this.begin('username', form)) return;
     const result = await this.accounts.changeUsername(form.getRawValue().username);
     this.finish('username', form, result, 'Nome de usuário alterado.');
+    if (result.ok) form.markAsPristine();
+  }
+
+  protected async saveBattleTag(): Promise<void> {
+    const form = this.forms.battleTag;
+    if (!this.begin('battleTag', form)) return;
+    const result = await this.accounts.changeBattleTag(form.getRawValue().battleTag);
+    this.finish('battleTag', form, result, 'BattleTag salvo.');
     if (result.ok) form.markAsPristine();
   }
 

@@ -42,6 +42,7 @@ export class SessionService {
     let unsubscribeAccount: (() => void) | null = null;
     let generation = 0;
     let syncedEmail: string | null = null;
+    let adoptedBattleTag: string | null = null;
 
     const unsubscribeAuth = onAuthStateChanged(this.auth, async (user) => {
       const current = ++generation;
@@ -79,6 +80,18 @@ export class SessionService {
             syncedEmail = `${user.uid}:${email}`;
             void import('./account-settings')
               .then((m) => m.syncAccountEmail(db, user.uid, email))
+              .catch(() => undefined);
+          }
+          // BattleTag de candidatura antiga: passa para a conta (uma tentativa por sessão).
+          if (
+            account &&
+            !account.battleTag &&
+            (account.status === 'pendente' || account.status === 'ativo') &&
+            adoptedBattleTag !== user.uid
+          ) {
+            adoptedBattleTag = user.uid;
+            void import('./account-settings')
+              .then((m) => m.adoptApplicationBattleTag(db, user.uid))
               .catch(() => undefined);
           }
         },

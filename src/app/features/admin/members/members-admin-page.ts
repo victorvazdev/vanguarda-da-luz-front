@@ -31,6 +31,7 @@ interface RowView {
   uid: string;
   name: string;
   details: string;
+  battleTag: string;
   active: boolean;
   role: Permission;
   isSelf: boolean;
@@ -71,6 +72,7 @@ export class MembersAdminPage {
           details: c
             ? `${classLabel(c.characterClass)}, ${roleLabel(c.characterRole).toLowerCase()} · ${gameLabel(c.game)}`
             : `Usuário ${r.username}, sem personagem principal`,
+          battleTag: r.battleTag ?? 'Não informado',
           active: r.status === 'ativo',
           role: r.role,
           isSelf: r.uid === me,

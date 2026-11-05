@@ -32,7 +32,7 @@ export type ApplicationInput = GameCharacter & {
   characterRole: CharacterRole;
   /** Profissões primárias; `[]` quando o personagem não tem profissão. */
   professions: Profession[];
-  /** Dado privado: visível somente para a própria pessoa e os administradores. */
+  /** Gravado na conta (`users/{uid}.battleTag`), não na candidatura. */
   battleTag: string;
   motivation: string;
 };
@@ -58,7 +58,10 @@ export interface Application {
   characterRole: CharacterRole;
   /** `null` em candidaturas enviadas antes da escolha de profissões existir. */
   professions: Profession[] | null;
-  /** `null` em candidaturas enviadas antes de o BattleTag ser exigido. */
+  /**
+   * Somente candidaturas antigas, de quando o BattleTag ficava nelas. Hoje ele fica na conta
+   * (`users/{uid}.battleTag`).
+   */
   battleTag: string | null;
   motivation: string;
   status: ApplicationStatus;
@@ -157,7 +160,6 @@ export async function submitApplication(
     characterClass: input.characterClass,
     characterRole: input.characterRole,
     professions: input.professions,
-    battleTag: input.battleTag.trim(),
     motivation: input.motivation.trim(),
     rulesAccepted: true,
     status: 'pendente',
@@ -167,6 +169,8 @@ export async function submitApplication(
   try {
     await runTransaction(db, async (tx) => {
       const current = await tx.get(ref);
+      // O BattleTag é da conta: atualizado no mesmo envio (as rules exigem que exista).
+      tx.update(doc(db, 'users', uid), { battleTag: input.battleTag.trim() });
       if (!current.exists()) {
         tx.set(ref, data);
         return;

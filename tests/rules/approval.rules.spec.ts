@@ -136,14 +136,11 @@ describe('Aprovar candidatura', () => {
     );
   });
 
-  describe('com BattleTag e profissões', () => {
+  describe('com profissões', () => {
     beforeEach(async () => {
       await seed(env(), {
-        'applications/alice': {
-          ...retailApp,
-          professions: ['alquimia', 'herborismo'],
-          battleTag: 'Elaris#1234',
-        },
+        'applications/alice': { ...retailApp, professions: ['alquimia', 'herborismo'] },
+        'users/alice': account('alice', { battleTag: 'Elaris#1234' }),
       });
     });
 
@@ -174,6 +171,11 @@ describe('Aprovar candidatura', () => {
   });
 
   it('candidatura antiga, sem BattleTag nem profissões, ainda pode ser aprovada', async () => {
+    await assertSucceeds(approve(asUser(env(), 'admin'), 'admin'));
+  });
+
+  it('candidatura antiga, com o BattleTag guardado nela, ainda pode ser aprovada', async () => {
+    await seed(env(), { 'applications/alice': { ...retailApp, battleTag: 'Elaris#1234' } });
     await assertSucceeds(approve(asUser(env(), 'admin'), 'admin'));
   });
 

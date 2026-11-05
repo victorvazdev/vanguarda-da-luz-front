@@ -11,7 +11,8 @@ import {
   type Auth,
   type User,
 } from 'firebase/auth';
-import { doc, runTransaction, updateDoc, type Firestore } from 'firebase/firestore';
+import { doc, getDoc, runTransaction, updateDoc, type Firestore } from 'firebase/firestore';
+import { isValidBattleTag } from '../../shared/forms/validators';
 import { usernameKey } from './username';
 
 export type SettingsError =
@@ -103,6 +104,32 @@ export async function changeUsername(
   } catch (error) {
     return { ok: false, error: settingsErrorFrom(error) };
   }
+}
+
+/** Informa ou altera o BattleTag da conta (dado privado: a pessoa e os administradores). */
+export async function changeBattleTag(
+  db: Firestore,
+  uid: string,
+  battleTag: string,
+): Promise<SettingsResult> {
+  try {
+    await updateDoc(doc(db, 'users', uid), { battleTag: battleTag.trim() });
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: settingsErrorFrom(error) };
+  }
+}
+
+/**
+ * Candidaturas antigas guardavam o BattleTag nelas; hoje ele fica na conta. Copia para a conta
+ * o BattleTag da candidatura, se a conta ainda não tem um. Devolve se copiou.
+ */
+export async function adoptApplicationBattleTag(db: Firestore, uid: string): Promise<boolean> {
+  const application = await getDoc(doc(db, 'applications', uid));
+  const battleTag = application.get('battleTag') as unknown;
+  if (typeof battleTag !== 'string' || !isValidBattleTag(battleTag)) return false;
+  await updateDoc(doc(db, 'users', uid), { battleTag });
+  return true;
 }
 
 /** Confirma a senha atual (o Firebase exige login recente para mudar e-mail ou senha). */

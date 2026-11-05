@@ -57,6 +57,7 @@ const pending = (uid: string, application: Application | null): PendingAccount =
   uid,
   username: uid,
   email: `${uid}@example.com`,
+  battleTag: application ? 'Conta#4321' : null,
   createdAt: new Date('2026-11-01T15:00:00Z'),
   application,
   rejectedAt: null,
@@ -118,6 +119,12 @@ describe('ApplicationsAdminPage (Aprovar ou recusar cadastros)', () => {
     expect(text()).toContain('Enviada em 4 nov. 2026');
     expect(text()).toContain('Lioren Vale');
     expect(text()).toContain('WoW Forever · ruleset Normal');
+    expect(text()).toContain('BattleTag: Conta#4321');
+  });
+
+  it('candidatura antiga mostra o BattleTag guardado nela quando a conta não tem', async () => {
+    await emit([{ ...pending('elaris', app({ battleTag: 'Antigo#1234' })), battleTag: null }]);
+    expect(text()).toContain('BattleTag: Antigo#1234');
   });
 
   it('mostra cadastros sem candidatura pendente, sem ações, e diferencia quem foi recusado', async () => {
