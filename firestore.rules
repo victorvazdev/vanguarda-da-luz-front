@@ -389,6 +389,62 @@ service cloud.firestore {
       }
     }
 
+    // ---------- Conteúdo do site (editado no painel administrativo) ----------
+    // Lido por qualquer pessoa (páginas públicas). Somente administradores gravam, sempre o
+    // documento inteiro, com registro de quem salvou e quando. Limites iguais aos de
+    // src/app/core/content/site-content.ts.
+    function optionalText(value, max) {
+      return value is string && value.size() <= max;
+    }
+
+    // Link vazio (null) ou URL https:// com domínio.
+    function socialUrl(value) {
+      return value == null
+        || (value is string && value.size() <= 300
+          && value.matches('https://[^\\s/?#]+\\.[^\\s/?#]+([/?#]\\S*)?'));
+    }
+
+    match /site/guild {
+      allow get: if true;
+
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(
+             ['history', 'values', 'faction', 'retailServer', 'foreverRulesets',
+              'updatedAt', 'updatedBy'])
+        && optionalText(request.resource.data.history, 5000)
+        && optionalText(request.resource.data.values, 2000)
+        && request.resource.data.faction in ['alianca', 'horda']
+        && optionalText(request.resource.data.retailServer, 40)
+        && request.resource.data.foreverRulesets is list
+        && request.resource.data.foreverRulesets.hasOnly(['normal', 'jxj'])
+        && request.resource.data.foreverRulesets.size()
+             == request.resource.data.foreverRulesets.toSet().size()
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.updatedBy == request.auth.uid;
+
+      allow delete: if false;
+    }
+
+    match /site/social {
+      allow get: if true;
+
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['links', 'updatedAt', 'updatedBy'])
+        && request.resource.data.links is map
+        && request.resource.data.links.keys().hasOnly(
+             ['discord', 'whatsapp', 'instagram', 'youtube'])
+        && request.resource.data.links.keys().hasAll(
+             ['discord', 'whatsapp', 'instagram', 'youtube'])
+        && socialUrl(request.resource.data.links.discord)
+        && socialUrl(request.resource.data.links.whatsapp)
+        && socialUrl(request.resource.data.links.instagram)
+        && socialUrl(request.resource.data.links.youtube)
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.updatedBy == request.auth.uid;
+
+      allow delete: if false;
+    }
+
     // ---------- Eventos ----------
     // Lidos por membros ativos. Criados, editados e cancelados por administradores, sempre
     // antes de começarem. O cancelamento mantém o evento (status 'cancelado') e é definitivo.

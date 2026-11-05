@@ -1,19 +1,13 @@
 /**
- * Conteúdo público da guilda. Textos entre colchetes ainda estão pendentes
- * e devem ser substituídos pelo conteúdo oficial.
+ * Conteúdo público fixo da guilda. Textos entre colchetes ainda estão pendentes e devem
+ * ser substituídos pelo conteúdo oficial. História, valores, facção, servidor, rulesets
+ * e redes sociais são editados no painel administrativo (ver site-content.ts).
  */
 export const GUILD = {
   name: 'Vanguarda da Luz',
   tagline: 'Guilda de World of Warcraft',
   intro:
     'Conheça a guilda, leia as regras e envie sua candidatura. Depois de aprovado, você acompanha os eventos e confirma sua presença pelo site.',
-  history: '[HISTÓRIA DA GUILDA: como surgiu, quem fundou e o que a Vanguarda da Luz faz no jogo.]',
-  values: '[VALORES DA GUILDA]',
-  faction: 'Aliança',
-  /** World of Warcraft Retail. */
-  server: '[NOME DO SERVIDOR]',
-  /** World of Warcraft Forever: no lugar de servidores, rulesets. */
-  foreverRulesets: 'Normal e JxJ',
   requirements: '[REQUISITOS PARA ENTRAR NA GUILDA]',
 } as const;
 
@@ -39,23 +33,3 @@ export const JOIN_STEPS = [
   { title: 'Envie sua candidatura', text: 'Conte qual é seu personagem e por que quer entrar.' },
   { title: 'Aguarde a avaliação', text: 'Acompanhe o resultado na sua conta.' },
 ] as const;
-
-export interface SocialLink {
-  name: string;
-  /** `null` = rede sem link cadastrado; não é exibida. */
-  url: string | null;
-}
-
-export const SOCIAL_LINKS: readonly SocialLink[] = [
-  { name: 'Discord', url: 'https://discord.gg/uGyPjtEsBw' },
-  { name: 'WhatsApp', url: 'https://chat.whatsapp.com/CRwgWovy7T11aAI0mtrcfe' },
-  { name: 'Instagram', url: 'https://www.instagram.com/vanguardaluz/' },
-  { name: 'YouTube', url: 'https://www.youtube.com/@VanguardaDaLuz' },
-];
-
-/** Somente redes com link cadastrado (critério "Redes sem link não são exibidas"). */
-export function visibleSocialLinks(
-  links: readonly SocialLink[] = SOCIAL_LINKS,
-): (SocialLink & { url: string })[] {
-  return links.filter((l): l is SocialLink & { url: string } => !!l.url?.trim());
-}

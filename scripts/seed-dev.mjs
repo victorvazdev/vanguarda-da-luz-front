@@ -94,6 +94,7 @@ const PEOPLE = [
 ];
 
 function encode(value) {
+  if (value === null) return { nullValue: null };
   if (value instanceof Date) return { timestampValue: value.toISOString() };
   if (Array.isArray(value)) return { arrayValue: { values: value.map(encode) } };
   if (typeof value === 'boolean') return { booleanValue: value };
@@ -170,6 +171,28 @@ for (const p of PEOPLE) {
 }
 // Lista de administradores ativos (usada para impedir remover o último admin).
 await put('config/admins', { activeAdminUids: adminUids });
+
+// Conteúdo editável no painel (Administração > Guilda e Redes sociais).
+await put('site/guild', {
+  history:
+    '[HISTÓRIA DA GUILDA: como surgiu, quem fundou e o que a **Vanguarda da Luz** faz no jogo.]\n\n[Segundo parágrafo da história.]',
+  values: '- [VALOR 1]\n- [VALOR 2]\n- [VALOR 3]',
+  faction: 'alianca',
+  retailServer: 'Servidor de teste',
+  foreverRulesets: ['normal', 'jxj'],
+  updatedAt: daysAgo(2),
+  updatedBy: adminUids[0],
+});
+await put('site/social', {
+  links: {
+    discord: 'https://discord.gg/uGyPjtEsBw',
+    whatsapp: 'https://chat.whatsapp.com/CRwgWovy7T11aAI0mtrcfe',
+    instagram: 'https://www.instagram.com/vanguardaluz/',
+    youtube: 'https://www.youtube.com/@VanguardaDaLuz',
+  },
+  updatedAt: daysAgo(2),
+  updatedBy: adminUids[0],
+});
 
 // Eventos do protótipo, a partir de hoje (horários de Brasília, UTC−3).
 const atBrasilia = (days, hour, minute = 0) => {

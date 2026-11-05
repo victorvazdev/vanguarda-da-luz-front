@@ -44,58 +44,86 @@
   </div>
 </section>
 
-<section class="band" aria-labelledby="titulo-historia">
-  <div class="container band__grid">
-    <div>
-      <h2 id="titulo-historia" class="band__title">Nossa história</h2>
-      <p class="muted">{{ guild.history }}</p>
-    </div>
+<section class="band" aria-labelledby="titulo-historia" [attr.aria-busy]="about() === undefined">
+  <div class="container">
+    @switch (about()) {
+      @case (undefined) {
+        <h2 id="titulo-historia" class="band__title">Nossa história</h2>
+        <p class="muted loading" role="status">Carregando…</p>
+      }
+      @case (null) {
+        <h2 id="titulo-historia" class="band__title">Nossa história</h2>
+        <p class="form-alert" role="alert">
+          Não foi possível carregar as informações da guilda. Recarregue a página.
+        </p>
+      }
+      @default {
+        @let a = about()!;
+        <div class="band__grid">
+          <div>
+            <h2 id="titulo-historia" class="band__title">Nossa história</h2>
+            @if (a.history) {
+              <app-rich-text class="band__text muted" [text]="a.history" />
+            }
+            @if (a.updatedAt) {
+              <p class="band__updated">Atualizado em {{ a.updatedAt }}</p>
+            }
+          </div>
 
-    <dl class="facts">
-      <div class="facts__item">
-        <dt class="facts__label">
-          <svg class="facts__icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z" />
-            <path d="m9 12 2 2 4-4" />
-          </svg>
-          Valores
-        </dt>
-        <dd class="facts__value">{{ guild.values }}</dd>
-      </div>
-      <div class="facts__item">
-        <dt class="facts__label">
-          <svg class="facts__icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 21V3" />
-            <path d="M6 4h12l-3 4 3 4H6" />
-          </svg>
-          Facção
-        </dt>
-        <dd class="facts__value">{{ guild.faction }}</dd>
-      </div>
-      <div class="facts__item">
-        <dt class="facts__label">
-          <svg class="facts__icon" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="9" />
-            <path
-              d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3Z"
-            />
-          </svg>
-          Servidor no Retail
-        </dt>
-        <dd class="facts__value">{{ guild.server }}</dd>
-      </div>
-      <div class="facts__item">
-        <dt class="facts__label">
-          <svg class="facts__icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5v-13ZM20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5c.8 0 1.5-.7 1.5-1.5v-13Z"
-            />
-          </svg>
-          Rulesets no WoW Forever
-        </dt>
-        <dd class="facts__value">{{ guild.foreverRulesets }}</dd>
-      </div>
-    </dl>
+          <dl class="facts">
+            @if (a.values) {
+              <div class="facts__item">
+                <dt class="facts__label">
+                  <svg class="facts__icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                  Valores
+                </dt>
+                <dd class="facts__value"><app-rich-text [text]="a.values" /></dd>
+              </div>
+            }
+            <div class="facts__item">
+              <dt class="facts__label">
+                <svg class="facts__icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 21V3" />
+                  <path d="M6 4h12l-3 4 3 4H6" />
+                </svg>
+                Facção
+              </dt>
+              <dd class="facts__value">{{ a.faction }}</dd>
+            </div>
+            @if (a.server) {
+              <div class="facts__item">
+                <dt class="facts__label">
+                  <svg class="facts__icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" />
+                    <path
+                      d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3Z"
+                    />
+                  </svg>
+                  Servidor no Retail
+                </dt>
+                <dd class="facts__value">{{ a.server }}</dd>
+              </div>
+            }
+            @if (a.rulesets) {
+              <div class="facts__item">
+                <dt class="facts__label">
+                  <svg class="facts__icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5v-13ZM20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5c.8 0 1.5-.7 1.5-1.5v-13Z"
+                    />
+                  </svg>
+                  Rulesets no WoW Forever
+                </dt>
+                <dd class="facts__value">{{ a.rulesets }}</dd>
+              </div>
+            }
+          </dl>
+        </div>
+      }
+    }
   </div>
 </section>
 
