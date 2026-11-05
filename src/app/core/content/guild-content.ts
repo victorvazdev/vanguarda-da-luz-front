@@ -12,7 +12,6 @@ export const GUILD = {
 } as const;
 
 export const RULES = {
-  updatedAt: '[DATA]',
   items: [
     'Fiel devoção à Aliança e à Vanguarda da Luz.',
     'Respeito absoluto a todos os irmãos e irmãs que caminham pela Luz.',
