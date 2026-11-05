@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { signUp } from '../../src/app/core/auth/sign-up';
 import { submitApplication } from '../../src/app/core/data/applications';
+import { confirmAttendance } from '../../src/app/core/data/attendance';
 import {
   cancelEvent,
   createEvent,
+  deleteCancelledEvent,
   updateEvent,
   watchEvent,
   watchEventsBetween,
@@ -190,6 +192,64 @@ describe('Criar, editar e cancelar eventos (emuladores)', () => {
       ok: false,
       error: 'not-allowed',
     });
+  });
+});
+
+describe('Excluir evento cancelado (emuladores)', () => {
+  it('exclui o evento cancelado e a lista de confirmados', async () => {
+    const admin = await firstAdmin();
+    const tavia = await approvedMember(admin, 'Tavia');
+    const created = await createEvent(admin.db, admin.uid, input());
+    if (!created.ok) throw new Error(created.error);
+    expect(await confirmAttendance(tavia.db, created.id, tavia.uid)).toEqual({ ok: true });
+    expect(await cancelEvent(admin.db, admin.uid, created.id)).toEqual({ ok: true });
+
+    expect(await deleteCancelledEvent(admin.db, created.id)).toEqual({ ok: true });
+    expect(await adminGet(`events/${created.id}`)).toBeNull();
+    expect(await adminGet(`events/${created.id}/attendees/${tavia.uid}`)).toBeNull();
+    // Sai do calendário dos membros.
+    expect(await firstSnapshot(tavia)).toEqual([]);
+  });
+
+  it('exclui evento cancelado que já passou', async () => {
+    const admin = await firstAdmin();
+    await adminPatch('events/antigo', {
+      title: 'Raid antiga',
+      startsAt: new Date(Date.now() - 3 * DAY),
+      description: 'Cancelada.',
+      organizer: 'Maren',
+      status: 'cancelado',
+    });
+    expect(await deleteCancelledEvent(admin.db, 'antigo')).toEqual({ ok: true });
+    expect(await adminGet('events/antigo')).toBeNull();
+  });
+
+  it('não exclui evento ativo; evento inexistente é informado', async () => {
+    const admin = await firstAdmin();
+    const created = await createEvent(admin.db, admin.uid, input());
+    if (!created.ok) throw new Error(created.error);
+    expect(await deleteCancelledEvent(admin.db, created.id)).toEqual({
+      ok: false,
+      error: 'not-cancelled',
+    });
+    expect(await adminGet(`events/${created.id}`)).not.toBeNull();
+    expect(await deleteCancelledEvent(admin.db, 'nao-existe')).toEqual({
+      ok: false,
+      error: 'not-found',
+    });
+  });
+
+  it('membro não exclui evento cancelado', async () => {
+    const admin = await firstAdmin();
+    const tavia = await approvedMember(admin, 'Tavia');
+    const created = await createEvent(admin.db, admin.uid, input());
+    if (!created.ok) throw new Error(created.error);
+    await cancelEvent(admin.db, admin.uid, created.id);
+    expect(await deleteCancelledEvent(tavia.db, created.id)).toEqual({
+      ok: false,
+      error: 'not-allowed',
+    });
+    expect(await adminGet(`events/${created.id}`)).not.toBeNull();
   });
 });
 

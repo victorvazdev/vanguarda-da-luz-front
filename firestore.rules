@@ -569,7 +569,8 @@ service cloud.firestore {
 
     // ---------- Eventos ----------
     // Lidos por membros ativos. Criados, editados e cancelados por administradores, sempre
-    // antes de começarem. O cancelamento mantém o evento (status 'cancelado') e é definitivo.
+    // antes de começarem. O cancelamento mantém o evento (status 'cancelado') e é definitivo;
+    // depois, um administrador pode excluir o evento cancelado, com a lista de confirmados.
     // As presenças ficam em subcoleção, então editar o evento não as altera.
     function eventFields() {
       return ['title', 'startsAt', 'description', 'organizer'];
@@ -624,11 +625,16 @@ service cloud.firestore {
         && request.resource.data.cancelledAt == request.time
         && request.resource.data.cancelledBy == request.auth.uid;
 
-      allow delete: if false;
+      // Exclusão: somente eventos cancelados (a qualquer momento, inclusive depois da data).
+      allow delete: if isAdmin() && resource.data.status == 'cancelado';
 
       // ---------- Presenças (ID = uid de quem confirmou) ----------
       // Cada conta ativa registra (ou cancela) somente a própria presença, uma vez por evento,
       // em evento ativo e futuro. Administradores veem a lista e podem cancelar presenças.
+      function eventPath() {
+        return /databases/$(database)/documents/events/$(eventId);
+      }
+
       function eventIsOpen() {
         let event = get(/databases/$(database)/documents/events/$(eventId)).data;
         return event.status == 'ativo' && event.startsAt > request.time;
@@ -652,6 +658,13 @@ service cloud.firestore {
         // Na exclusão da conta, a própria pessoa cancela as presenças em eventos futuros.
         allow delete: if ((isSelf(uid) && (isActive() || isDeleting())) || isAdmin())
           && eventIsOpen();
+
+        // Exclusão de evento cancelado: o administrador apaga as presenças no mesmo lote do
+        // evento ou, se o evento já não existe, as que sobraram. Fora disso, um evento
+        // cancelado mantém a lista de confirmados.
+        allow delete: if isAdmin()
+          && (!exists(eventPath())
+            || (get(eventPath()).data.status == 'cancelado' && !existsAfter(eventPath())));
       }
     }
   }

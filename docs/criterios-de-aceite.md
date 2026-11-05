@@ -345,6 +345,9 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 - [ ] Um evento criado aparece no calendário dos membros.
 - [ ] As alterações salvas aparecem no calendário e mantêm as presenças confirmadas.
 - [ ] O cancelamento exige confirmação e mantém o evento no calendário como cancelado.
+- [ ] Um evento cancelado pode ser excluído pelo administrador, na administração de eventos ou no detalhe do evento, inclusive depois da data.
+- [ ] A exclusão exige confirmação, remove o evento do calendário e apaga a lista de confirmados.
+- [ ] Eventos ativos não podem ser excluídos; um evento cancelado que não foi excluído mantém a lista de confirmados.
 
 ### Ver presenças confirmadas
 

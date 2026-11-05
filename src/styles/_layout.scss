@@ -154,6 +154,11 @@
 .admin__title {
   margin-bottom: var(--space-5);
   font-size: clamp(1.75rem, 5vw, 2.25rem);
+
+  // Recebe o foco por script (ex.: após excluir um evento), sem contorno.
+  &[tabindex='-1'] {
+    outline: none;
+  }
 }
 
 .admin__feedback {

@@ -103,6 +103,17 @@
   margin-top: var(--space-5);
 }
 
+// Administração: excluir o evento cancelado.
+.event-detail__remove {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.event-detail__remove-error {
+  margin-bottom: var(--space-4);
+}
+
 // Caixa "Você vai participar deste evento?" (protótipo, página 10).
 .presence {
   display: flex;

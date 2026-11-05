@@ -19,6 +19,7 @@ class EventsStub {
   created: EventInput[] = [];
   updated: [string, EventInput][] = [];
   cancelled: string[] = [];
+  deleted: string[] = [];
   watchFrom(from: Date, next: (events: GuildEvent[]) => void) {
     this.from = from;
     this.next = next;
@@ -34,6 +35,10 @@ class EventsStub {
   }
   cancel(id: string) {
     this.cancelled.push(id);
+    return Promise.resolve(this.result);
+  }
+  deleteCancelled(id: string) {
+    this.deleted.push(id);
     return Promise.resolve(this.result);
   }
 }
@@ -122,7 +127,7 @@ async function submit() {
   await fixture.whenStable();
 }
 
-describe('EventsAdminPage (Criar, editar e cancelar eventos)', () => {
+describe('EventsAdminPage (Criar, editar, cancelar e excluir eventos)', () => {
   it('lista os próximos eventos a partir de agora, com data e horário de Brasília', async () => {
     expect(events.from!.getTime()).toBeLessThanOrEqual(Date.now());
     await emit([raid]);
@@ -279,11 +284,51 @@ describe('EventsAdminPage (Criar, editar e cancelar eventos)', () => {
       expect(text('.notice')).toContain('continua no calendário como cancelado');
     });
 
-    it('evento cancelado aparece identificado e sem ações', async () => {
+    it('evento cancelado aparece identificado, sem editar nem cancelar', async () => {
       await emit([{ ...raid, status: 'cancelado' }]);
       expect(text('.event-row__badge')).toBe('Cancelado');
       expect(button('Editar')).toBeUndefined();
       expect(button('Cancelar')).toBeUndefined();
+    });
+  });
+
+  describe('Excluir evento cancelado', () => {
+    const cancelled: GuildEvent = { ...raid, status: 'cancelado' };
+
+    it('a opção existe somente para eventos cancelados', async () => {
+      await emit([raid, { ...cancelled, id: 'outro' }]);
+      const rows = [...el.querySelectorAll<HTMLElement>('.event-row')];
+      expect(button('Excluir', rows[0])).toBeUndefined();
+      expect(button('Excluir', rows[1])!.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+        'Excluir Raid semanal, Sáb, 7 nov. 2099, 21:00',
+      );
+    });
+
+    it('pede confirmação e não exclui se a pessoa mantiver o evento', async () => {
+      await emit([cancelled]);
+      confirm.answer = false;
+      button('Excluir')!.click();
+      await fixture.whenStable();
+      expect(confirm.asked[0].title).toBe('Excluir evento?');
+      expect(confirm.asked[0].message).toContain('sairá do calendário');
+      expect(confirm.asked[0].message).toContain('lista de confirmados');
+      expect(events.deleted).toHaveLength(0);
+    });
+
+    it('exclui após a confirmação e informa o resultado', async () => {
+      await emit([cancelled]);
+      button('Excluir')!.click();
+      await fixture.whenStable();
+      expect(events.deleted).toEqual(['raid']);
+      expect(text('.notice')).toBe('Raid semanal foi excluído do calendário.');
+    });
+
+    it('mostra o erro quando a exclusão é recusada', async () => {
+      events.result = { ok: false, error: 'not-allowed' };
+      await emit([cancelled]);
+      button('Excluir')!.click();
+      await fixture.whenStable();
+      expect(text('.form-alert')).toBe('Você não tem permissão para esta ação.');
     });
   });
 

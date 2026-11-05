@@ -14,6 +14,7 @@ import {
 import {
   cancelEvent,
   createEvent,
+  deleteCancelledEvent,
   updateEvent,
   watchEvent,
   watchEventsBetween,
@@ -65,6 +66,11 @@ export class EventsService {
 
   async cancel(id: string): Promise<EventActionResult> {
     return cancelEvent(await this.firestore.get(), this.uid(), id);
+  }
+
+  /** Exclui um evento cancelado, com a lista de confirmados. */
+  async deleteCancelled(id: string): Promise<EventActionResult> {
+    return deleteCancelledEvent(await this.firestore.get(), id);
   }
 
   /** Presença da pessoa autenticada no evento. */

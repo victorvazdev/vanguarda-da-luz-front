@@ -54,6 +54,26 @@
               <p class="notice event-detail__notice">
                 Este evento foi cancelado pela administração da guilda.
               </p>
+              @if (isAdmin()) {
+                <section class="event-detail__remove" aria-labelledby="titulo-excluir-evento">
+                  <h2 id="titulo-excluir-evento" class="event-detail__subtitle">Excluir evento</h2>
+                  <p class="muted">
+                    Remove o evento do calendário, junto com a lista de confirmados.
+                  </p>
+                  @if (removeError(); as message) {
+                    <p class="form-alert event-detail__remove-error" role="alert">{{ message }}</p>
+                  }
+                  <button
+                    type="button"
+                    class="btn btn--cancel"
+                    [disabled]="removing()"
+                    [attr.aria-busy]="removing()"
+                    (click)="removeEvent()"
+                  >
+                    {{ removing() ? 'Excluindo…' : 'Excluir evento' }}
+                  </button>
+                </section>
+              }
             }
 
             @if (!e.cancelled && attendance() !== undefined) {
