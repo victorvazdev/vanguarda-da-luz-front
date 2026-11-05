@@ -43,6 +43,7 @@ const row = (uid: string, name: string, over: Partial<MemberRow> = {}): MemberRo
   uid,
   username: uid,
   email: `${uid}@x.com`,
+  battleTag: `${name}#1234`,
   status: 'ativo',
   role: 'membro',
   mainCharacter: {
@@ -117,6 +118,7 @@ describe('MembersAdminPage (Gerenciar membros e permissões)', () => {
     await emit(guild());
     expect([...el.querySelectorAll('thead th')].map((t) => t.textContent?.trim())).toEqual([
       'Personagem',
+      'BattleTag',
       'Situação',
       'Permissão',
       'Ações',
@@ -127,6 +129,16 @@ describe('MembersAdminPage (Gerenciar membros e permissões)', () => {
     expect(rowOf('Tavia').textContent).toContain('Desativado');
     expect(rowOf('Tavia').querySelector('select')).toBeNull();
     expect(rowOf('Tavia').textContent).toContain('Sem permissão enquanto desativado');
+  });
+
+  it('mostra o BattleTag de cada membro, ou que ainda não foi informado', async () => {
+    await emit([row('me', 'Maren', { role: 'admin' }), row('kael', 'Kael', { battleTag: null })]);
+    expect(rowOf('Maren').querySelector('[data-label="BattleTag"]')?.textContent?.trim()).toBe(
+      'Maren#1234',
+    );
+    expect(rowOf('Kael').querySelector('[data-label="BattleTag"]')?.textContent?.trim()).toBe(
+      'Não informado',
+    );
   });
 
   it('busca por nome', async () => {

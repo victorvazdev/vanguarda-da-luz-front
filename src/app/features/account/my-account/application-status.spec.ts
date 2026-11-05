@@ -1,6 +1,7 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { Application } from '../../../core/data/applications';
+import { provideSessionStub } from '../../../core/auth/session.stub';
 import { ApplicationsService } from '../../../core/data/applications.service';
 import { ApplicationStatusPanel } from './application-status';
 
@@ -25,7 +26,7 @@ const app = (over: Partial<Application> = {}): Application => ({
   characterClass: 'paladino',
   characterRole: 'cura',
   professions: ['alquimia', 'herborismo'],
-  battleTag: 'Elaris#1234',
+  battleTag: null,
   motivation: 'x',
   status: 'pendente',
   submittedAt: new Date('2026-11-04T15:00:00Z'),
@@ -35,15 +36,28 @@ const app = (over: Partial<Application> = {}): Application => ({
   ...over,
 });
 
+let session: ReturnType<typeof provideSessionStub>;
 let fixture: ComponentFixture<ApplicationStatusPanel>;
 let el: HTMLElement;
 let stub: ApplicationsStub;
 
 beforeEach(async () => {
   stub = new ApplicationsStub();
+  session = provideSessionStub('pending');
+  session.stub.account.set({
+    username: 'Elaris',
+    email: 'elaris@example.com',
+    status: 'pendente',
+    role: 'membro',
+    battleTag: 'Elaris#1234',
+  });
   TestBed.configureTestingModule({
     imports: [ApplicationStatusPanel],
-    providers: [provideRouter([]), { provide: ApplicationsService, useValue: stub }],
+    providers: [
+      provideRouter([]),
+      { provide: ApplicationsService, useValue: stub },
+      session.provider,
+    ],
   });
   fixture = TestBed.createComponent(ApplicationStatusPanel);
   el = fixture.nativeElement;
@@ -115,5 +129,10 @@ describe('ApplicationStatusPanel (acompanhar candidatura)', () => {
   it('para de acompanhar ao sair da página', () => {
     fixture.destroy();
     expect(stub.stopped).toBe(true);
+  });
+
+  it('mostra o BattleTag da conta', async () => {
+    await emit(app());
+    expect(el.textContent).toContain('Elaris#1234');
   });
 });

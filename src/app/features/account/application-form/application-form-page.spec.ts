@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import type { Application, ApplicationInput, SubmitResult } from '../../../core/data/applications';
+import type { UserAccount } from '../../../core/auth/access';
+import { provideSessionStub } from '../../../core/auth/session.stub';
 import { ApplicationsService } from '../../../core/data/applications.service';
 import { stubDialog } from '../../../shared/ui/modal/dialog.stub';
 import { ApplicationFormPage } from './application-form-page';
@@ -47,14 +49,26 @@ let fixture: ComponentFixture<ApplicationFormPage>;
 let el: HTMLElement;
 let stub: ApplicationsStub;
 
-async function setup(configure?: (s: ApplicationsStub) => void) {
+async function setup(
+  configure?: (s: ApplicationsStub) => void,
+  account: Partial<UserAccount> = {},
+) {
   stub = new ApplicationsStub();
   configure?.(stub);
+  const session = provideSessionStub('pending');
+  session.stub.account.set({
+    username: 'Elaris',
+    email: 'elaris@example.com',
+    status: 'pendente',
+    role: 'membro',
+    ...account,
+  });
   TestBed.configureTestingModule({
     imports: [ApplicationFormPage],
     providers: [
       provideRouter([{ path: '**', component: Blank }]),
       { provide: ApplicationsService, useValue: stub },
+      session.provider,
     ],
   });
   fixture = TestBed.createComponent(ApplicationFormPage);
@@ -256,6 +270,11 @@ describe('ApplicationFormPage (Enviar candidatura)', () => {
       },
     );
 
+    it('parte do BattleTag já informado na conta', async () => {
+      await setup(undefined, { battleTag: 'Conta#4321' });
+      expect(q<HTMLInputElement>('#candidatura-battleTag')!.value).toBe('Conta#4321');
+    });
+
     it('aceita letras acentuadas e números (espaços nas pontas são descartados)', async () => {
       await setup();
       await choose('Jogo', 'World of Warcraft Retail');
@@ -321,7 +340,8 @@ describe('ApplicationFormPage (Enviar candidatura)', () => {
   });
 
   describe('Regras em modal', () => {
-    const rulesButton = () => q<HTMLButtonElement>('label[for="candidatura-rulesAccepted"] button')!;
+    const rulesButton = () =>
+      q<HTMLButtonElement>('label[for="candidatura-rulesAccepted"] button')!;
     const dialog = () => q<HTMLDialogElement>('app-rules-modal dialog')!;
 
     async function openRules() {

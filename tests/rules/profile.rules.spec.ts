@@ -1,7 +1,15 @@
 import { assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { deleteDoc, doc, setDoc, updateDoc, writeBatch, type Firestore } from 'firebase/firestore';
+import {
+  deleteDoc,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  writeBatch,
+  type Firestore,
+} from 'firebase/firestore';
 import { beforeEach, describe, it } from 'vitest';
-import { account, asUser, seed, useRulesEnv } from './env';
+import { account, asUser, asVisitor, seed, useRulesEnv } from './env';
 
 const env = useRulesEnv();
 
@@ -237,6 +245,52 @@ describe('Trocar o nome de usuário', () => {
 
   it('conta desativada não troca o nome', async () => {
     await assertFails(rename(asUser(env(), 'ex'), 'ex', 'ex', 'Voltei'));
+  });
+});
+
+describe('BattleTag da conta', () => {
+  const setTag = (db: Firestore, uid: string, battleTag: unknown) =>
+    updateDoc(doc(db, 'users', uid), { battleTag });
+
+  it('membro e conta pendente informam e alteram o próprio BattleTag', async () => {
+    await assertSucceeds(setTag(asUser(env(), 'tavia'), 'tavia', 'Tavia#1234'));
+    await assertSucceeds(setTag(asUser(env(), 'tavia'), 'tavia', 'Tavinha#98765'));
+    await assertSucceeds(setTag(asUser(env(), 'novo'), 'novo', 'Novo#1234'));
+  });
+
+  it('recusa BattleTag em formato inválido', async () => {
+    const db = asUser(env(), 'tavia');
+    for (const value of ['', 'Tavia', 'Ta#1234', 'Tavia#12', '1Tavia#1234', 1234, null]) {
+      await assertFails(setTag(db, 'tavia', value));
+    }
+  });
+
+  it('ninguém altera o BattleTag de outra pessoa, nem administradores', async () => {
+    await assertFails(setTag(asUser(env(), 'novo'), 'tavia', 'Outro#1234'));
+    await assertFails(setTag(asUser(env(), 'ana'), 'tavia', 'Outro#1234'));
+  });
+
+  it('conta desativada não altera o BattleTag', async () => {
+    await assertFails(setTag(asUser(env(), 'ex'), 'ex', 'Ex#1234'));
+  });
+
+  it('não altera outros campos junto com o BattleTag', async () => {
+    await assertFails(
+      updateDoc(doc(asUser(env(), 'tavia'), 'users', 'tavia'), {
+        battleTag: 'Tavia#1234',
+        role: 'admin',
+      }),
+    );
+  });
+
+  it('o BattleTag é lido somente pela pessoa e pelos administradores', async () => {
+    await seed(env(), {
+      'users/tavia': account('tavia', { status: 'ativo', battleTag: 'Tavia#1234' }),
+    });
+    await assertSucceeds(getDoc(doc(asUser(env(), 'tavia'), 'users', 'tavia')));
+    await assertSucceeds(getDoc(doc(asUser(env(), 'ana'), 'users', 'tavia')));
+    await assertFails(getDoc(doc(asUser(env(), 'novo'), 'users', 'tavia')));
+    await assertFails(getDoc(doc(asVisitor(env()), 'users', 'tavia')));
   });
 });
 

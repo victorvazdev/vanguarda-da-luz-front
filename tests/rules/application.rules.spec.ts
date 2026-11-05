@@ -7,6 +7,7 @@ import {
   getDocs,
   serverTimestamp,
   setDoc,
+  writeBatch,
   type Firestore,
 } from 'firebase/firestore';
 import { beforeEach, describe, it } from 'vitest';
@@ -21,7 +22,6 @@ const valid = (): Record<string, unknown> => ({
   characterClass: 'paladino',
   characterRole: 'cura',
   professions: ['alquimia', 'herborismo'],
-  battleTag: 'Elaris#1234',
   motivation: 'Quero participar das raids semanais.',
   rulesAccepted: true,
   status: 'pendente',
@@ -48,7 +48,7 @@ const rejected = {
 
 beforeEach(async () => {
   await seed(env(), {
-    'users/alice': account('alice'),
+    'users/alice': account('alice', { battleTag: 'Elaris#1234' }),
     'users/bob': account('bob'),
     'users/membro': account('membro', { status: 'ativo' }),
     'users/admin': account('admin', { status: 'ativo', role: 'admin' }),
@@ -105,12 +105,25 @@ describe('Candidatura: envio', () => {
   });
 
   describe('BattleTag', () => {
+    /** Candidatura e BattleTag da conta no mesmo lote, como o app envia. */
+    const applyWith = (uid: string, battleTag: unknown) => {
+      const db = asUser(env(), uid);
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'users', uid), { battleTag });
+      batch.set(doc(db, 'applications', uid), valid());
+      return batch.commit();
+    };
+
+    it('exige BattleTag na conta: já informado ou gravado no mesmo envio', async () => {
+      await assertFails(apply(asUser(env(), 'bob'), 'bob', valid()));
+      await assertSucceeds(applyWith('bob', 'Bob#1234'));
+    });
+
     it.each(['Elaris#1234', 'Élaris2#98765', 'Abc#123456'])('aceita %s', async (battleTag) => {
-      await assertSucceeds(apply(asUser(env(), 'alice'), 'alice', { ...valid(), battleTag }));
+      await assertSucceeds(applyWith('bob', battleTag));
     });
 
     it.each([
-      ['ausente', undefined],
       ['vazio', ''],
       ['sem número', 'Elaris'],
       ['número curto', 'Elaris#123'],
@@ -122,9 +135,13 @@ describe('Candidatura: envio', () => {
       ['com símbolo', 'Ela_ris#1234'],
       ['não é texto', 1234],
     ])('recusa BattleTag %s', async (_name, battleTag) => {
-      const data: Record<string, unknown> = { ...valid(), battleTag };
-      if (battleTag === undefined) delete data['battleTag'];
-      await assertFails(apply(asUser(env(), 'alice'), 'alice', data));
+      await assertFails(applyWith('bob', battleTag));
+    });
+
+    it('não grava o BattleTag na candidatura', async () => {
+      await assertFails(
+        apply(asUser(env(), 'alice'), 'alice', { ...valid(), battleTag: 'Elaris#1234' }),
+      );
     });
   });
 

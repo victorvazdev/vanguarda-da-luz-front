@@ -63,7 +63,12 @@ describe('Aprovar ou recusar cadastros (emuladores)', () => {
       [withApp.uid, 'Elaris'],
       [withoutApp.uid, null],
     ]);
-    expect(queue[0]).toMatchObject({ username: 'Elaris', email: 'elaris@example.com' });
+    expect(queue[0]).toMatchObject({
+      username: 'Elaris',
+      email: 'elaris@example.com',
+      battleTag: 'Jogador#1234',
+    });
+    expect(queue[1].battleTag).toBeNull();
     expect(queue[1].rejectedAt).toBeNull();
   });
 

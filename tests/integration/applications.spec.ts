@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import {
+  adoptApplicationBattleTag,
+  changeBattleTag,
+} from '../../src/app/core/auth/account-settings';
 import { signUp } from '../../src/app/core/auth/sign-up';
 import {
   getApplication,
@@ -46,6 +50,37 @@ describe('Candidatura (Firestore emulado)', () => {
       status: 'pendente',
     });
     expect(stored?.['submittedAt']).toBeTruthy();
+    // O BattleTag fica na conta, não na candidatura.
+    expect(stored).not.toHaveProperty('battleTag');
+    expect((await adminGet(`users/${uid}`))?.['battleTag']).toBe('Jogador#1234');
+  });
+
+  it('o BattleTag informado em um novo envio substitui o da conta', async () => {
+    const { db, uid } = await pendingUser();
+    await submitApplication(db, uid, input);
+    await adminPatch(`applications/${uid}`, { status: 'recusada' });
+    expect(await submitApplication(db, uid, { ...input, battleTag: 'Novo#5678' })).toEqual({
+      ok: true,
+    });
+    expect((await adminGet(`users/${uid}`))?.['battleTag']).toBe('Novo#5678');
+  });
+
+  it('a pessoa altera o próprio BattleTag; formato inválido é recusado', async () => {
+    const { db, uid } = await pendingUser();
+    expect(await changeBattleTag(db, uid, ' Elaris#4321 ')).toEqual({ ok: true });
+    expect((await adminGet(`users/${uid}`))?.['battleTag']).toBe('Elaris#4321');
+    expect(await changeBattleTag(db, uid, 'Elaris')).toEqual({ ok: false, error: 'not-allowed' });
+    expect((await adminGet(`users/${uid}`))?.['battleTag']).toBe('Elaris#4321');
+  });
+
+  it('BattleTag de candidatura antiga passa para a conta', async () => {
+    const { db, uid } = await pendingUser();
+    await submitApplication(db, uid, input);
+    // Formato antigo: BattleTag na candidatura e não na conta (gravado como pelo console).
+    await adminPatch(`applications/${uid}`, { battleTag: 'Antigo#1234' });
+    await adminPatch(`users/${uid}`, { battleTag: '' });
+    expect(await adoptApplicationBattleTag(db, uid)).toBe(true);
+    expect((await adminGet(`users/${uid}`))?.['battleTag']).toBe('Antigo#1234');
   });
 
   it('envia candidatura do WoW Forever com nome, sobrenome e ruleset (sem servidor)', async () => {

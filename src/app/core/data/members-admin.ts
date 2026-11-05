@@ -31,6 +31,8 @@ export interface MemberRow {
   uid: string;
   username: string;
   email: string;
+  /** BattleTag da conta (`null` se ainda não informado). Dado privado. */
+  battleTag: string | null;
   status: Extract<AccountStatus, 'ativo' | 'desativado'>;
   role: Permission;
   mainCharacter: MainCharacter | null;
@@ -91,6 +93,7 @@ export function watchMembers(
         uid: d.id,
         username: d.get('username') as string,
         email: d.get('email') as string,
+        battleTag: (d.get('battleTag') as string | undefined) ?? null,
         status: d.get('status') as MemberRow['status'],
         role: d.get('role') as Permission,
       }));

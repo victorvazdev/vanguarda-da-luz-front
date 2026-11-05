@@ -24,6 +24,7 @@ const acc = (uid: string, createdAt: string) => ({
   uid,
   username: uid,
   email: `${uid}@x.com`,
+  battleTag: null,
   createdAt: new Date(createdAt),
 });
 

@@ -4,6 +4,7 @@ const row = (over: Partial<MemberRow>): MemberRow => ({
   uid: 'u',
   username: 'user',
   email: 'u@x.com',
+  battleTag: null,
   status: 'ativo',
   role: 'membro',
   mainCharacter: {

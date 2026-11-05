@@ -49,7 +49,8 @@ function toCard(account: PendingAccount, app: Application): ApplicationCard {
     classRole: `${classLabel(app.characterClass)}, ${roleLabel(app.characterRole).toLowerCase()}`,
     where: `${gameLabel(app.game)} · ${place}`,
     professions: professionsText(app.professions),
-    battleTag: app.battleTag ?? 'Não informado',
+    // Da conta; candidaturas antigas guardavam o BattleTag nelas.
+    battleTag: account.battleTag ?? app.battleTag ?? 'Não informado',
     motivation: app.motivation,
     account: `${account.username} · ${account.email}`,
     submittedAt: formatBrasiliaDate(app.submittedAt),

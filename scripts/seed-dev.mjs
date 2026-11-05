@@ -16,6 +16,7 @@ const daysAgo = (d) => new Date(now - d * 86_400_000);
 const PEOPLE = [
   {
     username: 'Maren',
+    battleTag: 'Maren#4005',
     role: 'admin',
     status: 'ativo',
     member: {
@@ -28,6 +29,7 @@ const PEOPLE = [
   },
   {
     username: 'Elaris',
+    battleTag: 'Elaris#1240',
     status: 'pendente',
     application: {
       game: 'retail',
@@ -36,13 +38,13 @@ const PEOPLE = [
       characterClass: 'paladino',
       characterRole: 'cura',
       professions: ['alquimia', 'herborismo'],
-      battleTag: 'Elaris#1240',
       motivation: 'Quero participar das raids semanais com um grupo fixo.',
       submittedAt: daysAgo(0),
     },
   },
   {
     username: 'Lioren',
+    battleTag: 'Lioren#1240',
     status: 'pendente',
     application: {
       game: 'forever',
@@ -52,13 +54,13 @@ const PEOPLE = [
       characterClass: 'mago',
       characterRole: 'dano',
       professions: ['alfaiataria', 'encantamento'],
-      battleTag: 'Lioren#1240',
       motivation: 'Voltei ao jogo e procuro uma guilda para as atividades em grupo.',
       submittedAt: daysAgo(1),
     },
   },
   {
     username: 'Brenna',
+    battleTag: 'Brenna#1240',
     status: 'pendente',
     application: {
       game: 'forever',
@@ -68,13 +70,13 @@ const PEOPLE = [
       characterClass: 'guerreiro',
       characterRole: 'tanque',
       professions: [],
-      battleTag: 'Brenna#1240',
       motivation: 'Fui convidada por um integrante da guilda.',
       submittedAt: daysAgo(2),
     },
   },
   {
     username: 'Dorvan',
+    battleTag: 'Dorvan#4006',
     status: 'ativo',
     member: {
       game: 'retail',
@@ -160,6 +162,7 @@ for (const p of PEOPLE) {
     email,
     status: p.status,
     role: p.role ?? 'membro',
+    ...(p.battleTag ? { battleTag: p.battleTag } : {}),
     createdAt: daysAgo(3),
   });
   if (p.application)

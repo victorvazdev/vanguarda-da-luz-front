@@ -71,6 +71,8 @@ describe('Gerenciar membros e permissões (emuladores)', () => {
       ],
     );
     expect(rows[0].uid).toBe(dorvan.uid);
+    // O BattleTag (dado privado da conta) aparece para os administradores.
+    expect(rows.map((r) => r.battleTag)).toEqual(['Jogador#1234', null]);
   });
 
   it('promove a administrador e a permissão vale na próxima requisição', async () => {

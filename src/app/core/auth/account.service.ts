@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { FIREBASE_AUTH, FirestoreClient } from '../firebase/firebase.providers';
 import {
   applyEmailAction,
+  changeBattleTag,
   changePassword,
   changeUsername,
   requestEmailChange,
@@ -50,6 +51,12 @@ export class AccountService {
     const uid = this.auth.currentUser?.uid;
     if (!uid) return { ok: false, error: 'not-allowed' };
     return changeUsername(await this.firestore.get(), uid, username);
+  }
+
+  async changeBattleTag(battleTag: string): Promise<SettingsResult> {
+    const uid = this.auth.currentUser?.uid;
+    if (!uid) return { ok: false, error: 'not-allowed' };
+    return changeBattleTag(await this.firestore.get(), uid, battleTag);
   }
 
   changePassword(currentPassword: string, newPassword: string): Promise<SettingsResult> {

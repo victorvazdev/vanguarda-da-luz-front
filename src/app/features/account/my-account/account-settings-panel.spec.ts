@@ -9,6 +9,11 @@ class AccountStub {
   usernames: string[] = [];
   emails: [string, string][] = [];
   passwords: [string, string][] = [];
+  battleTags: string[] = [];
+  changeBattleTag(battleTag: string) {
+    this.battleTags.push(battleTag);
+    return Promise.resolve(this.result);
+  }
   changeUsername(username: string) {
     this.usernames.push(username);
     return Promise.resolve(this.result);
@@ -26,10 +31,11 @@ class AccountStub {
 let fixture: ComponentFixture<AccountSettingsPanel>;
 let el: HTMLElement;
 let accounts: AccountStub;
+let session: ReturnType<typeof provideSessionStub>;
 
 beforeEach(async () => {
   accounts = new AccountStub();
-  const session = provideSessionStub('member');
+  session = provideSessionStub('member');
   TestBed.configureTestingModule({
     imports: [AccountSettingsPanel],
     providers: [session.provider, { provide: AccountService, useValue: accounts }],
@@ -77,6 +83,41 @@ describe('AccountSettingsPanel (dados da conta)', () => {
     await submit('conta-username');
     expect(text(form('conta-username'))).toContain('Use de 3 a 20 caracteres');
     expect(accounts.usernames).toEqual([]);
+  });
+
+  describe('BattleTag', () => {
+    it('informa o BattleTag e avisa que é privado', async () => {
+      expect(el.querySelector<HTMLInputElement>('#conta-battleTag-input')!.value).toBe('');
+      expect(text(form('conta-battleTag'))).toContain(
+        'Visível somente para você e para os administradores.',
+      );
+      type('conta-battleTag-input', 'Elaris#1234');
+      await submit('conta-battleTag');
+      expect(accounts.battleTags).toEqual(['Elaris#1234']);
+      expect(text(form('conta-battleTag'))).toContain('BattleTag salvo.');
+    });
+
+    it('abre com o BattleTag atual e permite alterá-lo', async () => {
+      session.stub.account.update((a) => ({ ...a!, battleTag: 'Elaris#1234' }));
+      await fixture.whenStable();
+      expect(el.querySelector<HTMLInputElement>('#conta-battleTag-input')!.value).toBe(
+        'Elaris#1234',
+      );
+      type('conta-battleTag-input', 'Elarinha#98765');
+      await submit('conta-battleTag');
+      expect(accounts.battleTags).toEqual(['Elarinha#98765']);
+    });
+
+    it('bloqueia vazio ou formato inválido, com a mensagem junto ao campo', async () => {
+      await submit('conta-battleTag');
+      expect(text(form('conta-battleTag'))).toContain('Informe seu BattleTag.');
+      type('conta-battleTag-input', 'Elaris');
+      await submit('conta-battleTag');
+      expect(el.querySelector('#conta-battleTag-battleTag-erro')?.textContent).toContain(
+        'Nome#1234',
+      );
+      expect(accounts.battleTags).toEqual([]);
+    });
   });
 
   it('pede a troca de e-mail com a senha atual e explica a confirmação', async () => {

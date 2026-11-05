@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { Application, ApplicationStatus } from '../../../core/data/applications';
+import { SessionService } from '../../../core/auth/session.service';
 import { ApplicationsService } from '../../../core/data/applications.service';
 import {
   characterDisplayName,
@@ -62,6 +63,7 @@ export class ApplicationStatusPanel {
   protected readonly applicationPath = PATHS.application;
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly application = signal<Application | null>(null);
+  private readonly session = inject(SessionService);
 
   protected readonly view = computed(() => {
     const app = this.application();
@@ -77,7 +79,7 @@ export class ApplicationStatusPanel {
       characterClass: classLabel(app.characterClass),
       role: roleLabel(app.characterRole),
       professions: professionsText(app.professions),
-      battleTag: app.battleTag ?? 'Não informado',
+      battleTag: this.session.account()?.battleTag ?? app.battleTag ?? 'Não informado',
       submittedAt: formatBrasiliaDate(app.submittedAt),
       decidedAt:
         app.status !== 'pendente' && app.decidedAt ? formatBrasiliaDate(app.decidedAt) : null,
