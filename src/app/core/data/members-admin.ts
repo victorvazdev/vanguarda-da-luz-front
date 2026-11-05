@@ -21,6 +21,8 @@ export interface MainCharacter {
   ruleset?: Ruleset;
   characterClass: CharacterClass;
   characterRole: CharacterRole;
+  /** Ausente enquanto o membro não informa o nível (personagem vindo da candidatura). */
+  level?: number;
 }
 
 export interface MemberRow {

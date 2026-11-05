@@ -17,10 +17,14 @@ export function navItemsFor(access: AccessLevel): NavItem[] {
     case 'pending':
       return [{ label: 'Minha conta', path: PATHS.account, kind: 'link' }];
     case 'member':
-      return [{ label: 'Calendário', path: PATHS.calendar, kind: 'link' }];
+      return [
+        { label: 'Calendário', path: PATHS.calendar, kind: 'link' },
+        { label: 'Minha conta', path: PATHS.account, kind: 'link' },
+      ];
     case 'admin':
       return [
         { label: 'Calendário', path: PATHS.calendar, kind: 'link' },
+        { label: 'Minha conta', path: PATHS.account, kind: 'link' },
         { label: 'Administração', path: PATHS.admin, kind: 'link' },
       ];
     default:

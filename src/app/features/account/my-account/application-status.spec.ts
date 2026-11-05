@@ -2,7 +2,7 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { Application } from '../../../core/data/applications';
 import { ApplicationsService } from '../../../core/data/applications.service';
-import { MyAccountPage } from './my-account-page';
+import { ApplicationStatusPanel } from './application-status';
 
 class ApplicationsStub {
   next: ((a: Application | null) => void) | null = null;
@@ -33,17 +33,17 @@ const app = (over: Partial<Application> = {}): Application => ({
   ...over,
 });
 
-let fixture: ComponentFixture<MyAccountPage>;
+let fixture: ComponentFixture<ApplicationStatusPanel>;
 let el: HTMLElement;
 let stub: ApplicationsStub;
 
 beforeEach(async () => {
   stub = new ApplicationsStub();
   TestBed.configureTestingModule({
-    imports: [MyAccountPage],
+    imports: [ApplicationStatusPanel],
     providers: [provideRouter([]), { provide: ApplicationsService, useValue: stub }],
   });
-  fixture = TestBed.createComponent(MyAccountPage);
+  fixture = TestBed.createComponent(ApplicationStatusPanel);
   el = fixture.nativeElement;
   await fixture.whenStable();
 });
@@ -62,7 +62,7 @@ const detail = (label: string) =>
 
 const text = () => el.textContent?.replace(/\s+/g, ' ') ?? '';
 
-describe('MyAccountPage (acompanhar candidatura)', () => {
+describe('ApplicationStatusPanel (acompanhar candidatura)', () => {
   it('mostra candidatura pendente com os dados do protótipo', async () => {
     await emit(app());
     expect(el.querySelector('.badge')?.textContent?.trim()).toBe('Pendente');

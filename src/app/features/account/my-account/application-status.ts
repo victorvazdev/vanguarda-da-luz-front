@@ -52,12 +52,12 @@ const STATUS: Record<ApplicationStatus, StatusView> = {
 
 /** "Minha conta": acompanhamento da candidatura (pendente, aprovada ou recusada). */
 @Component({
-  selector: 'app-my-account-page',
+  selector: 'app-application-status',
   imports: [RouterLink],
-  templateUrl: './my-account-page.html',
+  templateUrl: './application-status.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MyAccountPage {
+export class ApplicationStatusPanel {
   protected readonly applicationPath = PATHS.application;
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly application = signal<Application | null>(null);

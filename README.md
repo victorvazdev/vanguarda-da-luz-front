@@ -71,8 +71,8 @@ Projeto Firebase: `vanguarda-da-luz` (padrão em `.firebaserc`). A configuraçã
 
 Configuração única no Console do Firebase, em **Authentication > Modelos > Redefinição de senha**:
 
-1. Em **Personalizar URL de ação**, informe `https://vanguarda-da-luz.web.app/redefinir-senha` (ou o domínio próprio do site). Sem isso, o link abre a página padrão do Firebase, que aceita senhas com 6 caracteres em vez de 8.
-2. Selecione o idioma **Português (Brasil)**. O app já envia `pt-BR`.
+1. Em **Personalizar URL de ação**, informe `https://vanguarda-da-luz.web.app/redefinir-senha` (ou o domínio próprio do site). Sem isso, o link abre a página padrão do Firebase, que aceita senhas com 6 caracteres em vez de 8. A mesma URL vale para os e-mails de troca de e-mail (confirmar o novo endereço e desfazer a troca): o app encaminha esses links para `/confirmar-email`.
+2. Selecione o idioma **Português (Brasil)** no modelo de redefinição de senha e nos modelos de alteração de e-mail. O app já envia `pt-BR`.
 
 ### Primeiro administrador
 
@@ -82,7 +82,7 @@ O primeiro administrador é definido manualmente, uma única vez:
 2. No Console do Firebase, em **Firestore**, edite os documentos com o seu `uid`:
    - `users/{uid}`: `status` = `ativo` e `role` = `admin`;
    - `applications/{uid}`: `status` = `aprovada`;
-   - crie `members/{uid}` com `username` (igual ao de `users`), `active` = `true`, `joinedAt` (data atual), `approvedBy` (o próprio `uid`) e o mapa `mainCharacter` com os campos de personagem da candidatura (`game`, `characterName`, `characterClass`, `characterRole` e `server` ou `characterSurname` + `ruleset`).
+   - crie `members/{uid}` com `username` (igual ao de `users`), `active` = `true`, `joinedAt` (data atual), `approvedBy` (o próprio `uid`) e o mapa `mainCharacter` com os campos de personagem da candidatura (`game`, `characterName`, `characterClass`, `characterRole` e `server` ou `characterSurname` + `ruleset`). O nível não entra aqui: depois, em **Minha conta**, edite o personagem principal e informe o nível.
    - crie `config/admins` com o campo `activeAdminUids` (array) contendo o seu `uid`. Essa lista guarda os administradores ativos e impede que a guilda fique sem nenhum.
 3. Saia e entre novamente. O menu **Administração** aparece.
 

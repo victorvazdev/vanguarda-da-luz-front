@@ -41,6 +41,7 @@ export class SessionService {
   constructor() {
     let unsubscribeAccount: (() => void) | null = null;
     let generation = 0;
+    let syncedEmail: string | null = null;
 
     const unsubscribeAuth = onAuthStateChanged(this.auth, async (user) => {
       const current = ++generation;
@@ -62,7 +63,25 @@ export class SessionService {
 
       unsubscribeAccount = onSnapshot(
         doc(db, 'users', user.uid),
-        (snap) => this._account.set(snap.exists() ? (snap.data() as UserAccount) : null),
+        (snap) => {
+          const account = snap.exists() ? (snap.data() as UserAccount) : null;
+          this._account.set(account);
+          // E-mail trocado e confirmado no Firebase Auth: a conta passa a usar o novo endereço.
+          // Uma tentativa por endereço (uma escrita recusada não deve se repetir em laço).
+          const email = user.email;
+          if (
+            account &&
+            email &&
+            account.email !== email &&
+            account.status !== 'desativado' &&
+            syncedEmail !== `${user.uid}:${email}`
+          ) {
+            syncedEmail = `${user.uid}:${email}`;
+            void import('./account-settings')
+              .then((m) => m.syncAccountEmail(db, user.uid, email))
+              .catch(() => undefined);
+          }
+        },
         () => this._account.set(null),
       );
     });

@@ -1,0 +1,11 @@
+<article class="container account">
+  <h1 class="page__title">Minha conta</h1>
+
+  @if (isMember()) {
+    <app-characters-panel />
+  } @else {
+    <app-application-status />
+  }
+
+  <app-account-settings-panel />
+</article>

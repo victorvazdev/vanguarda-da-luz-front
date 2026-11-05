@@ -185,14 +185,35 @@ A guilda está presente em duas versões de World of Warcraft:
 
 ### Editar perfil e personagens
 
-**Como membro**, quero editar meu perfil e meus personagens, para que a guilda saiba minha classe, função e nível.
+**Como membro**, quero editar meu perfil e meus personagens, para que a guilda saiba minha classe, função e nível e para que meus dados de acesso fiquem atualizados.
 
+**Perfil e dados da conta**
+
+- [ ] O perfil fica em "Minha conta", que aparece no menu para membros e administradores.
 - [ ] O membro pode editar somente o próprio perfil.
+- [ ] O nome de usuário pode ser alterado seguindo as regras do cadastro.
+- [ ] Um nome de usuário em uso por outra pessoa é recusado.
+- [ ] Após a troca, o nome antigo fica livre para outras pessoas e o novo aparece nas listas da guilda.
+- [ ] O e-mail pode ser alterado mediante a senha atual.
+- [ ] O novo e-mail recebe um link de confirmação, e a troca só vale depois que o link for aberto.
+- [ ] O e-mail anterior é avisado da troca e pode desfazê-la.
+- [ ] Depois da troca de e-mail, a sessão é encerrada e o usuário entra novamente com o novo e-mail.
+- [ ] A senha pode ser alterada mediante a senha atual, e a nova senha segue as regras do cadastro.
+- [ ] Uma senha atual incorreta impede a alteração do e-mail ou da senha e exibe uma mensagem junto ao campo.
+- [ ] Um usuário cadastrado que aguarda aprovação também pode alterar o nome de usuário, o e-mail e a senha.
+- [ ] Uma conta desativada não altera nenhum dado.
+
+**Personagens**
+
 - [ ] O membro pode adicionar, editar e remover personagens.
 - [ ] Cada personagem possui jogo, nome, classe, função e nível; no Retail, também o servidor; no WoW Forever, também o sobrenome e o ruleset.
 - [ ] A classe e a função são escolhidas entre as opções válidas do jogo.
-- [ ] O nível aceita somente valores numéricos dentro do limite do jogo.
-- [ ] Um personagem deve ser marcado como principal quando houver ao menos um cadastrado.
+- [ ] O nível aceita somente números inteiros de 1 até o limite do jogo: 90 no Retail e 60 no WoW Forever.
+- [ ] O personagem da candidatura aprovada é o primeiro personagem principal; o perfil pede que o membro informe o nível dele.
+- [ ] Sempre há um personagem marcado como principal, e o membro pode escolher outro personagem cadastrado como principal.
+- [ ] Enquanto o nível do personagem da candidatura não for informado, não é possível escolher outro personagem como principal.
+- [ ] O personagem principal não pode ser removido; para removê-lo, o membro escolhe outro principal antes.
+- [ ] A remoção de um personagem exige confirmação.
 - [ ] As alterações salvas aparecem imediatamente no perfil e na lista de membros.
 
 ## Eventos

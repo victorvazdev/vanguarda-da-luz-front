@@ -10,7 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AccountService } from '../../../core/auth/account.service';
 import { ACCOUNT_MESSAGES } from '../../../core/auth/messages';
 import { PATHS } from '../../../core/routing/paths';
@@ -23,6 +23,9 @@ import {
 } from '../../../shared/forms/validators';
 
 type Field = 'password' | 'confirmPassword';
+
+/** Links de e-mail que usam a mesma URL de ação (configurada uma vez no Console). */
+const EMAIL_MODES = ['verifyAndChangeEmail', 'recoverEmail'];
 type Step = 'checking' | 'form' | 'invalid' | 'done';
 
 const MESSAGES: Record<Field, ErrorMessages> = {
@@ -42,6 +45,7 @@ const MESSAGES: Record<Field, ErrorMessages> = {
 })
 export class ResetPasswordPage implements OnInit {
   private readonly accounts = inject(AccountService);
+  private readonly router = inject(Router);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
 
@@ -66,6 +70,13 @@ export class ResetPasswordPage implements OnInit {
 
   async ngOnInit(): Promise<void> {
     const mode = this.mode();
+    if (mode && EMAIL_MODES.includes(mode)) {
+      await this.router.navigate([PATHS.emailAction], {
+        queryParams: { mode, oobCode: this.oobCode() },
+        replaceUrl: true,
+      });
+      return;
+    }
     if (mode && mode !== 'resetPassword') {
       this.show('invalid');
       return;

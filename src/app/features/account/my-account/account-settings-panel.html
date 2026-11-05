@@ -1,0 +1,196 @@
+<section class="account__section" aria-labelledby="titulo-dados-conta">
+  <h2 id="titulo-dados-conta" class="account__title">Dados da conta</h2>
+
+  <form
+    id="conta-username"
+    class="form account__form"
+    [formGroup]="forms.username"
+    (ngSubmit)="saveUsername()"
+    novalidate
+    aria-labelledby="titulo-nome-usuario"
+  >
+    <h3 id="titulo-nome-usuario" class="account__subtitle">Nome de usuário</h3>
+    @if (errors().username; as message) {
+      <p class="form-alert" role="alert" tabindex="-1">{{ message }}</p>
+    }
+    <div class="field">
+      <label class="field__label" for="conta-username-input">Nome de usuário</label>
+      <input
+        id="conta-username-input"
+        class="field__input"
+        type="text"
+        formControlName="username"
+        autocomplete="username"
+        spellcheck="false"
+        maxlength="20"
+        [attr.aria-invalid]="!!fieldError('username', 'username')"
+        [attr.aria-describedby]="describedBy('username', 'username', 'conta-username-dica')"
+      />
+      <p id="conta-username-dica" class="field__hint">
+        Aparece para os membros e administradores. O nome antigo fica livre para outras pessoas.
+      </p>
+      @if (fieldError('username', 'username'); as message) {
+        <p id="conta-username-username-erro" class="field__error">{{ message }}</p>
+      }
+    </div>
+    <div aria-live="polite">
+      @if (success().username; as message) {
+        <p class="notice">{{ message }}</p>
+      }
+    </div>
+    <button
+      type="submit"
+      class="btn btn--primary"
+      [disabled]="saving() !== null"
+      [attr.aria-busy]="saving() === 'username'"
+    >
+      {{ saving() === 'username' ? 'Salvando…' : 'Salvar nome de usuário' }}
+    </button>
+  </form>
+
+  <form
+    id="conta-email"
+    class="form account__form"
+    [formGroup]="forms.email"
+    (ngSubmit)="saveEmail()"
+    novalidate
+    aria-labelledby="titulo-email"
+  >
+    <h3 id="titulo-email" class="account__subtitle">E-mail</h3>
+    <p class="muted">
+      E-mail atual: <strong>{{ session.account()?.email }}</strong>
+    </p>
+    @if (errors().email; as message) {
+      <p class="form-alert" role="alert" tabindex="-1">{{ message }}</p>
+    }
+    <div class="field">
+      <label class="field__label" for="conta-email-input">Novo e-mail</label>
+      <input
+        id="conta-email-input"
+        class="field__input"
+        type="email"
+        formControlName="email"
+        autocomplete="email"
+        [attr.aria-invalid]="!!fieldError('email', 'email')"
+        [attr.aria-describedby]="describedBy('email', 'email', 'conta-email-dica')"
+      />
+      <p id="conta-email-dica" class="field__hint">
+        Enviaremos um link de confirmação para o novo e-mail.
+      </p>
+      @if (fieldError('email', 'email'); as message) {
+        <p id="conta-email-email-erro" class="field__error">{{ message }}</p>
+      }
+    </div>
+    <div class="field">
+      <label class="field__label" for="conta-email-senha">Senha atual</label>
+      <input
+        id="conta-email-senha"
+        class="field__input"
+        type="password"
+        formControlName="currentPassword"
+        autocomplete="current-password"
+        [attr.aria-invalid]="!!fieldError('email', 'currentPassword')"
+        [attr.aria-describedby]="describedBy('email', 'currentPassword')"
+      />
+      @if (fieldError('email', 'currentPassword'); as message) {
+        <p id="conta-currentPassword-email-erro" class="field__error">{{ message }}</p>
+      }
+    </div>
+    <div aria-live="polite">
+      @if (success().email; as message) {
+        <p class="notice">{{ message }}</p>
+      }
+    </div>
+    <button
+      type="submit"
+      class="btn btn--primary"
+      [disabled]="saving() !== null"
+      [attr.aria-busy]="saving() === 'email'"
+    >
+      {{ saving() === 'email' ? 'Enviando…' : 'Enviar link de confirmação' }}
+    </button>
+  </form>
+
+  <form
+    id="conta-password"
+    class="form account__form"
+    [formGroup]="forms.password"
+    (ngSubmit)="savePassword()"
+    novalidate
+    aria-labelledby="titulo-senha"
+  >
+    <h3 id="titulo-senha" class="account__subtitle">Senha</h3>
+    @if (errors().password; as message) {
+      <p class="form-alert" role="alert" tabindex="-1">{{ message }}</p>
+    }
+    <!-- Ajuda gerenciadores de senha a associar a nova senha à conta. -->
+    <input
+      type="email"
+      class="sr-only"
+      [value]="session.account()?.email ?? ''"
+      autocomplete="username"
+      readonly
+      tabindex="-1"
+      aria-hidden="true"
+    />
+    <div class="field">
+      <label class="field__label" for="conta-senha-atual">Senha atual</label>
+      <input
+        id="conta-senha-atual"
+        class="field__input"
+        type="password"
+        formControlName="currentPassword"
+        autocomplete="current-password"
+        [attr.aria-invalid]="!!fieldError('password', 'currentPassword')"
+        [attr.aria-describedby]="describedBy('password', 'currentPassword')"
+      />
+      @if (fieldError('password', 'currentPassword'); as message) {
+        <p id="conta-currentPassword-password-erro" class="field__error">{{ message }}</p>
+      }
+    </div>
+    <div class="field">
+      <label class="field__label" for="conta-senha-nova">Nova senha</label>
+      <input
+        id="conta-senha-nova"
+        class="field__input"
+        type="password"
+        formControlName="password"
+        autocomplete="new-password"
+        [attr.aria-invalid]="!!fieldError('password', 'password')"
+        [attr.aria-describedby]="describedBy('password', 'password', 'conta-senha-dica')"
+      />
+      <p id="conta-senha-dica" class="field__hint">Use no mínimo {{ minLength }} caracteres.</p>
+      @if (fieldError('password', 'password'); as message) {
+        <p id="conta-password-password-erro" class="field__error">{{ message }}</p>
+      }
+    </div>
+    <div class="field">
+      <label class="field__label" for="conta-senha-confirmar">Confirmar nova senha</label>
+      <input
+        id="conta-senha-confirmar"
+        class="field__input"
+        type="password"
+        formControlName="confirmPassword"
+        autocomplete="new-password"
+        [attr.aria-invalid]="!!fieldError('password', 'confirmPassword')"
+        [attr.aria-describedby]="describedBy('password', 'confirmPassword')"
+      />
+      @if (fieldError('password', 'confirmPassword'); as message) {
+        <p id="conta-confirmPassword-password-erro" class="field__error">{{ message }}</p>
+      }
+    </div>
+    <div aria-live="polite">
+      @if (success().password; as message) {
+        <p class="notice">{{ message }}</p>
+      }
+    </div>
+    <button
+      type="submit"
+      class="btn btn--primary"
+      [disabled]="saving() !== null"
+      [attr.aria-busy]="saving() === 'password'"
+    >
+      {{ saving() === 'password' ? 'Salvando…' : 'Salvar nova senha' }}
+    </button>
+  </form>
+</section>

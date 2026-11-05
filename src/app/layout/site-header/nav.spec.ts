@@ -18,12 +18,12 @@ describe('navItemsFor', () => {
     expect(labels('pending')).toEqual(['Minha conta']);
   });
 
-  it('membro vê Calendário e não vê Administração', () => {
-    expect(labels('member')).toEqual(['Calendário']);
+  it('membro vê Calendário e Minha conta, e não vê Administração', () => {
+    expect(labels('member')).toEqual(['Calendário', 'Minha conta']);
   });
 
   it('somente admin vê Administração', () => {
-    expect(labels('admin')).toEqual(['Calendário', 'Administração']);
+    expect(labels('admin')).toEqual(['Calendário', 'Minha conta', 'Administração']);
     for (const access of ['visitor', 'pending', 'member', 'blocked', 'loading'] as const) {
       expect(labels(access)).not.toContain('Administração');
     }

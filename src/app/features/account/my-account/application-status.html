@@ -1,5 +1,5 @@
-<article class="container application-status">
-  <h1 class="page__title">Sua candidatura</h1>
+<section class="account__section" aria-labelledby="titulo-candidatura">
+  <h2 id="titulo-candidatura" class="account__title">Sua candidatura</h2>
 
   @switch (state()) {
     @case ('loading') {
@@ -14,7 +14,7 @@
       @if (view(); as v) {
         <section class="notice status-card" aria-live="polite" aria-labelledby="titulo-situacao">
           <p class="badge {{ v.badgeClass }}">{{ v.badge }}</p>
-          <h2 id="titulo-situacao" class="status-card__title">{{ v.title }}</h2>
+          <h3 id="titulo-situacao" class="status-card__title">{{ v.title }}</h3>
           <p>{{ v.text }}</p>
           @if (v.action; as action) {
             <a class="btn btn--primary" [routerLink]="action.path">{{ action.label }}</a>
@@ -55,9 +55,9 @@
         </dl>
       } @else {
         <section class="notice status-card" aria-labelledby="titulo-situacao">
-          <h2 id="titulo-situacao" class="status-card__title">
+          <h3 id="titulo-situacao" class="status-card__title">
             Você ainda não enviou sua candidatura
-          </h2>
+          </h3>
           <p>
             Sua conta aguarda aprovação. Envie a candidatura para que um administrador avalie seu
             pedido.
@@ -67,4 +67,4 @@
       }
     }
   }
-</article>
+</section>
