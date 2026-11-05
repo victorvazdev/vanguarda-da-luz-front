@@ -151,6 +151,36 @@
         </div>
       </div>
 
+      <app-professions-field
+        formControlName="professions"
+        idPrefix="candidatura-professions"
+        [game]="gameOrNull()"
+        [error]="fieldError('professions')"
+      />
+
+      <div class="field">
+        <label class="field__label" for="candidatura-battleTag">BattleTag</label>
+        <input
+          id="candidatura-battleTag"
+          class="field__input"
+          type="text"
+          formControlName="battleTag"
+          autocomplete="off"
+          autocapitalize="none"
+          spellcheck="false"
+          maxlength="19"
+          placeholder="Nome#1234"
+          [attr.aria-invalid]="!!fieldError('battleTag')"
+          [attr.aria-describedby]="describedBy('battleTag', 'candidatura-battleTag-dica')"
+        />
+        <p id="candidatura-battleTag-dica" class="field__hint">
+          Visível somente para você e para os administradores.
+        </p>
+        @if (fieldError('battleTag'); as message) {
+          <p id="candidatura-battleTag-erro" class="field__error">{{ message }}</p>
+        }
+      </div>
+
       <div class="field">
         <label class="field__label" for="candidatura-motivation"
           >Por que você quer entrar na guilda?</label
@@ -181,8 +211,13 @@
           />
           <label class="checkbox__label" for="candidatura-rulesAccepted">
             Li e aceito as
-            <a [routerLink]="paths.rules" target="_blank" rel="noopener"
-              >regras da guilda<span class="sr-only"> (abre em nova aba)</span></a
+            <button
+              type="button"
+              class="link-button"
+              aria-haspopup="dialog"
+              (click)="rulesModal.open()"
+            >
+              regras da guilda</button
             >.
           </label>
         </div>
@@ -201,4 +236,5 @@
       </button>
     </form>
   }
+  <app-rules-modal #rulesModal />
 </article>

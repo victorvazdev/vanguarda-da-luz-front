@@ -107,6 +107,19 @@ describe('Personagens do membro', () => {
     await assertFails(saveCharacter(db, 'tavia', 'f', retail({ extra: true })));
   });
 
+  it('aceita profissões do jogo (até 2) e lista vazia, e recusa as inválidas', async () => {
+    const db = asUser(env(), 'tavia');
+    const save = (data: Record<string, unknown>) =>
+      setDoc(doc(db, 'members', 'tavia', 'characters', 'alt1'), data);
+    await assertSucceeds(save(retail({ professions: ['joalheria', 'mineracao'] })));
+    await assertSucceeds(save(forever({ professions: [] })));
+    await assertSucceeds(save(retail()));
+    await assertFails(save(retail({ professions: ['alquimia', 'couraria', 'mineracao'] })));
+    await assertFails(save(retail({ professions: ['alquimia', 'alquimia'] })));
+    await assertFails(save(forever({ professions: ['joalheria'] })));
+    await assertFails(save(retail({ professions: ['pesca'] })));
+  });
+
   it('não edita personagens de outra pessoa', async () => {
     await assertFails(saveCharacter(asUser(env(), 'ana'), 'tavia', 'c1', retail()));
   });

@@ -8,6 +8,7 @@ import {
   type EmailAction,
   type SettingsResult,
 } from './account-settings';
+import { deleteAccount, type DeletionResult } from './account-deletion';
 import { LoginThrottle } from './login-throttle';
 import { checkResetCode, requestPasswordReset, resetPassword, type Result } from './password-reset';
 import { signIn, type SignInResult } from './sign-in';
@@ -57,6 +58,11 @@ export class AccountService {
 
   requestEmailChange(currentPassword: string, newEmail: string): Promise<SettingsResult> {
     return requestEmailChange(this.auth, currentPassword, newEmail);
+  }
+
+  /** Exclui a conta de quem está logado (ou conclui uma exclusão interrompida). */
+  async deleteAccount(password: string): Promise<DeletionResult> {
+    return deleteAccount(this.auth, await this.firestore.get(), password);
   }
 
   applyEmailAction(

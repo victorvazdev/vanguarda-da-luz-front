@@ -24,6 +24,8 @@ const app = (over: Partial<Application> = {}): Application => ({
   ruleset: null,
   characterClass: 'paladino',
   characterRole: 'cura',
+  professions: ['alquimia', 'herborismo'],
+  battleTag: 'Elaris#1234',
   motivation: 'x',
   status: 'pendente',
   submittedAt: new Date('2026-11-04T15:00:00Z'),

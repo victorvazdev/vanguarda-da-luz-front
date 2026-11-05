@@ -10,6 +10,8 @@ const app = (uid: string, submittedAt: string): Application => ({
   ruleset: null,
   characterClass: 'mago',
   characterRole: 'dano',
+  professions: null,
+  battleTag: null,
   motivation: 'x',
   status: 'pendente',
   submittedAt: new Date(submittedAt),

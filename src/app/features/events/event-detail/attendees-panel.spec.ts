@@ -40,6 +40,7 @@ const maren: Attendee = {
     characterClass: 'guerreiro',
     characterRole: 'tanque',
   },
+  deleted: false,
 };
 const tavia: Attendee = {
   uid: 'tavia',
@@ -53,6 +54,7 @@ const tavia: Attendee = {
     characterClass: 'mago',
     characterRole: 'dano',
   },
+  deleted: false,
 };
 
 let fixture: ComponentFixture<AttendeesPanel>;
@@ -121,8 +123,27 @@ describe('AttendeesPanel (Ver presenças confirmadas)', () => {
 
   it('conta sem personagem principal aparece pelo nome de usuário', async () => {
     await setup();
-    await emit([{ uid: 'x', username: 'Kael', confirmedAt: null, mainCharacter: null }]);
+    await emit([
+      { uid: 'x', username: 'Kael', confirmedAt: null, mainCharacter: null, deleted: false },
+    ]);
     expect(items()).toEqual([['Kael', 'Sem personagem principal']]);
+  });
+
+  it('no histórico, conta excluída aparece como tal, com o personagem principal', async () => {
+    await setup(false);
+    await emit([maren, { ...tavia, username: '', deleted: true }]);
+    expect(text('#titulo-confirmados')).toBe('Confirmados: 2');
+    expect(items()).toEqual([
+      ['Maren', 'Guerreiro, tanque', 'Retail'],
+      ['Tavia Brasaluz', 'Mago, dano', 'WoW Forever · Conta excluída'],
+    ]);
+    expect(el.textContent).not.toContain('TaviaB');
+  });
+
+  it('conta excluída sem personagem principal aparece só como conta excluída', async () => {
+    await setup(false);
+    await emit([{ uid: 'x', username: '', confirmedAt: null, mainCharacter: null, deleted: true }]);
+    expect(items()).toEqual([['Conta excluída', 'Sem personagem principal']]);
   });
 
   describe('Administrador cancela a presença de alguém', () => {

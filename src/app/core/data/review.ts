@@ -37,6 +37,7 @@ export const CHARACTER_FIELDS = [
   'ruleset',
   'characterClass',
   'characterRole',
+  'professions',
 ] as const;
 
 /**

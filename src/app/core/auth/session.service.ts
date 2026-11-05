@@ -73,7 +73,7 @@ export class SessionService {
             account &&
             email &&
             account.email !== email &&
-            account.status !== 'desativado' &&
+            (account.status === 'pendente' || account.status === 'ativo') &&
             syncedEmail !== `${user.uid}:${email}`
           ) {
             syncedEmail = `${user.uid}:${email}`;

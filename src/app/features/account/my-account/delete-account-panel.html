@@ -1,0 +1,114 @@
+<section class="account__section danger-zone" aria-labelledby="titulo-excluir-conta">
+  <h2 id="titulo-excluir-conta" class="account__title">
+    {{ resuming() ? 'Exclusão da conta em andamento' : 'Excluir conta' }}
+  </h2>
+  @if (resuming()) {
+    <p class="notice danger-zone__notice">
+      A exclusão da sua conta começou, mas não foi concluída. Seu acesso de membro já foi encerrado.
+      Confirme sua senha para terminar de remover seus dados.
+    </p>
+  } @else {
+    <p class="muted">
+      Remove definitivamente sua conta e seus dados pessoais. Esta ação não pode ser desfeita.
+    </p>
+  }
+  <button type="button" class="btn btn--cancel" aria-haspopup="dialog" (click)="open()">
+    {{ resuming() ? 'Concluir exclusão' : 'Excluir conta' }}
+  </button>
+
+  <app-modal
+    [heading]="resuming() ? 'Concluir a exclusão da conta' : 'Excluir sua conta?'"
+    size="wide"
+    [locked]="deleting()"
+  >
+    <form class="form delete-account" [formGroup]="form" (ngSubmit)="confirmDeletion()" novalidate>
+      @if (error(); as message) {
+        <p class="form-alert" role="alert" tabindex="-1">{{ message }}</p>
+      }
+
+      <div class="delete-account__lists">
+        <section aria-labelledby="excluir-removido">
+          <h3 id="excluir-removido" class="delete-account__heading">Será removido</h3>
+          <ul class="delete-account__list delete-account__list--removed">
+            <li>Seu login: e-mail e senha</li>
+            <li>Seu nome de usuário, que fica livre para outras pessoas</li>
+            <li>Sua candidatura, com BattleTag e motivo do interesse</li>
+            @if (isMember() || resuming()) {
+              <li>Suas presenças em eventos futuros, que saem das listas de confirmados</li>
+              <li>Seu acesso ao calendário e às funcionalidades de membros</li>
+            }
+          </ul>
+        </section>
+        <section aria-labelledby="excluir-mantido">
+          <h3 id="excluir-mantido" class="delete-account__heading">Será mantido</h3>
+          @if (isMember() || resuming()) {
+            <ul class="delete-account__list">
+              <li>Seus personagens, sem ligação com nenhum dado pessoal</li>
+              <li>
+                O histórico de eventos que já aconteceram: suas presenças aparecem como "Conta
+                excluída", com o personagem principal
+              </li>
+            </ul>
+          } @else {
+            <p class="muted">Nada: sua conta ainda não foi aprovada, então não há histórico.</p>
+          }
+        </section>
+      </div>
+
+      <div class="field">
+        <div class="checkbox">
+          <input
+            id="excluir-confirmar"
+            class="checkbox__input"
+            type="checkbox"
+            formControlName="confirmed"
+            data-initial-focus
+            [attr.aria-invalid]="!!fieldError('confirmed')"
+            [attr.aria-describedby]="fieldError('confirmed') ? 'excluir-confirmar-erro' : null"
+          />
+          <label class="checkbox__label" for="excluir-confirmar">
+            Entendo que a exclusão é permanente e não pode ser desfeita.
+          </label>
+        </div>
+        @if (fieldError('confirmed'); as message) {
+          <p id="excluir-confirmar-erro" class="field__error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="excluir-senha">Senha atual</label>
+        <input
+          id="excluir-senha"
+          class="field__input"
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+          [attr.aria-invalid]="!!fieldError('password')"
+          [attr.aria-describedby]="
+            fieldError('password') ? 'excluir-senha-dica excluir-senha-erro' : 'excluir-senha-dica'
+          "
+        />
+        <p id="excluir-senha-dica" class="field__hint">
+          Por segurança, confirme sua identidade antes de excluir.
+        </p>
+        @if (fieldError('password'); as message) {
+          <p id="excluir-senha-erro" class="field__error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="confirm__actions">
+        <button type="button" class="btn btn--outline" [disabled]="deleting()" (click)="close()">
+          Manter conta
+        </button>
+        <button
+          type="submit"
+          class="btn btn--cancel"
+          [disabled]="deleting()"
+          [attr.aria-busy]="deleting()"
+        >
+          {{ deleting() ? 'Excluindo…' : 'Excluir conta definitivamente' }}
+        </button>
+      </div>
+    </form>
+  </app-modal>
+</section>

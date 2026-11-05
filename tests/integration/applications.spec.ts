@@ -14,6 +14,8 @@ const input: ApplicationInput = {
   server: 'Azralon',
   characterClass: 'paladino',
   characterRole: 'cura',
+  professions: ['alquimia'],
+  battleTag: 'Jogador#1234',
   motivation: 'Quero participar das raids semanais.',
 };
 
@@ -55,6 +57,8 @@ describe('Candidatura (Firestore emulado)', () => {
       ruleset: 'jxj',
       characterClass: 'sacerdote',
       characterRole: 'cura',
+      professions: ['alquimia'],
+      battleTag: 'Jogador#1234',
       motivation: 'Quero jogar no Forever com a guilda.',
     };
     expect(await submitApplication(db, uid, forever)).toEqual({ ok: true });

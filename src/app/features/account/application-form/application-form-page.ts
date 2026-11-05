@@ -10,8 +10,13 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import {
+  FormControl,
+  NonNullableFormBuilder,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { Router } from '@angular/router';
 import { ACCOUNT_MESSAGES } from '../../../core/auth/messages';
 import {
   canSubmit,
@@ -34,7 +39,15 @@ import {
 } from '../../../core/models/wow';
 import { PATHS } from '../../../core/routing/paths';
 import { firstError, type ErrorMessages } from '../../../shared/forms/field-errors';
-import { characterNameFormat } from '../../../shared/forms/validators';
+import {
+  PROFESSIONS_MESSAGES,
+  ProfessionsField,
+  professionsInGame,
+  professionsRequired,
+  type ProfessionsValue,
+} from '../../../shared/forms/professions-field/professions-field';
+import { battleTagFormat, characterNameFormat } from '../../../shared/forms/validators';
+import { RulesModal } from '../../../shared/ui/rules-modal/rules-modal';
 
 type Field =
   | 'game'
@@ -44,6 +57,8 @@ type Field =
   | 'ruleset'
   | 'characterClass'
   | 'characterRole'
+  | 'professions'
+  | 'battleTag'
   | 'motivation'
   | 'rulesAccepted';
 
@@ -63,6 +78,11 @@ const MESSAGES: Record<Field, ErrorMessages> = {
   ruleset: { required: 'Selecione o ruleset.' },
   characterClass: { required: 'Selecione a classe.' },
   characterRole: { required: 'Selecione a função.' },
+  professions: PROFESSIONS_MESSAGES,
+  battleTag: {
+    required: 'Informe seu BattleTag.',
+    battleTag: 'Use o formato Nome#1234: de 3 a 12 letras ou números, começando por letra.',
+  },
   motivation: {
     required: 'Conte por que você quer entrar na guilda.',
     maxlength: `Use no máximo ${MOTIVATION_MAX} caracteres.`,
@@ -85,7 +105,7 @@ const GAME_ONLY_FIELDS: Record<Game, readonly ('server' | 'characterSurname' | '
 /** História "Enviar candidatura" (World of Warcraft Retail ou Forever). */
 @Component({
   selector: 'app-application-form-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, ProfessionsField, RulesModal],
   templateUrl: './application-form-page.html',
   styleUrl: './application-form-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -96,7 +116,6 @@ export class ApplicationFormPage implements OnInit {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
 
-  protected readonly paths = PATHS;
   protected readonly games = GAMES;
   protected readonly rulesets = RULESETS;
   protected readonly motivationMax = MOTIVATION_MAX;
@@ -114,6 +133,8 @@ export class ApplicationFormPage implements OnInit {
     ruleset: [{ value: '' as Ruleset | '', disabled: true }, [Validators.required]],
     characterClass: [{ value: '' as CharacterClass | '', disabled: true }, [Validators.required]],
     characterRole: [{ value: '' as CharacterRole | '', disabled: true }, [Validators.required]],
+    professions: new FormControl<ProfessionsValue>(null, [professionsRequired, professionsInGame]),
+    battleTag: ['', [Validators.required, battleTagFormat]],
     motivation: ['', [Validators.required, Validators.maxLength(MOTIVATION_MAX)]],
     rulesAccepted: [false, [Validators.requiredTrue]],
   });
@@ -146,6 +167,7 @@ export class ApplicationFormPage implements OnInit {
         controls.characterClass.setValue('');
       }
       this.dropInvalidRole();
+      controls.professions.updateValueAndValidity();
     });
 
     // Ao trocar de classe, descarta uma função que ela não pode exercer.
@@ -173,6 +195,8 @@ export class ApplicationFormPage implements OnInit {
           ruleset: current.ruleset ?? '',
           characterClass: current.characterClass,
           characterRole: current.characterRole,
+          professions: current.professions,
+          battleTag: current.battleTag ?? '',
           motivation: current.motivation,
         });
       }
@@ -188,8 +212,9 @@ export class ApplicationFormPage implements OnInit {
     return firstError(control, MESSAGES[field]);
   }
 
-  protected describedBy(field: Field): string | null {
-    return this.fieldError(field) ? `candidatura-${field}-erro` : null;
+  protected describedBy(field: Field, hint?: string): string | null {
+    const ids = [hint, this.fieldError(field) ? `candidatura-${field}-erro` : null];
+    return ids.filter(Boolean).join(' ') || null;
   }
 
   protected async submit(): Promise<void> {
@@ -222,6 +247,8 @@ export class ApplicationFormPage implements OnInit {
       characterName: v.characterName,
       characterClass: v.characterClass as CharacterClass,
       characterRole: v.characterRole as CharacterRole,
+      professions: v.professions ?? [],
+      battleTag: v.battleTag,
       motivation: v.motivation,
     };
     if (v.game === 'retail') return { ...common, game: 'retail', server: v.server };
@@ -236,7 +263,7 @@ export class ApplicationFormPage implements OnInit {
     return null;
   }
 
-  private gameOrNull(): Game | null {
+  protected gameOrNull(): Game | null {
     const game = this.game();
     return isGame(game) ? game : null;
   }

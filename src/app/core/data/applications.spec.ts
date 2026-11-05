@@ -9,6 +9,8 @@ const app = (status: Application['status']): Application => ({
   ruleset: null,
   characterClass: 'paladino',
   characterRole: 'cura',
+  professions: null,
+  battleTag: null,
   motivation: 'x',
   status,
   submittedAt: new Date(),

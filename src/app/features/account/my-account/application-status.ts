@@ -13,6 +13,7 @@ import {
   characterDisplayName,
   classLabel,
   gameLabel,
+  professionsText,
   roleLabel,
   rulesetLabel,
 } from '../../../core/models/wow';
@@ -75,6 +76,8 @@ export class ApplicationStatusPanel {
           : { label: 'Servidor', value: app.server ?? '' },
       characterClass: classLabel(app.characterClass),
       role: roleLabel(app.characterRole),
+      professions: professionsText(app.professions),
+      battleTag: app.battleTag ?? 'Não informado',
       submittedAt: formatBrasiliaDate(app.submittedAt),
       decidedAt:
         app.status !== 'pendente' && app.decidedAt ? formatBrasiliaDate(app.decidedAt) : null,

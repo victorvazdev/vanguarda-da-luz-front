@@ -1,11 +1,18 @@
 <article class="container account">
   <h1 class="page__title">Minha conta</h1>
 
-  @if (isMember()) {
+  @if (deleting()) {
+    <!-- Exclusão em andamento: só resta concluí-la (painel abaixo). -->
+  } @else if (isMember()) {
     <app-characters-panel />
   } @else {
     <app-application-status />
   }
 
-  <app-account-settings-panel />
+  @if (!deleting()) {
+    <app-account-settings-panel />
+  }
+
+  <!-- Fora dos blocos acima: continua montado quando a conta passa a "excluindo". -->
+  <app-delete-account-panel />
 </article>

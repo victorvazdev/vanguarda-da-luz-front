@@ -20,6 +20,7 @@ import {
   passwordsMatch,
   usernameFormat,
 } from '../../../shared/forms/validators';
+import { RulesModal } from '../../../shared/ui/rules-modal/rules-modal';
 
 type Field = 'username' | 'email' | 'password' | 'confirmPassword';
 
@@ -47,7 +48,7 @@ const GENERAL_ERRORS: Partial<Record<SignUpError, string>> = {
 /** História "Cadastrar-se". */
 @Component({
   selector: 'app-sign-up-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, RulesModal],
   templateUrl: './sign-up-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

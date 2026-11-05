@@ -15,6 +15,7 @@ export function navItemsFor(access: AccessLevel): NavItem[] {
     case 'loading':
       return [];
     case 'pending':
+    case 'deleting':
       return [{ label: 'Minha conta', path: PATHS.account, kind: 'link' }];
     case 'member':
       return [
@@ -39,5 +40,5 @@ export function navItemsFor(access: AccessLevel): NavItem[] {
 }
 
 export function showsSignOut(access: AccessLevel): boolean {
-  return access === 'pending' || access === 'member' || access === 'admin';
+  return access === 'pending' || access === 'member' || access === 'admin' || access === 'deleting';
 }

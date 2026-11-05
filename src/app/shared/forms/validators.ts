@@ -37,6 +37,21 @@ export const characterNameFormat: ValidatorFn = (control) => {
   return !value || CHARACTER_NAME_PATTERN.test(value) ? null : { characterName: true };
 };
 
+/**
+ * BattleTag da Blizzard: 3 a 12 letras ou números, começando por letra (acentos permitidos),
+ * seguidos de `#` e do número (4 a 6 dígitos). Igual às Security Rules.
+ */
+export const BATTLETAG_PATTERN = /^\p{L}[\p{L}\p{N}]{2,11}#[0-9]{4,6}$/u;
+
+export function isValidBattleTag(value: string): boolean {
+  return BATTLETAG_PATTERN.test(value);
+}
+
+export const battleTagFormat: ValidatorFn = (control) => {
+  const value = String(control.value ?? '').trim();
+  return !value || isValidBattleTag(value) ? null : { battleTag: true };
+};
+
 /** Texto obrigatório que não aceita só espaços (erro `required`). */
 export const requiredText: ValidatorFn = (control) =>
   String(control.value ?? '').trim() ? null : { required: true };

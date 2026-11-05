@@ -49,9 +49,12 @@ export function watchMyAttendance(
 
 export interface Attendee {
   uid: string;
+  /** Vazio quando a conta foi excluída (o nome de usuário é removido). */
   username: string;
   mainCharacter: MainCharacter | null;
   confirmedAt: Date | null;
+  /** Conta excluída: a presença continua no histórico, com o personagem principal. */
+  deleted: boolean;
 }
 
 /** Ordem de confirmação (quem confirmou primeiro, primeiro). */
@@ -61,7 +64,9 @@ function byConfirmation(a: Attendee, b: Attendee): number {
 
 /**
  * Confirmados do evento (somente administradores), com o personagem principal atual de cada um.
- * Contas desativadas saem da lista, como nas demais listas da guilda.
+ * Contas desativadas saem da lista, como nas demais listas da guilda. Contas excluídas
+ * continuam no histórico (suas presenças em eventos futuros já foram canceladas), sem dados
+ * pessoais.
  */
 export function watchAttendees(
   db: Firestore,
@@ -71,14 +76,25 @@ export function watchAttendees(
 ): () => void {
   let confirmed: Map<string, Date | null> | null = null;
   let members: Map<string, MemberRow> | null = null;
+  let deleted: Map<string, MainCharacter | null> | null = null;
   const emit = () => {
-    if (!confirmed || !members) return;
+    if (!confirmed || !members || !deleted) return;
     const people = members;
+    const gone = deleted;
     const list: Attendee[] = [];
     for (const [uid, confirmedAt] of confirmed) {
       const m = people.get(uid);
-      if (m?.status !== 'ativo') continue;
-      list.push({ uid, username: m.username, mainCharacter: m.mainCharacter, confirmedAt });
+      if (m?.status === 'ativo') {
+        list.push({
+          uid,
+          username: m.username,
+          mainCharacter: m.mainCharacter,
+          confirmedAt,
+          deleted: false,
+        });
+      } else if (!m && gone.has(uid)) {
+        list.push({ uid, username: '', mainCharacter: gone.get(uid)!, confirmedAt, deleted: true });
+      }
     }
     next(list.sort(byConfirmation));
   };
@@ -99,9 +115,22 @@ export function watchAttendees(
     },
     error,
   );
+  const stopDeleted = onSnapshot(
+    collection(db, 'members'),
+    (snap) => {
+      deleted = new Map(
+        snap.docs
+          .filter((d) => d.get('deletedAt') !== undefined)
+          .map((d) => [d.id, (d.get('mainCharacter') as MainCharacter | undefined) ?? null]),
+      );
+      emit();
+    },
+    error,
+  );
   return () => {
     stopAttendees();
     stopMembers();
+    stopDeleted();
   };
 }
 

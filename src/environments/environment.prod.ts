@@ -15,4 +15,3 @@ export const environment: AppEnvironment = {
     appId: '1:346692288233:web:d0edfc60fe0b6e70deba78',
   },
 };
-

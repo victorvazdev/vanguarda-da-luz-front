@@ -31,6 +31,7 @@ describe('guards', () => {
       ['pending', '/minha-conta'],
       ['member', '/calendario'],
       ['admin', '/calendario'],
+      ['deleting', '/minha-conta'],
     ])('%s → %s', async (access, expected) => {
       expect(await run(guestGuard, access)).toBe(expected);
     });
@@ -43,6 +44,7 @@ describe('guards', () => {
       ['pending', true],
       ['member', true],
       ['admin', true],
+      ['deleting', true],
     ])('%s → %s', async (access, expected) => {
       expect(await run(authGuard, access)).toBe(expected);
     });
@@ -55,6 +57,7 @@ describe('guards', () => {
       ['pending', true],
       ['member', '/calendario'],
       ['admin', '/calendario'],
+      ['deleting', '/minha-conta'],
     ])('%s → %s', async (access, expected) => {
       expect(await run(pendingGuard, access)).toBe(expected);
     });
@@ -67,6 +70,7 @@ describe('guards', () => {
       ['pending', '/acesso-negado'],
       ['member', true],
       ['admin', true],
+      ['deleting', '/minha-conta'],
     ])('%s → %s', async (access, expected) => {
       expect(await run(memberGuard, access)).toBe(expected);
     });
@@ -79,6 +83,7 @@ describe('guards', () => {
       ['pending', '/acesso-negado'],
       ['member', '/acesso-negado'],
       ['admin', true],
+      ['deleting', '/minha-conta'],
     ])('%s → %s', async (access, expected) => {
       expect(await run(adminGuard, access)).toBe(expected);
     });

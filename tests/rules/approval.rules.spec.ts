@@ -136,6 +136,47 @@ describe('Aprovar candidatura', () => {
     );
   });
 
+  describe('com BattleTag e profissões', () => {
+    beforeEach(async () => {
+      await seed(env(), {
+        'applications/alice': {
+          ...retailApp,
+          professions: ['alquimia', 'herborismo'],
+          battleTag: 'Elaris#1234',
+        },
+      });
+    });
+
+    it('as profissões vão para o personagem principal; o BattleTag não', async () => {
+      await assertSucceeds(
+        approve(asUser(env(), 'admin'), 'admin', {
+          character: { ...retailCharacter, professions: ['alquimia', 'herborismo'] },
+        }),
+      );
+    });
+
+    it('recusa BattleTag copiado para o membro (dado privado)', async () => {
+      const db = asUser(env(), 'admin');
+      const character = { ...retailCharacter, professions: ['alquimia', 'herborismo'] };
+      await assertFails(
+        approve(db, 'admin', { character: { ...character, battleTag: 'Elaris#1234' } }),
+      );
+      await assertFails(approve(db, 'admin', { character, member: { battleTag: 'Elaris#1234' } }));
+    });
+
+    it('recusa profissões diferentes das da candidatura', async () => {
+      const db = asUser(env(), 'admin');
+      await assertFails(approve(db, 'admin', { character: retailCharacter }));
+      await assertFails(
+        approve(db, 'admin', { character: { ...retailCharacter, professions: ['mineracao'] } }),
+      );
+    });
+  });
+
+  it('candidatura antiga, sem BattleTag nem profissões, ainda pode ser aprovada', async () => {
+    await assertSucceeds(approve(asUser(env(), 'admin'), 'admin'));
+  });
+
   it('registra o administrador responsável (não outro)', async () => {
     const db = asUser(env(), 'admin');
     const batch = writeBatch(db);

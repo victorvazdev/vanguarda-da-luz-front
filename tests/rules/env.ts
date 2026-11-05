@@ -35,6 +35,21 @@ export function asUser(env: RulesTestEnvironment, uid: string): Firestore {
   return modular(env.authenticatedContext(uid, { email: `${uid}@example.com` }).firestore());
 }
 
+/**
+ * Contexto autenticado com o horário do login (`auth_time`, em segundos) — padrão: agora.
+ * As rules de exclusão de conta exigem login recente.
+ */
+export function asFreshUser(
+  env: RulesTestEnvironment,
+  uid: string,
+  loggedInSecondsAgo = 0,
+): Firestore {
+  const authTime = Math.floor(Date.now() / 1000) - loggedInSecondsAgo;
+  return modular(
+    env.authenticatedContext(uid, { email: `${uid}@example.com`, auth_time: authTime }).firestore(),
+  );
+}
+
 /** Visitante sem login. */
 export function asVisitor(env: RulesTestEnvironment): Firestore {
   return modular(env.unauthenticatedContext().firestore());

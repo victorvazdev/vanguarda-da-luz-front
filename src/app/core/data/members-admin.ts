@@ -11,7 +11,7 @@ import {
   type Firestore,
 } from 'firebase/firestore';
 import type { AccountStatus, Permission } from '../auth/access';
-import type { CharacterClass, CharacterRole, Game, Ruleset } from '../models/wow';
+import type { CharacterClass, CharacterRole, Game, Profession, Ruleset } from '../models/wow';
 
 export interface MainCharacter {
   game: Game;
@@ -21,6 +21,8 @@ export interface MainCharacter {
   ruleset?: Ruleset;
   characterClass: CharacterClass;
   characterRole: CharacterRole;
+  /** Ausente em personagens salvos antes da escolha de profissões existir. */
+  professions?: Profession[];
   /** Ausente enquanto o membro não informa o nível (personagem vindo da candidatura). */
   level?: number;
 }

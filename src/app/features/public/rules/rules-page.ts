@@ -2,11 +2,12 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { RULES } from '../../../core/content/guild-content';
 import { PATHS } from '../../../core/routing/paths';
+import { RulesList } from '../../../shared/ui/rules-list/rules-list';
 
 /** História "Ler as regras". */
 @Component({
   selector: 'app-rules-page',
-  imports: [RouterLink],
+  imports: [RouterLink, RulesList],
   templateUrl: './rules-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

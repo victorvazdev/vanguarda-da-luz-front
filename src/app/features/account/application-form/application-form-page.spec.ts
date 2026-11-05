@@ -3,7 +3,10 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import type { Application, ApplicationInput, SubmitResult } from '../../../core/data/applications';
 import { ApplicationsService } from '../../../core/data/applications.service';
+import { stubDialog } from '../../../shared/ui/modal/dialog.stub';
 import { ApplicationFormPage } from './application-form-page';
+
+stubDialog();
 
 @Component({ template: '' })
 class Blank {}
@@ -30,6 +33,8 @@ const rejected: Application = {
   ruleset: 'jxj',
   characterClass: 'paladino',
   characterRole: 'cura',
+  professions: ['alquimia'],
+  battleTag: 'Elaris#1234',
   motivation: 'Quero raidar.',
   status: 'recusada',
   submittedAt: new Date('2026-11-02T12:00:00Z'),
@@ -85,6 +90,8 @@ async function fillCommon() {
   await set('characterName', 'Elaris');
   await set('characterClass', 'paladino');
   await set('characterRole', 'cura');
+  await choose('Profissões', 'Alquimia');
+  await set('battleTag', 'Elaris#1234');
   await set('motivation', 'Quero participar das raids.');
   q<HTMLInputElement>('#candidatura-rulesAccepted')!.click();
   await fixture.whenStable();
@@ -110,6 +117,10 @@ describe('ApplicationFormPage (Enviar candidatura)', () => {
     expect(errorOf('characterName')).toBe('Informe o nome do personagem.');
     expect(errorOf('motivation')).toBe('Conte por que você quer entrar na guilda.');
     expect(errorOf('rulesAccepted')).toBe('Confirme que leu e aceita as regras da guilda.');
+    expect(errorOf('battleTag')).toBe('Informe seu BattleTag.');
+    expect(errorOf('professions')).toBe(
+      'Selecione as profissões ou marque que o personagem não tem profissão.',
+    );
     expect(stub.submitted).toHaveLength(0);
   });
 
@@ -135,6 +146,8 @@ describe('ApplicationFormPage (Enviar candidatura)', () => {
           server: 'Azralon',
           characterClass: 'paladino',
           characterRole: 'cura',
+          professions: ['alquimia'],
+          battleTag: 'Elaris#1234',
           motivation: 'Quero participar das raids.',
         },
       ]);
@@ -194,6 +207,8 @@ describe('ApplicationFormPage (Enviar candidatura)', () => {
           ruleset: 'jxj',
           characterClass: 'paladino',
           characterRole: 'cura',
+          professions: ['alquimia'],
+          battleTag: 'Elaris#1234',
           motivation: 'Quero participar das raids.',
         },
       ]);
@@ -225,11 +240,142 @@ describe('ApplicationFormPage (Enviar candidatura)', () => {
     expect(errorOf('characterName')).toContain('2 a 12 letras');
   });
 
-  it('o link das regras abre em nova aba (sem perder o formulário)', async () => {
-    await setup();
-    const link = q<HTMLAnchorElement>('label[for="candidatura-rulesAccepted"] a')!;
-    expect(link.getAttribute('href')).toBe('/regras');
-    expect(link.target).toBe('_blank');
+  describe('BattleTag', () => {
+    it.each(['Elaris', 'El#1234', 'Elaris#12', '1Elaris#1234', 'Ela ris#1234', 'Elaris#1234567'])(
+      'bloqueia o envio com formato inválido: %s',
+      async (value) => {
+        await setup();
+        await choose('Jogo', 'World of Warcraft Retail');
+        await set('server', 'Azralon');
+        await fillCommon();
+        await set('battleTag', value);
+        await submit();
+        expect(errorOf('battleTag')).toContain('Nome#1234');
+        expect(q('#candidatura-battleTag')!.getAttribute('aria-invalid')).toBe('true');
+        expect(stub.submitted).toHaveLength(0);
+      },
+    );
+
+    it('aceita letras acentuadas e números (espaços nas pontas são descartados)', async () => {
+      await setup();
+      await choose('Jogo', 'World of Warcraft Retail');
+      await set('server', 'Azralon');
+      await fillCommon();
+      await set('battleTag', '  Élaris2#98765 ');
+      await submit();
+      expect(errorOf('battleTag')).toBeNull();
+      expect(stub.submitted).toHaveLength(1);
+    });
+  });
+
+  describe('Profissões', () => {
+    const professionInputs = () => {
+      const fieldset = [...el.querySelectorAll('fieldset')].find(
+        (f) => f.querySelector('legend')?.textContent?.trim() === 'Profissões',
+      )!;
+      return [...fieldset.querySelectorAll<HTMLInputElement>('.choice input')];
+    };
+
+    it('lista as profissões primárias do jogo escolhido', async () => {
+      await setup();
+      await choose('Jogo', 'World of Warcraft Retail');
+      expect(professionInputs()).toHaveLength(11);
+      await choose('Jogo', 'World of Warcraft Forever');
+      const labels = [...el.querySelectorAll('.choice')].map((l) => l.textContent?.trim());
+      expect(professionInputs()).toHaveLength(9);
+      expect(labels).not.toContain('Joalheria');
+      expect(labels).not.toContain('Escrivania');
+    });
+
+    it('permite no máximo 2: as demais ficam indisponíveis', async () => {
+      await setup();
+      await choose('Jogo', 'World of Warcraft Retail');
+      await choose('Profissões', 'Alquimia');
+      await choose('Profissões', 'Herborismo');
+      const disabled = professionInputs().filter((i) => i.disabled);
+      expect(disabled).toHaveLength(9);
+      expect(professionInputs().filter((i) => i.checked)).toHaveLength(2);
+    });
+
+    it('permite informar que o personagem não tem profissão', async () => {
+      await setup();
+      await choose('Jogo', 'World of Warcraft Retail');
+      await set('server', 'Azralon');
+      await fillCommon();
+      q<HTMLInputElement>('#candidatura-professions-nenhuma')!.click();
+      await fixture.whenStable();
+      expect(professionInputs().some((i) => i.checked)).toBe(false);
+      await submit();
+      expect(stub.submitted[0].professions).toEqual([]);
+    });
+
+    it('ao trocar para o Forever, descarta profissão que não existe nele', async () => {
+      await setup();
+      await choose('Jogo', 'World of Warcraft Retail');
+      await choose('Profissões', 'Joalheria');
+      await choose('Jogo', 'World of Warcraft Forever');
+      expect(professionInputs().some((i) => i.checked)).toBe(false);
+      await submit();
+      expect(errorOf('professions')).toContain('Selecione as profissões');
+    });
+  });
+
+  describe('Regras em modal', () => {
+    const rulesButton = () => q<HTMLButtonElement>('label[for="candidatura-rulesAccepted"] button')!;
+    const dialog = () => q<HTMLDialogElement>('app-rules-modal dialog')!;
+
+    async function openRules() {
+      rulesButton().focus();
+      rulesButton().click();
+      await fixture.whenStable();
+    }
+
+    it('abre as regras completas sem sair da página e preserva o formulário', async () => {
+      await setup();
+      await set('characterName', 'Elaris');
+      await openRules();
+      expect(TestBed.inject(Router).url).toBe('/');
+      expect(dialog().open).toBe(true);
+      expect(dialog().querySelectorAll('ol li')).toHaveLength(10);
+      expect(dialog().textContent).toContain('Fiel devoção à Aliança');
+      expect(document.activeElement?.id).toBe(dialog().getAttribute('aria-labelledby'));
+      expect(q<HTMLInputElement>('#candidatura-characterName')!.value).toBe('Elaris');
+    });
+
+    it('fecha pelo botão e devolve o foco ao link', async () => {
+      await setup();
+      await openRules();
+      const close = [...dialog().querySelectorAll('button')].find(
+        (b) => b.textContent?.trim() === 'Fechar',
+      )!;
+      close.click();
+      await fixture.whenStable();
+      expect(dialog().open).toBe(false);
+      expect(document.activeElement).toBe(rulesButton());
+    });
+
+    it('fecha pela tecla Esc e pelo fundo', async () => {
+      await setup();
+      await openRules();
+      dialog().dispatchEvent(new Event('cancel', { cancelable: true }));
+      await fixture.whenStable();
+      expect(dialog().open).toBe(false);
+      expect(document.activeElement).toBe(rulesButton());
+
+      await openRules();
+      expect(dialog().open).toBe(true);
+      dialog().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await fixture.whenStable();
+      expect(dialog().open).toBe(false);
+    });
+
+    it('clique dentro do conteúdo não fecha', async () => {
+      await setup();
+      await openRules();
+      dialog().querySelector<HTMLElement>('ol')!.click();
+      await fixture.whenStable();
+      expect(dialog().open).toBe(true);
+    });
   });
 
   it('com candidatura pendente, redireciona ao acompanhamento', async () => {
@@ -242,6 +388,7 @@ describe('ApplicationFormPage (Enviar candidatura)', () => {
     expect(el.querySelector('h1')?.textContent).toContain('nova candidatura');
     expect(q<HTMLInputElement>('#candidatura-characterSurname')!.value).toBe('Aurora');
     expect(q<HTMLSelectElement>('#candidatura-characterRole')!.value).toBe('cura');
+    expect(q<HTMLInputElement>('#candidatura-battleTag')!.value).toBe('Elaris#1234');
     expect(q<HTMLInputElement>('#candidatura-rulesAccepted')!.checked).toBe(false);
   });
 
