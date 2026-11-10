@@ -18,7 +18,7 @@ import { SessionService } from '../../../core/auth/session.service';
 import type { AttendanceError, MyAttendance } from '../../../core/data/attendance';
 import { isUpcoming, type GuildEvent } from '../../../core/data/events';
 import { EventsService } from '../../../core/data/events.service';
-import { PATHS } from '../../../core/routing/paths';
+import { PATHS, joinPathFor } from '../../../core/routing/paths';
 import {
   GUILD_TIME_ZONE_LABEL,
   formatBrasiliaDate,
@@ -29,6 +29,7 @@ import { ConfirmService } from '../../../shared/ui/confirm-dialog/confirm.servic
 import { FlashService } from '../../../shared/ui/flash/flash.service';
 import { dayKey } from '../calendar/month';
 import { AttendeesPanel } from './attendees-panel';
+import { GuestPresence } from './guest-presence';
 
 const ATTENDANCE_ERRORS: Record<
   Exclude<AttendanceError, 'already-confirmed' | 'not-confirmed'>,
@@ -45,7 +46,7 @@ const ATTENDANCE_ERRORS: Record<
 /** Detalhe de um evento do calendário: título, data, horário, organizador e descrição. */
 @Component({
   selector: 'app-event-detail-page',
-  imports: [RouterLink, AttendeesPanel],
+  imports: [RouterLink, AttendeesPanel, GuestPresence],
   templateUrl: './event-detail-page.html',
   styleUrl: './event-detail-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,6 +62,14 @@ export class EventDetailPage {
   private readonly flash = inject(FlashService);
   /** A lista de confirmados é visível apenas para administradores. */
   protected readonly isAdmin = computed(() => this.session.access() === 'admin');
+  /** Membros confirmam com a conta; os demais (visitantes e contas pendentes), como visitantes. */
+  protected readonly presenceMode = computed<'member' | 'guest' | null>(() => {
+    const access = this.session.access();
+    if (access === 'member' || access === 'admin') return 'member';
+    if (access === 'visitor' || access === 'pending' || access === 'blocked') return 'guest';
+    return null;
+  });
+  protected readonly joinPath = computed(() => joinPathFor(this.session.access()));
 
   /** Parâmetro `:id` da rota. */
   readonly id = input.required<string>();
@@ -89,6 +98,7 @@ export class EventDetailPage {
       description: e.description,
       cancelled: e.status === 'cancelado',
       upcoming: isUpcoming(e.startsAt),
+      guestsAllowed: e.guestsAllowed,
     };
   });
 
@@ -115,11 +125,12 @@ export class EventDetailPage {
       onCleanup(stop);
     });
 
-    // Presença da pessoa autenticada neste evento, em tempo real.
+    // Presença do membro autenticado neste evento, em tempo real.
     effect((onCleanup) => {
       const id = this.id();
       this.attendance.set(undefined);
       this.attendanceError.set(null);
+      if (this.presenceMode() !== 'member') return;
       const stop = this.events.watchMyAttendance(
         id,
         (attendance) => this.attendance.set(attendance),

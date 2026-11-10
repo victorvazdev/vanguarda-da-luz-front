@@ -1,6 +1,6 @@
 <aside class="attendees" aria-labelledby="titulo-confirmados">
   <h2 id="titulo-confirmados" class="attendees__title">
-    Confirmados: {{ state() === 'ready' ? view().length : '…' }}
+    Confirmados: {{ state() === 'ready' ? total() : '…' }}
   </h2>
   <p class="attendees__note">Visível para administradores</p>
 
@@ -21,35 +21,47 @@
       <p class="form-alert" role="alert">Não foi possível carregar os confirmados.</p>
     }
     @default {
-      @if (view().length) {
-        <ul class="attendees__list">
-          @for (person of view(); track person.uid) {
-            <li
-              class="attendees__item"
-              [attr.aria-busy]="busy() === person.uid"
-              [attr.data-initial]="person.name.charAt(0)"
-            >
-              <strong class="attendees__name">{{ person.name }}</strong>
-              <span>{{ person.details }}</span>
-              @if (person.meta) {
-                <span class="attendees__meta">{{ person.meta }}</span>
-              }
-              @if (open()) {
-                <button
-                  type="button"
-                  class="btn btn--outline attendees__remove"
-                  [disabled]="busy() !== null"
-                  (click)="remove(person)"
-                >
-                  Cancelar presença<span class="sr-only"> de {{ person.name }}</span>
-                </button>
-              }
-            </li>
-          }
-        </ul>
+      @if (total()) {
+        @if (view().length) {
+          <ng-container *ngTemplateOutlet="list; context: { $implicit: view() }"></ng-container>
+        }
+        @if (guestsView().length) {
+          <h3 class="attendees__group">Visitantes: {{ guestsView().length }}</h3>
+          <ng-container
+            *ngTemplateOutlet="list; context: { $implicit: guestsView() }"
+          ></ng-container>
+        }
       } @else {
         <p class="muted attendees__empty">Ainda não há confirmados.</p>
       }
     }
   }
 </aside>
+
+<ng-template #list let-people>
+  <ul class="attendees__list">
+    @for (person of people; track person.uid) {
+      <li
+        class="attendees__item"
+        [attr.aria-busy]="busy() === person.uid"
+        [attr.data-initial]="person.name.charAt(0)"
+      >
+        <strong class="attendees__name">{{ person.name }}</strong>
+        <span>{{ person.details }}</span>
+        @if (person.meta) {
+          <span class="attendees__meta">{{ person.meta }}</span>
+        }
+        @if (open()) {
+          <button
+            type="button"
+            class="btn btn--outline attendees__remove"
+            [disabled]="busy() !== null"
+            (click)="remove(person)"
+          >
+            Cancelar presença<span class="sr-only"> de {{ person.name }}</span>
+          </button>
+        }
+      </li>
+    }
+  </ul>
+</ng-template>

@@ -1,6 +1,7 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import type { AttendanceResult, Attendee } from '../../../core/data/attendance';
 import { EventsService } from '../../../core/data/events.service';
+import type { Guest } from '../../../core/data/guest-attendance';
 import { ConfirmService } from '../../../shared/ui/confirm-dialog/confirm.service';
 import { AttendeesPanel } from './attendees-panel';
 
@@ -18,7 +19,33 @@ class EventsStub {
     this.removed.push([eventId, uid]);
     return Promise.resolve(this.result);
   }
+  guestsNext: ((list: Guest[]) => void) | null = null;
+  watchGuests(_id: string, next: (list: Guest[]) => void) {
+    this.guestsNext = next;
+    next([]);
+    return () => undefined;
+  }
+  removedGuests: [string, string][] = [];
+  removeGuest(eventId: string, id: string) {
+    this.removedGuests.push([eventId, id]);
+    return Promise.resolve({ ok: true as const, id });
+  }
 }
+
+const lunara: Guest = {
+  id: 'forever:Lunara:Sombraviva',
+  game: 'forever',
+  characterName: 'Lunara',
+  characterSurname: 'Sombraviva',
+  confirmedAt: new Date('2026-11-03T12:00:00Z'),
+};
+const thalor: Guest = {
+  id: 'retail:Thalor:Azralon',
+  game: 'retail',
+  characterName: 'Thalor',
+  realm: 'Azralon',
+  confirmedAt: new Date('2026-11-04T12:00:00Z'),
+};
 
 class ConfirmStub {
   answer = true;
@@ -191,6 +218,50 @@ describe('AttendeesPanel (Ver presenças confirmadas)', () => {
       expect(removeButton('Maren')!.textContent?.replace(/\s+/g, ' ').trim()).toBe(
         'Cancelar presença de Maren',
       );
+    });
+  });
+
+  describe('Visitantes', () => {
+    async function withGuests(guests: Guest[], open = true) {
+      await setup(open);
+      await emit([maren]);
+      events.guestsNext!(guests);
+      await fixture.whenStable();
+    }
+
+    it('somam ao total e aparecem em lista própria, com o personagem e o jogo', async () => {
+      await withGuests([lunara, thalor]);
+      expect(text('#titulo-confirmados')).toBe('Confirmados: 3');
+      expect(text('.attendees__group')).toBe('Visitantes: 2');
+      expect(items()).toEqual([
+        ['Maren', 'Guerreiro, tanque', 'Retail'],
+        ['Lunara Sombraviva', 'Personagem do WoW Forever', 'Visitante'],
+        ['Thalor-Azralon', 'Personagem do Retail', 'Visitante'],
+      ]);
+    });
+
+    it('sem membros confirmados, mostra só os visitantes', async () => {
+      await setup();
+      await emit([]);
+      events.guestsNext!([thalor]);
+      await fixture.whenStable();
+      expect(text('#titulo-confirmados')).toBe('Confirmados: 1');
+      expect(el.querySelector('.attendees__empty')).toBeNull();
+    });
+
+    it('administrador cancela a presença de um visitante, com confirmação', async () => {
+      await withGuests([lunara]);
+      removeButton('Lunara Sombraviva')!.click();
+      await fixture.whenStable();
+      expect(dialog.asked[0].message).toContain('Lunara Sombraviva (visitante) sairá da lista');
+      expect(events.removedGuests).toEqual([['raid', 'forever:Lunara:Sombraviva']]);
+      expect(events.removed).toHaveLength(0);
+      expect(text('#confirmados-status')).toBe('Presença de Lunara Sombraviva cancelada.');
+    });
+
+    it('evento passado ou cancelado não oferece a ação', async () => {
+      await withGuests([lunara], false);
+      expect(removeButton('Lunara Sombraviva')).toBeUndefined();
     });
   });
 });

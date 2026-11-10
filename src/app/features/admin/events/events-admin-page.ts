@@ -77,6 +77,7 @@ interface EventView {
   organizer: string;
   cancelled: boolean;
   changeable: boolean;
+  guestsAllowed: boolean;
   source: GuildEvent;
 }
 
@@ -116,6 +117,7 @@ export class EventsAdminPage {
       organizer: e.organizer,
       cancelled: e.status === 'cancelado',
       changeable: isChangeable(e),
+      guestsAllowed: e.guestsAllowed,
       source: e,
     })),
   );
@@ -127,6 +129,8 @@ export class EventsAdminPage {
       time: ['', [Validators.required]],
       organizer: ['', [requiredText, Validators.maxLength(EVENT_LIMITS.organizer)]],
       description: ['', [requiredText, Validators.maxLength(EVENT_LIMITS.description)]],
+      /** Visitantes podem confirmar presença (padrão: sim). */
+      guestsAllowed: [true],
     },
     { validators: futureDateTime },
   );
@@ -166,6 +170,7 @@ export class EventsAdminPage {
       time,
       organizer: event.source.organizer,
       description: event.source.description,
+      guestsAllowed: event.source.guestsAllowed,
     });
     this.focus('#evento-title');
   }
@@ -266,7 +271,7 @@ export class EventsAdminPage {
   private startNew(): void {
     this.editing.set(null);
     this.submitted.set(false);
-    this.form.reset();
+    this.form.reset({ guestsAllowed: true });
   }
 
   private resetMessages(): void {
@@ -284,6 +289,7 @@ export class EventsAdminPage {
       startsAt,
       organizer: v.organizer.trim(),
       description: v.description.trim(),
+      guestsAllowed: v.guestsAllowed,
     };
   }
 

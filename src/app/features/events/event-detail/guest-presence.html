@@ -1,0 +1,141 @@
+<section class="presence" aria-labelledby="titulo-presenca">
+  @if (guest() === undefined) {
+    <p class="muted loading" role="status">Carregando…</p>
+  } @else if (confirmedView(); as c) {
+    <h2 id="titulo-presenca" class="presence__title">
+      <span class="badge badge--success">Presença confirmada</span>
+    </h2>
+    <p id="visitante-status" class="presence__text" role="status" tabindex="-1">
+      {{
+        upcoming()
+          ? 'Você confirmou presença com ' + c.name + ' (' + c.game + ').'
+          : 'Você confirmou presença com ' +
+            c.name +
+            ' (' +
+            c.game +
+            '), neste evento que já aconteceu.'
+      }}
+    </p>
+    @if (upcoming()) {
+      <p class="presence__text muted">
+        Não poderá participar? Avise a administração da guilda para cancelar sua presença.
+      </p>
+      <button type="button" class="btn btn--outline" (click)="another()">
+        Confirmar outro personagem
+      </button>
+    }
+  } @else if (!upcoming()) {
+    <h2 id="titulo-presenca" class="presence__title">Evento encerrado</h2>
+    <p class="presence__text muted">
+      Este evento já aconteceu. Não é mais possível confirmar presença.
+    </p>
+  } @else if (!guestsAllowed()) {
+    <h2 id="titulo-presenca" class="presence__title">Confirmação exclusiva para membros</h2>
+    <p class="presence__text muted">
+      Neste evento, somente membros da guilda podem confirmar presença.
+    </p>
+    @if (joinPath(); as path) {
+      <a class="btn btn--primary" [routerLink]="path">Fazer parte da guilda</a>
+    }
+  } @else {
+    <h2 id="titulo-presenca" class="presence__title">Você vai participar deste evento?</h2>
+    <p class="presence__text muted">
+      Visitantes também podem participar. Informe o seu personagem para confirmar presença.
+    </p>
+
+    <form class="form guest-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (error(); as message) {
+        <p class="form-alert" role="alert" tabindex="-1">{{ message }}</p>
+      }
+
+      <fieldset class="choices" [attr.aria-describedby]="describedBy('game')">
+        <legend class="field__label">Em qual jogo você joga?</legend>
+        <div class="choices__options">
+          @for (g of games; track g.id) {
+            <label class="choice">
+              <input
+                class="choice__input"
+                type="radio"
+                formControlName="game"
+                [value]="g.id"
+                [attr.aria-invalid]="!!fieldError('game')"
+              />
+              {{ g.label }}
+            </label>
+          }
+        </div>
+        @if (fieldError('game'); as message) {
+          <p id="visitante-game-erro" class="field__error">{{ message }}</p>
+        }
+      </fieldset>
+
+      @if (game()) {
+        <div class="form-grid">
+          <div class="field">
+            <label class="field__label" for="visitante-characterName">Nome do personagem</label>
+            <input
+              id="visitante-characterName"
+              class="field__input"
+              type="text"
+              formControlName="characterName"
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="12"
+              [attr.aria-invalid]="!!fieldError('characterName')"
+              [attr.aria-describedby]="describedBy('characterName')"
+            />
+            @if (fieldError('characterName'); as message) {
+              <p id="visitante-characterName-erro" class="field__error">{{ message }}</p>
+            }
+          </div>
+
+          @if (game() === 'forever') {
+            <div class="field">
+              <label class="field__label" for="visitante-characterSurname">Sobrenome</label>
+              <input
+                id="visitante-characterSurname"
+                class="field__input"
+                type="text"
+                formControlName="characterSurname"
+                autocomplete="off"
+                spellcheck="false"
+                maxlength="12"
+                [attr.aria-invalid]="!!fieldError('characterSurname')"
+                [attr.aria-describedby]="describedBy('characterSurname')"
+              />
+              @if (fieldError('characterSurname'); as message) {
+                <p id="visitante-characterSurname-erro" class="field__error">{{ message }}</p>
+              }
+            </div>
+          } @else {
+            <div class="field">
+              <label class="field__label" for="visitante-realm">Reino</label>
+              <input
+                id="visitante-realm"
+                class="field__input"
+                type="text"
+                formControlName="realm"
+                autocomplete="off"
+                [attr.maxlength]="realmMax"
+                [attr.aria-invalid]="!!fieldError('realm')"
+                [attr.aria-describedby]="describedBy('realm')"
+              />
+              @if (fieldError('realm'); as message) {
+                <p id="visitante-realm-erro" class="field__error">{{ message }}</p>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <button
+        type="submit"
+        class="btn btn--primary"
+        [disabled]="saving()"
+        [attr.aria-busy]="saving()"
+      >
+        {{ saving() ? 'Confirmando…' : 'Confirmar presença' }}
+      </button>
+    </form>
+  }
+</section>

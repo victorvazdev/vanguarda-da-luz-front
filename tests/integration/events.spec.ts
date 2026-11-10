@@ -58,6 +58,7 @@ const input = (over: Partial<EventInput> = {}): EventInput => ({
   startsAt: new Date(Date.now() + 3 * DAY),
   description: '[DESCRIÇÃO DO EVENTO]',
   organizer: 'Maren',
+  guestsAllowed: true,
   ...over,
 });
 
@@ -135,6 +136,7 @@ describe('Criar, editar e cancelar eventos (emuladores)', () => {
       startsAt: newDate,
       description: 'Traga poções.',
       organizer: 'Dorvan',
+      guestsAllowed: true,
     });
     expect(result).toEqual({ ok: true });
 
@@ -307,18 +309,23 @@ describe('Acessar o calendário de eventos (emuladores)', () => {
     expect(await one('nao-existe')).toBeNull();
   });
 
-  it('conta pendente não lê o calendário', async () => {
-    await firstAdmin();
+  it('visitante sem login e conta pendente também leem o calendário', async () => {
+    const admin = await firstAdmin();
+    const created = await createEvent(admin.db, admin.uid, input());
+    if (!created.ok) throw new Error(created.error);
     const kaelen = await register('Kaelen');
-    const error = await new Promise<unknown>((resolve) => {
-      watchEventsBetween(
-        kaelen.db,
-        new Date(),
-        new Date(Date.now() + DAY),
-        () => resolve(null),
-        resolve,
-      );
-    });
-    expect((error as { code?: string })?.code).toBe('permission-denied');
+    const visitor = client();
+    for (const db of [kaelen.db, visitor.db]) {
+      const events = await new Promise<GuildEvent[]>((resolve, reject) => {
+        const stop = watchEventsBetween(
+          db,
+          new Date(),
+          new Date(Date.now() + 7 * DAY),
+          (list) => (stop(), resolve(list)),
+          reject,
+        );
+      });
+      expect(events.map((e) => e.title)).toEqual(['Raid semanal']);
+    }
   });
 });

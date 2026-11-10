@@ -14,9 +14,13 @@ export function navItemsFor(access: AccessLevel): NavItem[] {
   switch (access) {
     case 'loading':
       return [];
-    case 'pending':
     case 'deleting':
       return [{ label: 'Minha conta', path: PATHS.account, kind: 'link' }];
+    case 'pending':
+      return [
+        { label: 'Calendário', path: PATHS.calendar, kind: 'link' },
+        { label: 'Minha conta', path: PATHS.account, kind: 'link' },
+      ];
     case 'member':
       return [
         { label: 'Calendário', path: PATHS.calendar, kind: 'link' },
@@ -33,6 +37,7 @@ export function navItemsFor(access: AccessLevel): NavItem[] {
         { label: 'A guilda', path: PATHS.home, kind: 'link', exact: true },
         { label: 'Como ingressar', path: PATHS.join, kind: 'link' },
         { label: 'Regras', path: PATHS.rules, kind: 'link' },
+        { label: 'Calendário', path: PATHS.calendar, kind: 'link' },
         { label: 'Entrar', path: PATHS.signIn, kind: 'link' },
         { label: 'Fazer parte', path: PATHS.signUp, kind: 'cta' },
       ];

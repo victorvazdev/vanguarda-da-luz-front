@@ -12,6 +12,15 @@ import {
   type MyAttendance,
 } from './attendance';
 import {
+  confirmGuestAttendance,
+  removeGuestAttendance,
+  watchGuest,
+  watchGuests,
+  type Guest,
+  type GuestAttendanceResult,
+  type GuestInput,
+} from './guest-attendance';
+import {
   cancelEvent,
   createEvent,
   deleteCancelledEvent,
@@ -103,6 +112,35 @@ export class EventsService {
   /** Administrador cancela a presença de um confirmado. */
   async removeAttendee(eventId: string, uid: string): Promise<AttendanceResult> {
     return cancelAttendance(await this.firestore.get(), eventId, uid);
+  }
+
+  /** Visitante (sem conta de membro) confirma presença com o personagem informado. */
+  async confirmGuest(eventId: string, input: GuestInput): Promise<GuestAttendanceResult> {
+    return confirmGuestAttendance(await this.firestore.get(), eventId, input);
+  }
+
+  /** Acompanha uma presença de visitante pelo ID; `null` quando não existe mais. */
+  watchGuest(
+    eventId: string,
+    guestId: string,
+    next: (guest: Guest | null) => void,
+    error: (e: unknown) => void,
+  ): () => void {
+    return this.whenReady((db) => watchGuest(db, eventId, guestId, next, error), error);
+  }
+
+  /** Visitantes confirmados (somente administradores). */
+  watchGuests(
+    eventId: string,
+    next: (guests: Guest[]) => void,
+    error: (e: unknown) => void,
+  ): () => void {
+    return this.whenReady((db) => watchGuests(db, eventId, next, error), error);
+  }
+
+  /** Administrador cancela a presença de um visitante. */
+  async removeGuest(eventId: string, guestId: string): Promise<GuestAttendanceResult> {
+    return removeGuestAttendance(await this.firestore.get(), eventId, guestId);
   }
 
   /** Inicia o listener quando o Firestore (carregado sob demanda) estiver pronto. */

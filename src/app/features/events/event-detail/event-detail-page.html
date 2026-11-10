@@ -76,7 +76,16 @@
               }
             }
 
-            @if (!e.cancelled && attendance() !== undefined) {
+            @if (!e.cancelled && presenceMode() === 'guest') {
+              <app-guest-presence
+                [eventId]="id()"
+                [upcoming]="e.upcoming"
+                [guestsAllowed]="e.guestsAllowed"
+                [joinPath]="joinPath()"
+              />
+            }
+
+            @if (!e.cancelled && presenceMode() === 'member' && attendance() !== undefined) {
               <section class="presence" aria-labelledby="titulo-presenca">
                 @if (attendance()) {
                   <h2 id="titulo-presenca" class="presence__title">

@@ -4,11 +4,11 @@ Nov 5, 2026 · @Victor Vaz de Oliveira
 
 ## Visão geral
 
-As 29 histórias abaixo têm critérios verificáveis, agrupados por área. Uma história só está pronta quando todos os seus critérios forem atendidos.
+As 30 histórias abaixo têm critérios verificáveis, agrupados por área. Uma história só está pronta quando todos os seus critérios forem atendidos.
 
 | Perfil | Situação | Acesso |
 | --- | --- | --- |
-| Visitante | Sem conta ou não autenticado | Páginas públicas, cadastro e login |
+| Visitante | Sem conta ou não autenticado | Páginas públicas (inclusive o calendário de eventos), confirmação de presença como visitante, cadastro e login |
 | Usuário cadastrado | Autenticado e aguardando aprovação | Páginas públicas, candidatura e própria conta |
 | Membro | Aprovado por um administrador | Funcionalidades de membros |
 | Administrador | Permissão administrativa | Funcionalidades de membros e área administrativa |
@@ -256,13 +256,13 @@ A guilda está presente em duas versões de World of Warcraft:
 
 ### Acessar o calendário de eventos
 
-**Como membro**, quero acessar um calendário de eventos, para que eu possa visualizar quais dias foram programados para algum evento.
+**Como membro ou visitante**, quero acessar um calendário de eventos, para que eu possa visualizar quais dias foram programados para algum evento.
 
-- [ ] Somente membros e administradores acessam o calendário.
-- [ ] Um visitante ou usuário pendente é redirecionado ao login ou recebe uma mensagem de acesso negado.
+- [ ] O calendário e o detalhe dos eventos são públicos: visitantes, usuários pendentes, membros e administradores os acessam.
+- [ ] O menu de visitantes e de usuários pendentes inclui o calendário.
 - [ ] O calendário abre no mês atual e permite navegar entre meses.
 - [ ] Os dias com eventos ficam identificados.
-- [ ] Ao selecionar um evento, o membro vê o título, a data, o horário, a descrição e o organizador.
+- [ ] Ao selecionar um evento, a pessoa vê o título, a data, o horário, a descrição e o organizador.
 - [ ] Datas e horários são exibidos no fuso definido para a guilda e esse fuso fica identificado.
 - [ ] Eventos cancelados são identificados como cancelados.
 
@@ -284,6 +284,21 @@ A guilda está presente em duas versões de World of Warcraft:
 - [ ] O membro precisa confirmar o cancelamento antes de concluí-lo.
 - [ ] Após o cancelamento, o nome do membro sai da lista de confirmados.
 - [ ] O membro pode confirmar presença novamente enquanto o evento estiver futuro e ativo.
+
+### Confirmar presença como visitante
+
+**Como visitante**, quero confirmar minha presença em um evento da guilda, para que os organizadores saibam que vou participar mesmo sem ser membro.
+
+- [ ] Visitantes (sem conta ou não autenticados) e usuários pendentes podem confirmar presença em eventos futuros e ativos, quando o administrador permitir.
+- [ ] Ao confirmar, o visitante informa se joga no World of Warcraft Forever ou no Retail.
+- [ ] No WoW Forever, o visitante informa o nome e o sobrenome do personagem; no Retail, o nome e o reino.
+- [ ] Os nomes têm de 2 a 12 letras, sem espaços ou números, e são gravados como no jogo (só a primeira letra maiúscula); o reino tem até 40 caracteres, sem "/".
+- [ ] Após confirmar, o evento indica a presença confirmada com o personagem informado; neste navegador, a confirmação continua indicada ao voltar à página.
+- [ ] O mesmo personagem não pode confirmar duas vezes no mesmo evento.
+- [ ] Não é possível confirmar presença em eventos passados ou cancelados.
+- [ ] Quando a confirmação de visitantes está desativada no evento, o detalhe informa que ela é exclusiva para membros e oferece o botão para fazer parte da guilda.
+- [ ] Membros confirmam presença com a própria conta, não como visitantes.
+- [ ] O visitante não cancela a própria presença; ele pede o cancelamento à administração.
 
 ## Administração
 
@@ -345,23 +360,27 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 **Como administrador**, quero criar, editar e cancelar eventos, para que os membros vejam a programação atualizada da guilda.
 
 - [ ] O formulário solicita título, data, horário, descrição e organizador.
+- [ ] O formulário permite habilitar ou desabilitar a confirmação de presença de visitantes; por padrão, ela vem habilitada.
+- [ ] Eventos criados antes dessa opção aceitam a confirmação de visitantes.
+- [ ] A administração de eventos identifica os eventos em que somente membros confirmam presença.
 - [ ] Um novo evento não pode ter data e horário no passado.
 - [ ] Um evento criado aparece no calendário dos membros.
 - [ ] As alterações salvas aparecem no calendário e mantêm as presenças confirmadas.
 - [ ] O cancelamento exige confirmação e mantém o evento no calendário como cancelado.
 - [ ] Um evento cancelado pode ser excluído pelo administrador, na administração de eventos ou no detalhe do evento, inclusive depois da data.
-- [ ] A exclusão exige confirmação, remove o evento do calendário e apaga a lista de confirmados.
+- [ ] A exclusão exige confirmação, remove o evento do calendário e apaga a lista de confirmados (membros e visitantes).
 - [ ] Eventos ativos não podem ser excluídos; um evento cancelado que não foi excluído mantém a lista de confirmados.
 
 ### Ver presenças confirmadas
 
 **Como administrador**, quero ver quem confirmou presença em um evento, para que eu possa organizar sua realização.
 
-- [ ] O detalhe do evento mostra o total de confirmados.
+- [ ] O detalhe do evento mostra o total de confirmados, somando membros e visitantes.
 - [ ] A lista mostra o nome, o personagem principal, a classe e a função de cada confirmado.
+- [ ] Os visitantes aparecem em uma lista própria, com o personagem (nome e sobrenome no WoW Forever; nome e reino no Retail) e o jogo.
 - [ ] A lista reflete confirmações e cancelamentos já registrados.
 - [ ] Uma mensagem é exibida quando ainda não há confirmados.
-- [ ] O administrador pode cancelar a presença de um confirmado, com confirmação, enquanto o evento estiver futuro e ativo.
+- [ ] O administrador pode cancelar a presença de um confirmado (membro ou visitante), com confirmação, enquanto o evento estiver futuro e ativo.
 - [ ] A pessoa que teve a presença cancelada pode confirmar novamente enquanto o evento estiver futuro e ativo.
 
 ### Gerenciar procurados

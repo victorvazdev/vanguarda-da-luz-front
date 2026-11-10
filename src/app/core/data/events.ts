@@ -28,6 +28,8 @@ export interface GuildEvent {
   description: string;
   organizer: string;
   status: EventStatus;
+  /** Visitantes podem confirmar presença (padrão: sim; eventos antigos não têm o campo). */
+  guestsAllowed: boolean;
 }
 
 export interface EventInput {
@@ -35,6 +37,7 @@ export interface EventInput {
   startsAt: Date;
   description: string;
   organizer: string;
+  guestsAllowed: boolean;
 }
 
 /** Tamanhos máximos (iguais aos de firestore.rules). */
@@ -64,6 +67,7 @@ export function eventFromData(id: string, data: Record<string, unknown>): GuildE
     description: data['description'] as string,
     organizer: data['organizer'] as string,
     status: data['status'] === 'cancelado' ? 'cancelado' : 'ativo',
+    guestsAllowed: data['guestsAllowed'] !== false,
   };
 }
 
@@ -72,6 +76,7 @@ const clean = (input: EventInput) => ({
   startsAt: Timestamp.fromDate(input.startsAt),
   description: input.description.trim(),
   organizer: input.organizer.trim(),
+  guestsAllowed: input.guestsAllowed,
 });
 
 class ActionBlocked extends Error {
@@ -215,9 +220,10 @@ export async function cancelEvent(
 const BATCH_SIZE = 450;
 
 /**
- * Exclui um evento cancelado e a lista de confirmados (subcoleção, que o Firestore não apaga
- * sozinho). As presenças saem no mesmo lote do evento; se houver mais do que cabe num lote, as
- * restantes saem logo depois (as rules só permitem isso nessas duas situações).
+ * Exclui um evento cancelado e as listas de confirmados, de membros e de visitantes
+ * (subcoleções, que o Firestore não apaga sozinho). As presenças saem no mesmo lote do evento;
+ * se houver mais do que cabe num lote, as restantes saem logo depois (as rules só permitem isso
+ * nessas duas situações).
  */
 export async function deleteCancelledEvent(db: Firestore, id: string): Promise<EventActionResult> {
   try {
@@ -228,7 +234,11 @@ export async function deleteCancelledEvent(db: Firestore, id: string): Promise<E
       return { ok: false, error: 'not-cancelled' };
     }
 
-    const attendees = (await getDocs(collection(db, 'events', id, 'attendees'))).docs;
+    const [members, guests] = await Promise.all([
+      getDocs(collection(db, 'events', id, 'attendees')),
+      getDocs(collection(db, 'events', id, 'guests')),
+    ]);
+    const attendees = [...members.docs, ...guests.docs];
     const first = writeBatch(db);
     for (const a of attendees.slice(0, BATCH_SIZE)) first.delete(a.ref);
     first.delete(ref);

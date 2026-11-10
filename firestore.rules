@@ -568,12 +568,17 @@ service cloud.firestore {
     }
 
     // ---------- Eventos ----------
-    // Lidos por membros ativos. Criados, editados e cancelados por administradores, sempre
-    // antes de começarem. O cancelamento mantém o evento (status 'cancelado') e é definitivo;
+    // Públicos (visitantes também veem o calendário). Criados, editados e cancelados por
+    // administradores, sempre antes de começarem. O cancelamento mantém o evento (status 'cancelado') e é definitivo;
     // depois, um administrador pode excluir o evento cancelado, com a lista de confirmados.
-    // As presenças ficam em subcoleção, então editar o evento não as altera.
+    // As presenças ficam em subcoleções, então editar o evento não as altera.
+    // `guestsAllowed` (opcional; ausente = true) liga a confirmação de presença de visitantes.
     function eventFields() {
       return ['title', 'startsAt', 'description', 'organizer'];
+    }
+
+    function editableEventFields() {
+      return eventFields().concat(['guestsAllowed']);
     }
 
     function filledText(value, max) {
@@ -584,17 +589,50 @@ service cloud.firestore {
       return filledText(d.title, 80)
         && filledText(d.organizer, 40)
         && filledText(d.description, 2000)
-        && d.startsAt is timestamp;
+        && d.startsAt is timestamp
+        && (!('guestsAllowed' in d) || d.guestsAllowed is bool);
+    }
+
+    // Personagem de visitante: no Forever, nome e sobrenome; no Retail, nome e reino.
+    // Nomes com 2 a 12 letras, só a primeira maiúscula, como no jogo (o app ajusta; ver
+    // GUEST_NAME_PATTERN em src/app/core/data/guest-attendance.ts). Reino com até 40
+    // caracteres, sem "/" e com espaços simples entre as palavras.
+    function characterNameText(value) {
+      return value is string && value.matches('\\p{Lu}\\p{Ll}{1,11}');
+    }
+
+    function realmText(value) {
+      return value is string && value.size() <= 40 && value.matches('[^\\s/]+( [^\\s/]+)*');
+    }
+
+    // ID da presença do visitante: jogo + nome + sobrenome/reino, já padronizados pelo app.
+    // Impede que o mesmo personagem confirme duas vezes (igual a guestKey em
+    // src/app/core/data/guest-attendance.ts). Sem lower(): ele falha com maiúsculas
+    // acentuadas (ex.: "Água").
+    function guestKey(d) {
+      return d.game + ':' + d.characterName + ':'
+        + (d.game == 'forever' ? d.characterSurname : d.realm);
+    }
+
+    function validGuest(d, guestId) {
+      return ((d.game == 'forever'
+          && d.keys().hasOnly(['game', 'characterName', 'characterSurname', 'confirmedAt'])
+          && characterNameText(d.characterSurname))
+        || (d.game == 'retail'
+          && d.keys().hasOnly(['game', 'characterName', 'realm', 'confirmedAt'])
+          && realmText(d.realm)))
+        && characterNameText(d.characterName)
+        && d.confirmedAt == request.time
+        && guestId == guestKey(d);
     }
 
     match /events/{eventId} {
-      // Durante a exclusão da conta, o membro ainda encontra os eventos futuros em que
-      // confirmou presença, para cancelá-la.
-      allow get, list: if isActive() || isDeletingMember();
+      // Públicos: visitantes, contas pendentes e membros veem o calendário e o detalhe.
+      allow get, list: if true;
 
       allow create: if isAdmin()
         && request.resource.data.keys().hasOnly(
-             eventFields().concat(['status', 'createdBy', 'createdAt', 'updatedAt']))
+             editableEventFields().concat(['status', 'createdBy', 'createdAt', 'updatedAt']))
         && request.resource.data.keys().hasAll(eventFields())
         && validEventContent(request.resource.data)
         && request.resource.data.startsAt > request.time
@@ -608,7 +646,7 @@ service cloud.firestore {
         && resource.data.status == 'ativo'
         && resource.data.startsAt > request.time
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(eventFields().concat(['updatedAt', 'updatedBy']))
+             .hasOnly(editableEventFields().concat(['updatedAt', 'updatedBy']))
         && validEventContent(request.resource.data)
         && (request.resource.data.startsAt == resource.data.startsAt
             || request.resource.data.startsAt > request.time)
@@ -640,6 +678,22 @@ service cloud.firestore {
         return event.status == 'ativo' && event.startsAt > request.time;
       }
 
+      // Evento aberto e com a confirmação de visitantes ligada.
+      function guestsOpen() {
+        let event = get(/databases/$(database)/documents/events/$(eventId)).data;
+        return event.status == 'ativo'
+          && event.startsAt > request.time
+          && event.get('guestsAllowed', true) == true;
+      }
+
+      // Exclusão de evento cancelado: o administrador apaga as presenças no mesmo lote do
+      // evento ou, se o evento já não existe, as que sobraram.
+      function deletingCancelledEvent() {
+        return isAdmin()
+          && (!exists(eventPath())
+            || (get(eventPath()).data.status == 'cancelado' && !existsAfter(eventPath())));
+      }
+
       match /attendees/{uid} {
         allow get: if (isSelf(uid) && isActive()) || isAdmin();
         allow list: if isAdmin();
@@ -659,12 +713,29 @@ service cloud.firestore {
         allow delete: if ((isSelf(uid) && (isActive() || isDeleting())) || isAdmin())
           && eventIsOpen();
 
-        // Exclusão de evento cancelado: o administrador apaga as presenças no mesmo lote do
-        // evento ou, se o evento já não existe, as que sobraram. Fora disso, um evento
-        // cancelado mantém a lista de confirmados.
-        allow delete: if isAdmin()
-          && (!exists(eventPath())
-            || (get(eventPath()).data.status == 'cancelado' && !existsAfter(eventPath())));
+        // Exclusão de evento cancelado. Fora disso, um evento cancelado mantém a lista de
+        // confirmados.
+        allow delete: if deletingCancelledEvent();
+      }
+
+      // ---------- Presenças de visitantes (ID = guestKey) ----------
+      // Quem não é membro ativo (visitante sem login ou conta pendente) confirma presença
+      // informando o personagem, em evento ativo, futuro e com a confirmação de visitantes
+      // ligada. O ID determinístico impede confirmar o mesmo personagem duas vezes.
+      // A consulta pontual (por ID) é pública: o visitante acompanha a própria confirmação.
+      // Somente administradores listam e cancelam.
+      match /guests/{guestId} {
+        allow get: if true;
+        allow list: if isAdmin();
+
+        allow create: if !isActive()
+          && guestsOpen()
+          && validGuest(request.resource.data, guestId);
+
+        allow update: if false;
+
+        allow delete: if isAdmin() && eventIsOpen();
+        allow delete: if deletingCancelledEvent();
       }
     }
   }

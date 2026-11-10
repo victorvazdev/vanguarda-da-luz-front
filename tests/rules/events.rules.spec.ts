@@ -58,6 +58,13 @@ beforeEach(() =>
   }),
 );
 
+const guestDoc = () => ({
+  game: 'forever',
+  characterName: 'Lunara',
+  characterSurname: 'Sombraviva',
+  confirmedAt: new Date(),
+});
+
 const events = (uid: string) => collection(asUser(env(), uid), 'events');
 const event = (uid: string, id: string) => doc(asUser(env(), uid), 'events', id);
 
@@ -67,10 +74,11 @@ describe('Ler eventos', () => {
     await assertSucceeds(getDoc(event('ana', 'raid')));
   });
 
-  it('visitante, conta pendente e conta desativada não leem', async () => {
-    await assertFails(getDocs(collection(asVisitor(env()), 'events')));
-    await assertFails(getDoc(event('kaelen', 'raid')));
-    await assertFails(getDocs(events('brenna')));
+  it('visitante, conta pendente e conta desativada também leem (calendário público)', async () => {
+    await assertSucceeds(getDocs(collection(asVisitor(env()), 'events')));
+    await assertSucceeds(getDoc(doc(asVisitor(env()), 'events', 'raid')));
+    await assertSucceeds(getDoc(event('kaelen', 'raid')));
+    await assertSucceeds(getDocs(events('brenna')));
   });
 });
 
@@ -108,6 +116,12 @@ describe('Criar evento', () => {
     await assertFails(addDoc(events('ana'), newEvent('ana', { createdAt: new Date() })));
     await assertFails(addDoc(events('ana'), newEvent('ana', { attendees: [] })));
   });
+
+  it('aceita ligar ou desligar a confirmação de presença de visitantes', async () => {
+    await assertSucceeds(addDoc(events('ana'), newEvent('ana', { guestsAllowed: true })));
+    await assertSucceeds(addDoc(events('ana'), newEvent('ana', { guestsAllowed: false })));
+    await assertFails(addDoc(events('ana'), newEvent('ana', { guestsAllowed: 'sim' })));
+  });
 });
 
 describe('Editar evento', () => {
@@ -131,6 +145,13 @@ describe('Editar evento', () => {
 
   it('membro não edita', async () => {
     await assertFails(edit('tavia', 'raid'));
+  });
+
+  it('administrador liga ou desliga a confirmação de presença de visitantes', async () => {
+    await assertSucceeds(edit('ana', 'raid', { guestsAllowed: false }));
+    await assertSucceeds(edit('ana', 'raid', { guestsAllowed: true }));
+    await assertFails(edit('ana', 'raid', { guestsAllowed: 1 }));
+    await assertFails(edit('tavia', 'raid', { guestsAllowed: false }));
   });
 
   it('não move o evento para o passado', async () => {
@@ -240,6 +261,24 @@ describe('Excluir evento cancelado', () => {
     await seed(env(), { 'events/sumiu/attendees/tavia': { confirmedAt: new Date() } });
     await assertFails(deleteDoc(attendee('tavia', 'sumiu', 'tavia')));
     await assertSucceeds(deleteDoc(attendee('ana', 'sumiu', 'tavia')));
+  });
+
+  it('apaga também as presenças de visitantes no mesmo lote', async () => {
+    await seed(env(), { 'events/cancelado/guests/forever:Lunara:Sombraviva': guestDoc() });
+    const db = asUser(env(), 'ana');
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'events', 'cancelado', 'guests', 'forever:Lunara:Sombraviva'));
+    batch.delete(doc(db, 'events', 'cancelado'));
+    await assertSucceeds(batch.commit());
+  });
+
+  it('fora da exclusão, o evento cancelado mantém a lista de visitantes', async () => {
+    await seed(env(), { 'events/cancelado/guests/forever:Lunara:Sombraviva': guestDoc() });
+    await assertFails(
+      deleteDoc(
+        doc(asUser(env(), 'ana'), 'events', 'cancelado', 'guests', 'forever:Lunara:Sombraviva'),
+      ),
+    );
   });
 
   it('o histórico de eventos ativos que já aconteceram não é apagado', async () => {
