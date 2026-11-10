@@ -1,0 +1,117 @@
+@use '../../../../../styles/mixins' as *;
+
+.community {
+  padding-block: var(--space-7);
+}
+
+.community__title {
+  margin: 0 0 var(--space-5);
+  font-size: clamp(1.5rem, 4vw, 1.75rem);
+}
+
+.networks {
+  display: grid;
+  // Duas colunas no desktop; um cartão sozinho ocupa a largura toda.
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.networks--others {
+  margin-top: var(--space-4);
+}
+
+.network {
+  position: relative;
+}
+
+// Destaque: cartão maior, com cantos ornamentais e botão dourado no pé.
+.network--featured {
+  @include card(var(--space-5));
+  @include card-corners;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+
+  .network__name {
+    font-size: 1.375rem;
+  }
+
+  .network__icon {
+    width: 52px;
+    height: 52px;
+    padding: 11px;
+  }
+
+  .network__action {
+    align-self: flex-start;
+    margin-top: auto;
+  }
+}
+
+// Segundo plano: cartão compacto com ícone ao lado e botão de contorno.
+.network--other {
+  @include card(var(--space-4));
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+
+  .network__name {
+    font-size: 1.125rem;
+  }
+
+  .network__icon {
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+  }
+
+  .network__text {
+    margin: var(--space-1) 0 var(--space-3);
+    font-size: 0.9375rem;
+  }
+}
+
+.network__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.network__text {
+  margin: 0;
+}
+
+// Ícone em círculo dourado, como os de "Valores" e "Facção".
+.network__icon {
+  flex: none;
+  border: 1px solid var(--color-border-field);
+  border-radius: 50%;
+  background: rgb(242 201 76 / 8%);
+  color: var(--color-gold);
+  fill: currentColor;
+}
+
+.network__icon-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.network__note {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 2px solid var(--color-gold);
+  background: rgb(242 201 76 / 6%);
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 760px) {
+  .community {
+    padding-block: var(--space-6);
+  }
+}

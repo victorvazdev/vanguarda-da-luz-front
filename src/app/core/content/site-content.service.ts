@@ -36,7 +36,7 @@ export class SiteContentService {
     return this.guildState.asReadonly();
   }
 
-  /** Links das redes sociais (rodapé). */
+  /** Links das redes sociais (rodapé e página inicial). */
   social() {
     if (!this.socialStarted) {
       this.socialStarted = true;

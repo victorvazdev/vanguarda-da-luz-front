@@ -53,6 +53,10 @@ A guilda está presente em duas versões de World of Warcraft:
 **Como visitante**, quero ver quais são as redes sociais, para que eu possa aprender mais sobre a guilda por esses meios.
 
 - [ ] Os links das redes sociais ficam visíveis no rodapé de todas as páginas públicas.
+- [ ] A página inicial apresenta a seção "Junte-se à comunidade" logo abaixo da história da guilda.
+- [ ] Na seção, Discord e WhatsApp aparecem em destaque, com cartões maiores e botão dourado; Instagram e YouTube aparecem em segundo plano, com cartões menores e botão de contorno.
+- [ ] Na seção, cada rede exibe o logotipo, o nome, uma frase curta sobre seu uso e um botão de ação.
+- [ ] O cartão do Discord informa que o nome do Discord é necessário para participar do Core, conforme a regra 5.
 - [ ] Cada link identifica a rede por nome ou ícone com texto alternativo.
 - [ ] Cada link abre o perfil oficial correspondente em uma nova aba.
 - [ ] Os links exibidos são os definidos no painel administrativo.
@@ -300,13 +304,13 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 
 ### Gerenciar redes sociais
 
-**Como administrador**, quero modificar os links das redes sociais no painel administrativo, para que o rodapé do site aponte sempre para os perfis oficiais da guilda.
+**Como administrador**, quero modificar os links das redes sociais no painel administrativo, para que o rodapé e a página inicial apontem sempre para os perfis oficiais da guilda.
 
 - [ ] O painel administrativo lista as redes sociais disponíveis com o link atual de cada uma.
 - [ ] O administrador pode adicionar, alterar ou apagar o link de cada rede.
 - [ ] O link deve ser uma URL válida começando com https://; um link inválido exibe uma mensagem junto ao campo e impede o salvamento.
-- [ ] Uma rede com o link apagado deixa de aparecer no rodapé.
-- [ ] As alterações salvas aparecem imediatamente no rodapé de todas as páginas públicas.
+- [ ] Uma rede com o link apagado deixa de aparecer no rodapé e na página inicial.
+- [ ] As alterações salvas aparecem imediatamente no rodapé de todas as páginas públicas e na página inicial.
 
 ### Adicionar artigo
 
