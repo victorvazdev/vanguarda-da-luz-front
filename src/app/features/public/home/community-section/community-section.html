@@ -40,12 +40,6 @@
                 {{ n.name }}
               </h3>
               <p class="network__text muted">{{ n.description }}</p>
-              @if (n.id === 'discord') {
-                <p class="network__note">
-                  O nome do Discord é necessário para participar do Core, conforme a
-                  <a [routerLink]="rulesPath">regra 5</a>.
-                </p>
-              }
               <a
                 class="btn btn--primary network__action"
                 [href]="n.url"

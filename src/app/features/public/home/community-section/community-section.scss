@@ -102,14 +102,6 @@
   stroke-width: 2;
 }
 
-.network__note {
-  margin: 0;
-  padding: var(--space-2) var(--space-3);
-  border-left: 2px solid var(--color-gold);
-  background: rgb(242 201 76 / 6%);
-  font-size: 0.9375rem;
-}
-
 @media (max-width: 760px) {
   .community {
     padding-block: var(--space-6);

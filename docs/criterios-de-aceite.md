@@ -56,7 +56,6 @@ A guilda está presente em duas versões de World of Warcraft:
 - [ ] A página inicial apresenta a seção "Junte-se à comunidade" logo abaixo da história da guilda.
 - [ ] Na seção, Discord e WhatsApp aparecem em destaque, com cartões maiores e botão dourado; Instagram e YouTube aparecem em segundo plano, com cartões menores e botão de contorno.
 - [ ] Na seção, cada rede exibe o logotipo, o nome, uma frase curta sobre seu uso e um botão de ação.
-- [ ] O cartão do Discord informa que o nome do Discord é necessário para participar do Core, conforme a regra 5.
 - [ ] Cada link identifica a rede por nome ou ícone com texto alternativo.
 - [ ] Cada link abre o perfil oficial correspondente em uma nova aba.
 - [ ] Os links exibidos são os definidos no painel administrativo.
