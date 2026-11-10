@@ -94,6 +94,8 @@ export class AttendeesPanel {
   readonly eventTitle = input.required<string>();
   /** Evento ativo e futuro: presenças ainda podem ser canceladas. */
   readonly open = input.required<boolean>();
+  /** Limite de confirmados do evento (membros e visitantes). */
+  readonly maxAttendees = input<number | null>(null);
 
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
   private readonly attendees = signal<Attendee[]>([]);

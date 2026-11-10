@@ -79,3 +79,24 @@ export function account(uid: string, over: Record<string, unknown> = {}) {
     ...over,
   };
 }
+
+/**
+ * Confirma (`data`) ou cancela (`null`) uma presença junto com o contador de confirmados do
+ * evento, num único lote, como o app faz. `attendeeCount` é o novo valor do contador.
+ */
+export async function presenceWithCount(
+  db: Firestore,
+  eventId: string,
+  kind: 'attendees' | 'guests',
+  id: string,
+  data: Record<string, unknown> | null,
+  attendeeCount: number,
+): Promise<void> {
+  const { doc, writeBatch } = await import('firebase/firestore');
+  const batch = writeBatch(db);
+  const ref = doc(db, 'events', eventId, kind, id);
+  if (data) batch.set(ref, data);
+  else batch.delete(ref);
+  batch.update(doc(db, 'events', eventId), { attendeeCount, lastAttendance: { kind, id } });
+  return batch.commit();
+}

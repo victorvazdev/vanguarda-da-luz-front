@@ -37,11 +37,20 @@
     @if (joinPath(); as path) {
       <a class="btn btn--primary" [routerLink]="path">Fazer parte da guilda</a>
     }
+  } @else if (full()) {
+    <h2 id="titulo-presenca" class="presence__title">Evento lotado</h2>
+    <p class="presence__text muted">
+      Este evento atingiu o limite de confirmados. Se alguém cancelar, a vaga volta a ficar
+      disponível.
+    </p>
   } @else {
     <h2 id="titulo-presenca" class="presence__title">Você vai participar deste evento?</h2>
     <p class="presence__text muted">
       Visitantes também podem participar. Informe o seu personagem para confirmar presença.
     </p>
+    @if (spots()) {
+      <p class="presence__text muted presence__spots">{{ spots() }}</p>
+    }
 
     <form class="form guest-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
       @if (error(); as message) {

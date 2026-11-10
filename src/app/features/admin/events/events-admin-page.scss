@@ -116,6 +116,11 @@
   }
 }
 
+// Limite de confirmados: número curto.
+.event-form__number {
+  max-width: 10rem;
+}
+
 // Mensagens de data e horário ficam juntas, abaixo dos dois campos.
 .event-form__when-messages {
   display: flex;

@@ -51,6 +51,7 @@ const MESSAGES: Record<Field, ErrorMessages> = {
 
 const ERRORS: Record<Exclude<GuestAttendanceError, 'already-confirmed'>, string> = {
   'guests-closed': 'A confirmação de presença de visitantes foi desativada neste evento.',
+  full: 'Este evento atingiu o limite de confirmados.',
   past: 'Este evento já começou. Não é mais possível confirmar presença.',
   cancelled: 'Este evento foi cancelado. Não é possível confirmar presença.',
   'not-found': 'Este evento não existe mais.',
@@ -109,6 +110,10 @@ export class GuestPresence {
   readonly upcoming = input.required<boolean>();
   /** O administrador permite a confirmação de visitantes neste evento. */
   readonly guestsAllowed = input.required<boolean>();
+  /** O evento atingiu o limite de confirmados. */
+  readonly full = input(false);
+  /** Vagas restantes, por extenso ("3 de 40 vagas disponíveis"). */
+  readonly spots = input('');
   /** Destino do botão "Fazer parte" (cadastro ou candidatura). */
   readonly joinPath = input<string | null>(null);
 

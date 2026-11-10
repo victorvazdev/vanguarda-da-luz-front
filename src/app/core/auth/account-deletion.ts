@@ -8,7 +8,8 @@
 //
 // 1. `startDeletion`: a conta passa a `excluindo` (sai da lista de admins; o membro sai das
 //    listas). A partir daqui o app só oferece concluir a exclusão.
-// 2. `cancelFutureAttendances`: apaga as presenças em eventos futuros e ativos.
+// 2. `cancelFutureAttendances`: apaga as presenças em eventos futuros e ativos (e as tira
+//    do contador de confirmados de cada evento).
 // 3. `finishDeletion`: num único lote, apaga a candidatura (BattleTag, motivo) e o nome de
 //    usuário (que fica livre), tira o nome de usuário do membro e troca a conta por um
 //    registro mínimo `excluido`, sem dados pessoais.
@@ -28,7 +29,6 @@ import {
 import {
   Timestamp,
   collection,
-  deleteDoc,
   deleteField,
   doc,
   getDoc,
@@ -40,6 +40,7 @@ import {
   where,
   type Firestore,
 } from 'firebase/firestore';
+import { cancelAttendance, type AttendanceError } from '../data/attendance';
 import { eventFromData, isChangeable } from '../data/events';
 
 export type DeletionError =
@@ -118,6 +119,8 @@ export async function startDeletion(
   });
 }
 
+const SKIPPED: readonly AttendanceError[] = ['not-confirmed', 'past', 'cancelled', 'not-found'];
+
 /**
  * Etapa 2: cancela as presenças em eventos futuros e ativos (as de eventos passados ou
  * cancelados ficam no histórico). Um evento que começa durante a exclusão é pulado.
@@ -140,14 +143,13 @@ export async function cancelFutureAttendances(
   );
   for (const event of snap.docs) {
     if (!isChangeable(eventFromData(event.id, event.data()), now())) continue;
-    try {
-      // Apagar uma presença que não existe não é erro.
-      await deleteDoc(doc(db, 'events', event.id, 'attendees', uid));
-    } catch (error) {
-      const fresh = await getDoc(event.ref);
-      const stillOpen =
-        fresh.exists() && isChangeable(eventFromData(fresh.id, fresh.data()), now());
-      if (stillOpen) throw error;
+    // Cancela junto com o contador de confirmados do evento. Não ter presença, ou o evento
+    // ter começado ou sido cancelado nesse meio-tempo, não é erro.
+    const result = await cancelAttendance(db, event.id, uid);
+    if (!result.ok && !SKIPPED.includes(result.error)) {
+      throw new Blocked(
+        result.error === 'not-allowed' || result.error === 'network' ? result.error : 'unknown',
+      );
     }
   }
 }

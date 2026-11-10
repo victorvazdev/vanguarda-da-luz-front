@@ -275,6 +275,7 @@ A guilda está presente em duas versões de World of Warcraft:
 - [ ] Após confirmar, o evento indica que a presença do membro está confirmada.
 - [ ] O membro não pode confirmar a presença duas vezes no mesmo evento.
 - [ ] Não é possível confirmar presença em eventos passados ou cancelados.
+- [ ] O detalhe do evento mostra quantas vagas restam; quando o limite de confirmados é atingido, o evento aparece como lotado e não aceita novas confirmações.
 
 ### Cancelar presença
 
@@ -295,6 +296,7 @@ A guilda está presente em duas versões de World of Warcraft:
 - [ ] Os nomes têm de 2 a 12 letras, sem espaços ou números, e são gravados como no jogo (só a primeira letra maiúscula); o reino tem até 40 caracteres, sem "/".
 - [ ] Após confirmar, o evento indica a presença confirmada com o personagem informado; neste navegador, a confirmação continua indicada ao voltar à página.
 - [ ] O mesmo personagem não pode confirmar duas vezes no mesmo evento.
+- [ ] Visitantes ocupam vagas do mesmo limite de confirmados dos membros; com o evento lotado, o formulário não é oferecido.
 - [ ] Não é possível confirmar presença em eventos passados ou cancelados.
 - [ ] Quando a confirmação de visitantes está desativada no evento, o detalhe informa que ela é exclusiva para membros e oferece o botão para fazer parte da guilda.
 - [ ] Membros confirmam presença com a própria conta, não como visitantes.
@@ -362,6 +364,9 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 - [ ] O formulário solicita título, data, horário, descrição e organizador.
 - [ ] O formulário permite habilitar ou desabilitar a confirmação de presença de visitantes; por padrão, ela vem habilitada.
 - [ ] Eventos criados antes dessa opção aceitam a confirmação de visitantes.
+- [ ] O formulário solicita o limite de confirmados (membros e visitantes somados), de 1 a 500; por padrão, 40.
+- [ ] O limite é verificado no servidor, inclusive com confirmações simultâneas; um cancelamento libera a vaga.
+- [ ] A administração de eventos mostra quantos confirmaram de quantas vagas.
 - [ ] A administração de eventos identifica os eventos em que somente membros confirmam presença.
 - [ ] Um novo evento não pode ter data e horário no passado.
 - [ ] Um evento criado aparece no calendário dos membros.
@@ -375,7 +380,7 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 
 **Como administrador**, quero ver quem confirmou presença em um evento, para que eu possa organizar sua realização.
 
-- [ ] O detalhe do evento mostra o total de confirmados, somando membros e visitantes.
+- [ ] O detalhe do evento mostra o total de confirmados, somando membros e visitantes, e o limite do evento.
 - [ ] A lista mostra o nome, o personagem principal, a classe e a função de cada confirmado.
 - [ ] Os visitantes aparecem em uma lista própria, com o personagem (nome e sobrenome no WoW Forever; nome e reino no Retail) e o jogo.
 - [ ] A lista reflete confirmações e cancelamentos já registrados.

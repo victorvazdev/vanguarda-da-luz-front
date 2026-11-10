@@ -2,7 +2,12 @@
   <h2 id="titulo-confirmados" class="attendees__title">
     Confirmados: {{ state() === 'ready' ? total() : '…' }}
   </h2>
-  <p class="attendees__note">Visível para administradores</p>
+  <p class="attendees__note">
+    @if (maxAttendees(); as max) {
+      Limite: {{ max }} {{ max === 1 ? 'pessoa' : 'pessoas' }} ·
+    }
+    Visível para administradores
+  </p>
 
   <div aria-live="polite">
     @if (status(); as message) {

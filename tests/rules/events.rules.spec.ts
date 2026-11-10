@@ -117,6 +117,16 @@ describe('Criar evento', () => {
     await assertFails(addDoc(events('ana'), newEvent('ana', { attendees: [] })));
   });
 
+  it('aceita limite de confirmados de 1 a 500, e o contador nasce zerado', async () => {
+    await assertSucceeds(addDoc(events('ana'), newEvent('ana', { maxAttendees: 1 })));
+    await assertSucceeds(addDoc(events('ana'), newEvent('ana', { maxAttendees: 500 })));
+    await assertSucceeds(addDoc(events('ana'), newEvent('ana', { attendeeCount: 0 })));
+    for (const maxAttendees of [0, 501, 2.5, '40']) {
+      await assertFails(addDoc(events('ana'), newEvent('ana', { maxAttendees })));
+    }
+    await assertFails(addDoc(events('ana'), newEvent('ana', { attendeeCount: 3 })));
+  });
+
   it('aceita ligar ou desligar a confirmação de presença de visitantes', async () => {
     await assertSucceeds(addDoc(events('ana'), newEvent('ana', { guestsAllowed: true })));
     await assertSucceeds(addDoc(events('ana'), newEvent('ana', { guestsAllowed: false })));
@@ -145,6 +155,12 @@ describe('Editar evento', () => {
 
   it('membro não edita', async () => {
     await assertFails(edit('tavia', 'raid'));
+  });
+
+  it('administrador altera o limite de confirmados, mas não o contador', async () => {
+    await assertSucceeds(edit('ana', 'raid', { maxAttendees: 10 }));
+    await assertFails(edit('ana', 'raid', { maxAttendees: 0 }));
+    await assertFails(edit('ana', 'raid', { attendeeCount: 5 }));
   });
 
   it('administrador liga ou desliga a confirmação de presença de visitantes', async () => {

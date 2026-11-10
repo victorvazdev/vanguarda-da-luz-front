@@ -78,6 +78,8 @@ const raid: GuildEvent = {
   organizer: 'Maren',
   status: 'ativo',
   guestsAllowed: true,
+  maxAttendees: 40,
+  attendeeCount: 0,
 };
 
 let fixture: ComponentFixture<EventDetailPage>;
@@ -161,7 +163,7 @@ describe('EventDetailPage', () => {
     session.access.set('admin');
     await fixture.whenStable();
     expect(text('#titulo-confirmados')).toBe('Confirmados: 0');
-    expect(text('.attendees__note')).toBe('Visível para administradores');
+    expect(text('.attendees__note')).toBe('Limite: 40 pessoas · Visível para administradores');
   });
 
   it('avisa quando o evento não existe', async () => {
@@ -228,6 +230,30 @@ describe('EventDetailPage', () => {
       await fixture.whenStable();
       expect(text('.presence [role="alert"]')).toContain('já começou');
       expect(confirmButton()).toBeTruthy();
+    });
+
+    it('mostra as vagas disponíveis', async () => {
+      await emit({ ...raid, attendeeCount: 39 });
+      await attendance(null);
+      expect(text('.presence__spots')).toBe('1 de 40 vaga disponível');
+    });
+
+    it('evento lotado não oferece a ação, mas quem já confirmou continua confirmado', async () => {
+      await emit({ ...raid, attendeeCount: 40 });
+      await attendance(null);
+      expect(text('#titulo-presenca')).toBe('Evento lotado');
+      expect(confirmButton()).toBeUndefined();
+      await attendance({ confirmedAt: new Date() });
+      expect(presence()).toContain('Presença confirmada');
+    });
+
+    it('avisa quando o evento lota antes da confirmação', async () => {
+      await emit(raid);
+      await attendance(null);
+      events.confirmResult = { ok: false, error: 'full' };
+      confirmButton()!.click();
+      await fixture.whenStable();
+      expect(text('.presence [role="alert"]')).toBe('Este evento atingiu o limite de confirmados.');
     });
 
     it('evento passado não oferece a ação', async () => {
@@ -483,6 +509,17 @@ describe('EventDetailPage', () => {
       events.guestResult = { ok: false, error: 'guests-closed' };
       await submit();
       expect(text('.guest-form [role="alert"]')).toContain('foi desativada neste evento');
+    });
+
+    it('evento lotado não oferece o formulário', async () => {
+      await asVisitor({ ...raid, attendeeCount: 40 });
+      expect(text('#titulo-presenca')).toBe('Evento lotado');
+      expect(q('.guest-form')).toBeNull();
+    });
+
+    it('veem as vagas disponíveis', async () => {
+      await asVisitor({ ...raid, attendeeCount: 10 });
+      expect(text('.presence__spots')).toBe('30 de 40 vagas disponíveis');
     });
 
     it('com a confirmação de visitantes desativada, não oferecem a ação', async () => {

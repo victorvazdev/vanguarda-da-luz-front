@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { signUp } from '../../src/app/core/auth/sign-up';
+import { cancelAttendance, confirmAttendance } from '../../src/app/core/data/attendance';
 import {
   cancelEvent,
   createEvent,
@@ -41,6 +42,7 @@ const input = (over: Partial<EventInput> = {}): EventInput => ({
   description: '[DESCRIÇÃO DO EVENTO]',
   organizer: 'Maren',
   guestsAllowed: true,
+  maxAttendees: 40,
   ...over,
 });
 
@@ -181,5 +183,43 @@ describe('Visitantes confirmam presença (emuladores)', () => {
     expect(await deleteCancelledEvent(admin.db, id)).toEqual({ ok: true });
     expect(await adminGet(`events/${id}`)).toBeNull();
     expect(await adminGet(`events/${id}/guests/forever:Lunara:Sombraviva`)).toBeNull();
+  });
+
+  it('respeita o limite de confirmados, somando membros e visitantes', async () => {
+    const admin = await firstAdmin();
+    const id = await newEvent(admin, { maxAttendees: 2 });
+    expect((await confirmAttendance(admin.db, id, admin.uid)).ok).toBe(true);
+    expect((await confirmGuestAttendance(client().db, id, lunara)).ok).toBe(true);
+    expect(await confirmGuestAttendance(client().db, id, thalor)).toEqual({
+      ok: false,
+      error: 'full',
+    });
+    expect(await adminGet(`events/${id}`)).toMatchObject({ attendeeCount: '2' });
+
+    // Um cancelamento libera a vaga.
+    expect(await cancelAttendance(admin.db, id, admin.uid)).toEqual({ ok: true });
+    expect((await confirmGuestAttendance(client().db, id, thalor)).ok).toBe(true);
+  });
+
+  it('confirmações simultâneas não passam do limite', async () => {
+    const admin = await firstAdmin();
+    const id = await newEvent(admin, { maxAttendees: 3 });
+    const names = ['Aria', 'Brom', 'Cael', 'Dara', 'Eryn', 'Fenn'];
+    const results = await Promise.all(
+      names.map((n) =>
+        confirmGuestAttendance(client().db, id, {
+          game: 'retail',
+          characterName: n,
+          realm: 'Azralon',
+        }),
+      ),
+    );
+    expect(results.filter((r) => r.ok)).toHaveLength(3);
+    expect(results.filter((r) => !r.ok).map((r) => !r.ok && r.error)).toEqual([
+      'full',
+      'full',
+      'full',
+    ]);
+    expect(await firstGuests(admin, id)).toHaveLength(3);
   });
 });

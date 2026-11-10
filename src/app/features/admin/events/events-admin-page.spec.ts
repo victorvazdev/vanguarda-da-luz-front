@@ -67,6 +67,8 @@ const raid: GuildEvent = {
   organizer: 'Maren',
   status: 'ativo',
   guestsAllowed: true,
+  maxAttendees: 40,
+  attendeeCount: 0,
 };
 
 let fixture: ComponentFixture<EventsAdminPage>;
@@ -159,8 +161,11 @@ describe('EventsAdminPage (Criar, editar, cancelar e excluir eventos)', () => {
         'Horário',
         'Organizador',
         'Descrição',
+        'Limite de confirmados',
         'Visitantes podem confirmar presença',
       ]);
+      // Por padrão, até 40 confirmados.
+      expect(q<HTMLInputElement>('#evento-maxAttendees')!.value).toBe('40');
       // Por padrão, visitantes podem confirmar presença.
       expect(q<HTMLInputElement>('#evento-guestsAllowed')!.checked).toBe(true);
       expect(text('#evento-fuso')).toBe('Horário de Brasília.');
@@ -203,10 +208,37 @@ describe('EventsAdminPage (Criar, editar, cancelar e excluir eventos)', () => {
           organizer: 'Maren',
           description: 'Traga poções.',
           guestsAllowed: true,
+          maxAttendees: 40,
         },
       ]);
       expect(text('.notice')).toBe('Evento criado: Raid semanal.');
       expect(q<HTMLInputElement>('#evento-title')!.value).toBe('');
+    });
+
+    it('permite definir o limite de confirmados, de 1 a 500', async () => {
+      await emit([]);
+      await fill();
+      for (const [value, ok] of [
+        ['0', false],
+        ['501', false],
+        ['2.5', false],
+        ['', false],
+        ['12', true],
+      ] as const) {
+        await set('maxAttendees', value);
+        await submit();
+        if (!ok) {
+          expect(errorOf('maxAttendees')).toMatch(/limite|número inteiro de 1 a 500/);
+          expect(events.created).toHaveLength(0);
+        }
+      }
+      expect(events.created[0].maxAttendees).toBe(12);
+      expect(q<HTMLInputElement>('#evento-maxAttendees')!.value).toBe('40');
+    });
+
+    it('mostra quantos confirmaram de quantas vagas', async () => {
+      await emit([{ ...raid, attendeeCount: 12, maxAttendees: 30 }]);
+      expect(el.textContent).toContain('12 de 30 confirmados');
     });
 
     it('permite desativar a confirmação de presença de visitantes', async () => {
@@ -258,6 +290,7 @@ describe('EventsAdminPage (Criar, editar, cancelar e excluir eventos)', () => {
             organizer: 'Maren',
             description: '[DESCRIÇÃO DO EVENTO]',
             guestsAllowed: true,
+            maxAttendees: 40,
           },
         ],
       ]);
@@ -273,10 +306,12 @@ describe('EventsAdminPage (Criar, editar, cancelar e excluir eventos)', () => {
       await fixture.whenStable();
       const toggle = q<HTMLInputElement>('#evento-guestsAllowed')!;
       expect(toggle.checked).toBe(false);
+      await set('maxAttendees', '25');
       toggle.click();
       await fixture.whenStable();
       await submit();
       expect(events.updated[0][1].guestsAllowed).toBe(true);
+      expect(events.updated[0][1].maxAttendees).toBe(25);
     });
 
     it('descartar volta ao formulário de novo evento sem salvar', async () => {

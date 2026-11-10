@@ -17,7 +17,9 @@ import {
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
+  DEFAULT_MAX_ATTENDEES,
   EVENT_LIMITS,
+  MAX_ATTENDEES_RANGE,
   isChangeable,
   isUpcoming,
   type EventActionError,
@@ -35,7 +37,7 @@ import { firstError, type ErrorMessages } from '../../../shared/forms/field-erro
 import { requiredText } from '../../../shared/forms/validators';
 import { ConfirmService } from '../../../shared/ui/confirm-dialog/confirm.service';
 
-type Field = 'title' | 'date' | 'time' | 'organizer' | 'description';
+type Field = 'title' | 'date' | 'time' | 'organizer' | 'description' | 'maxAttendees';
 
 const MESSAGES: Record<Field, ErrorMessages> = {
   title: {
@@ -52,7 +54,17 @@ const MESSAGES: Record<Field, ErrorMessages> = {
     required: 'Informe a descrição.',
     maxlength: `Use no máximo ${EVENT_LIMITS.description} caracteres.`,
   },
+  maxAttendees: {
+    required: 'Informe o limite de confirmados.',
+    min: `Use um número inteiro de ${MAX_ATTENDEES_RANGE.min} a ${MAX_ATTENDEES_RANGE.max}.`,
+    max: `Use um número inteiro de ${MAX_ATTENDEES_RANGE.min} a ${MAX_ATTENDEES_RANGE.max}.`,
+    integer: `Use um número inteiro de ${MAX_ATTENDEES_RANGE.min} a ${MAX_ATTENDEES_RANGE.max}.`,
+  },
 };
+
+/** Número inteiro (o campo numérico aceita decimais). */
+const integer: ValidatorFn = (control) =>
+  control.value === null || Number.isInteger(control.value) ? null : { integer: true };
 
 const ERRORS: Record<Exclude<EventActionError, 'past'>, string> = {
   cancelled: 'Este evento foi cancelado e não pode mais ser alterado. A lista foi atualizada.',
@@ -78,6 +90,8 @@ interface EventView {
   cancelled: boolean;
   changeable: boolean;
   guestsAllowed: boolean;
+  /** "12 de 40 confirmados". */
+  attendance: string;
   source: GuildEvent;
 }
 
@@ -96,6 +110,7 @@ export class EventsAdminPage {
   private readonly injector = inject(Injector);
 
   protected readonly limits = EVENT_LIMITS;
+  protected readonly attendeesRange = MAX_ATTENDEES_RANGE;
   protected readonly timeZone = GUILD_TIME_ZONE_LABEL;
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
   private readonly list = signal<GuildEvent[]>([]);
@@ -118,6 +133,7 @@ export class EventsAdminPage {
       cancelled: e.status === 'cancelado',
       changeable: isChangeable(e),
       guestsAllowed: e.guestsAllowed,
+      attendance: `${e.attendeeCount} de ${e.maxAttendees} confirmados`,
       source: e,
     })),
   );
@@ -131,6 +147,16 @@ export class EventsAdminPage {
       description: ['', [requiredText, Validators.maxLength(EVENT_LIMITS.description)]],
       /** Visitantes podem confirmar presença (padrão: sim). */
       guestsAllowed: [true],
+      /** Limite de confirmados, membros e visitantes (padrão: 40). */
+      maxAttendees: [
+        DEFAULT_MAX_ATTENDEES as number | null,
+        [
+          Validators.required,
+          Validators.min(MAX_ATTENDEES_RANGE.min),
+          Validators.max(MAX_ATTENDEES_RANGE.max),
+          integer,
+        ],
+      ],
     },
     { validators: futureDateTime },
   );
@@ -171,6 +197,7 @@ export class EventsAdminPage {
       organizer: event.source.organizer,
       description: event.source.description,
       guestsAllowed: event.source.guestsAllowed,
+      maxAttendees: event.source.maxAttendees,
     });
     this.focus('#evento-title');
   }
@@ -271,7 +298,7 @@ export class EventsAdminPage {
   private startNew(): void {
     this.editing.set(null);
     this.submitted.set(false);
-    this.form.reset({ guestsAllowed: true });
+    this.form.reset({ guestsAllowed: true, maxAttendees: DEFAULT_MAX_ATTENDEES });
   }
 
   private resetMessages(): void {
@@ -283,13 +310,14 @@ export class EventsAdminPage {
   private toInput(): EventInput | null {
     const v = this.form.getRawValue();
     const startsAt = brasiliaToDate(v.date, v.time);
-    if (!startsAt) return null;
+    if (!startsAt || v.maxAttendees === null) return null;
     return {
       title: v.title.trim(),
       startsAt,
       organizer: v.organizer.trim(),
       description: v.description.trim(),
       guestsAllowed: v.guestsAllowed,
+      maxAttendees: v.maxAttendees,
     };
   }
 

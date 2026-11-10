@@ -66,6 +66,7 @@ async function futureEvent(admin: Person): Promise<string> {
     description: '[DESCRIÇÃO DO EVENTO]',
     organizer: 'Maren',
     guestsAllowed: true,
+    maxAttendees: 40,
   });
   if (!r.ok) throw new Error(r.error);
   return r.id;

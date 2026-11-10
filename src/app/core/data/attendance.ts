@@ -11,7 +11,14 @@ import {
   type Transaction,
 } from 'firebase/firestore';
 import { toDate } from './applications';
-import { eventFromData, isUpcoming } from './events';
+import {
+  attendanceCountUpdate,
+  retryCountRace,
+  eventFromData,
+  isFull,
+  isUpcoming,
+  type GuildEvent,
+} from './events';
 import { watchMembers, type MainCharacter, type MemberRow } from './members-admin';
 
 export interface MyAttendance {
@@ -21,6 +28,7 @@ export interface MyAttendance {
 export type AttendanceError =
   | 'already-confirmed'
   | 'not-confirmed'
+  | 'full'
   | 'past'
   | 'cancelled'
   | 'not-found'
@@ -141,27 +149,35 @@ class Blocked extends Error {
 }
 
 /** Lê o evento na transação e garante que ainda aceita mudanças de presença. */
-async function openEvent(tx: Transaction, db: Firestore, eventId: string): Promise<void> {
+async function openEvent(tx: Transaction, db: Firestore, eventId: string): Promise<GuildEvent> {
   const snap = await tx.get(doc(db, 'events', eventId));
   if (!snap.exists()) throw new Blocked('not-found');
   const event = eventFromData(eventId, snap.data());
   if (event.status === 'cancelado') throw new Blocked('cancelled');
   if (!isUpcoming(event.startsAt)) throw new Blocked('past');
+  return event;
 }
 
-/** Confirma a presença de `uid` (a pessoa autenticada) em um evento futuro e ativo. */
+/**
+ * Confirma a presença de `uid` (a pessoa autenticada) em um evento futuro e ativo, com vaga.
+ * O contador de confirmados do evento sobe no mesmo lote.
+ */
 export async function confirmAttendance(
   db: Firestore,
   eventId: string,
   uid: string,
 ): Promise<AttendanceResult> {
   try {
-    await runTransaction(db, async (tx) => {
-      await openEvent(tx, db, eventId);
-      const ref = attendeeRef(db, eventId, uid);
-      if ((await tx.get(ref)).exists()) throw new Blocked('already-confirmed');
-      tx.set(ref, { confirmedAt: serverTimestamp() });
-    });
+    await retryCountRace(() =>
+      runTransaction(db, async (tx) => {
+        const event = await openEvent(tx, db, eventId);
+        const ref = attendeeRef(db, eventId, uid);
+        if ((await tx.get(ref)).exists()) throw new Blocked('already-confirmed');
+        if (isFull(event)) throw new Blocked('full');
+        tx.set(ref, { confirmedAt: serverTimestamp() });
+        tx.update(doc(db, 'events', eventId), attendanceCountUpdate(event, 'attendees', uid, 1));
+      }),
+    );
     return { ok: true };
   } catch (error) {
     return failure(error);
@@ -178,12 +194,15 @@ export async function cancelAttendance(
   uid: string,
 ): Promise<AttendanceResult> {
   try {
-    await runTransaction(db, async (tx) => {
-      await openEvent(tx, db, eventId);
-      const ref = attendeeRef(db, eventId, uid);
-      if (!(await tx.get(ref)).exists()) throw new Blocked('not-confirmed');
-      tx.delete(ref);
-    });
+    await retryCountRace(() =>
+      runTransaction(db, async (tx) => {
+        const event = await openEvent(tx, db, eventId);
+        const ref = attendeeRef(db, eventId, uid);
+        if (!(await tx.get(ref)).exists()) throw new Blocked('not-confirmed');
+        tx.delete(ref);
+        tx.update(doc(db, 'events', eventId), attendanceCountUpdate(event, 'attendees', uid, -1));
+      }),
+    );
     return { ok: true };
   } catch (error) {
     return failure(error);

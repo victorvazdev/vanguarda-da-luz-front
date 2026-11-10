@@ -11,7 +11,7 @@ import {
   type Firestore,
 } from 'firebase/firestore';
 import { beforeEach, describe, it } from 'vitest';
-import { account, asUser, asVisitor, seed, useRulesEnv } from './env';
+import { account, asUser, asVisitor, presenceWithCount, seed, useRulesEnv } from './env';
 
 const env = useRulesEnv();
 
@@ -69,8 +69,9 @@ const retail = (over: Record<string, unknown> = {}) => ({
 const guest = (db: Firestore, eventId: string, id: string) =>
   doc(db, 'events', eventId, 'guests', id);
 const visitor = () => asVisitor(env());
+/** Confirma junto com o contador do evento (eventos semeados sem contador: passa a 1). */
 const confirm = (db: Firestore, eventId: string, data: Record<string, unknown>, id = LUNARA) =>
-  setDoc(guest(db, eventId, id), data);
+  presenceWithCount(db, eventId, 'guests', id, data, 1);
 
 describe('Visitante confirma presença', () => {
   it('sem login, com nome e sobrenome (WoW Forever)', async () => {
@@ -88,6 +89,12 @@ describe('Visitante confirma presença', () => {
 
   it('membro ativo confirma pela própria conta, não como visitante', async () => {
     await assertFails(confirm(asUser(env(), 'tavia'), 'raid', forever()));
+  });
+
+  it('não confirma sem atualizar o contador, nem além do limite', async () => {
+    await assertFails(setDoc(guest(visitor(), 'raid', LUNARA), forever()));
+    await seed(env(), { 'events/lotado': event({ maxAttendees: 1, attendeeCount: 1 }) });
+    await assertFails(presenceWithCount(visitor(), 'lotado', 'guests', LUNARA, forever(), 2));
   });
 
   it('não confirma com a confirmação de visitantes desativada', async () => {
@@ -120,11 +127,14 @@ describe('Visitante confirma presença', () => {
       ),
     );
     await assertSucceeds(
-      confirm(
+      // Segunda confirmação no evento: o contador vai a 2.
+      presenceWithCount(
         visitor(),
         'raid',
-        retail({ realm: "Água Quel'Thalas" }),
+        'guests',
         "retail:Thalor:Água Quel'Thalas",
+        retail({ realm: "Água Quel'Thalas" }),
+        2,
       ),
     );
   });
@@ -182,14 +192,17 @@ describe('Ler presenças de visitantes', () => {
 });
 
 describe('Cancelar presença de visitante', () => {
-  it('administrador cancela em evento futuro e ativo', async () => {
-    await assertSucceeds(deleteDoc(guest(asUser(env(), 'ana'), 'raid', THALOR)));
+  it('administrador cancela em evento futuro e ativo, junto com o contador', async () => {
+    await assertFails(deleteDoc(guest(asUser(env(), 'ana'), 'raid', THALOR)));
+    await assertSucceeds(
+      presenceWithCount(asUser(env(), 'ana'), 'raid', 'guests', THALOR, null, 0),
+    );
   });
 
   it('visitante, conta pendente e membro não cancelam', async () => {
-    await assertFails(deleteDoc(guest(visitor(), 'raid', THALOR)));
-    await assertFails(deleteDoc(guest(asUser(env(), 'kaelen'), 'raid', THALOR)));
-    await assertFails(deleteDoc(guest(asUser(env(), 'tavia'), 'raid', THALOR)));
+    for (const db of [visitor(), asUser(env(), 'kaelen'), asUser(env(), 'tavia')]) {
+      await assertFails(presenceWithCount(db, 'raid', 'guests', THALOR, null, 0));
+    }
   });
 
   it('ninguém altera uma presença de visitante', async () => {

@@ -569,16 +569,26 @@ service cloud.firestore {
 
     // ---------- Eventos ----------
     // Públicos (visitantes também veem o calendário). Criados, editados e cancelados por
-    // administradores, sempre antes de começarem. O cancelamento mantém o evento (status 'cancelado') e é definitivo;
-    // depois, um administrador pode excluir o evento cancelado, com a lista de confirmados.
-    // As presenças ficam em subcoleções, então editar o evento não as altera.
+    // administradores, sempre antes de começarem. O cancelamento mantém o evento (status
+    // 'cancelado') e é definitivo; depois, um administrador pode excluir o evento cancelado,
+    // com a lista de confirmados. As presenças ficam em subcoleções, então editar o evento não
+    // as altera.
     // `guestsAllowed` (opcional; ausente = true) liga a confirmação de presença de visitantes.
+    // `maxAttendees` (opcional; ausente = 40) limita o total de confirmados (membros e
+    // visitantes). `attendeeCount` conta os confirmados: cada confirmação ou cancelamento
+    // altera o contador no mesmo lote, e `lastAttendance` aponta a presença alterada, para as
+    // rules conferirem os dois lados (ver "Contador de confirmados").
     function eventFields() {
       return ['title', 'startsAt', 'description', 'organizer'];
     }
 
     function editableEventFields() {
-      return eventFields().concat(['guestsAllowed']);
+      return eventFields().concat(['guestsAllowed', 'maxAttendees']);
+    }
+
+    // Limite padrão e máximo de confirmados (igual a src/app/core/data/events.ts).
+    function maxAttendeesOf(event) {
+      return event.get('maxAttendees', 40);
     }
 
     function filledText(value, max) {
@@ -590,7 +600,9 @@ service cloud.firestore {
         && filledText(d.organizer, 40)
         && filledText(d.description, 2000)
         && d.startsAt is timestamp
-        && (!('guestsAllowed' in d) || d.guestsAllowed is bool);
+        && (!('guestsAllowed' in d) || d.guestsAllowed is bool)
+        && (!('maxAttendees' in d)
+          || (d.maxAttendees is int && d.maxAttendees >= 1 && d.maxAttendees <= 500));
     }
 
     // Personagem de visitante: no Forever, nome e sobrenome; no Retail, nome e reino.
@@ -632,9 +644,11 @@ service cloud.firestore {
 
       allow create: if isAdmin()
         && request.resource.data.keys().hasOnly(
-             editableEventFields().concat(['status', 'createdBy', 'createdAt', 'updatedAt']))
+             editableEventFields().concat(
+               ['status', 'createdBy', 'createdAt', 'updatedAt', 'attendeeCount']))
         && request.resource.data.keys().hasAll(eventFields())
         && validEventContent(request.resource.data)
+        && request.resource.data.get('attendeeCount', 0) == 0
         && request.resource.data.startsAt > request.time
         && request.resource.data.status == 'ativo'
         && request.resource.data.createdBy == request.auth.uid
@@ -663,6 +677,38 @@ service cloud.firestore {
         && request.resource.data.cancelledAt == request.time
         && request.resource.data.cancelledBy == request.auth.uid;
 
+      // Contador de confirmados: muda junto com a presença apontada em `lastAttendance`, no
+      // mesmo lote (quem pode confirmar ou cancelar é decidido nas rules da presença).
+      // Entrada: +1, sem passar do limite. Saída: -1 (nunca abaixo de zero; eventos antigos
+      // não tinham contador).
+      allow update: if resource.data.status == 'ativo'
+        && resource.data.startsAt > request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['attendeeCount', 'lastAttendance'])
+        && request.resource.data.lastAttendance is map
+        && request.resource.data.lastAttendance.keys().hasOnly(['kind', 'id'])
+        && request.resource.data.lastAttendance.kind in ['attendees', 'guests']
+        && request.resource.data.lastAttendance.id is string
+        && countChangeMatches(request.resource.data);
+
+      function presencePath(change) {
+        return /databases/$(database)/documents/events/$(eventId)/$(change.kind)/$(change.id);
+      }
+
+      function currentCount() {
+        return resource.data.get('attendeeCount', 0);
+      }
+
+      function countChangeMatches(next) {
+        return (next.attendeeCount == currentCount() + 1
+            && next.attendeeCount <= maxAttendeesOf(resource.data)
+            && !exists(presencePath(next.lastAttendance))
+            && existsAfter(presencePath(next.lastAttendance)))
+          || (next.attendeeCount == (currentCount() > 0 ? currentCount() - 1 : 0)
+            && exists(presencePath(next.lastAttendance))
+            && !existsAfter(presencePath(next.lastAttendance)));
+      }
+
       // Exclusão: somente eventos cancelados (a qualquer momento, inclusive depois da data).
       allow delete: if isAdmin() && resource.data.status == 'cancelado';
 
@@ -686,6 +732,21 @@ service cloud.firestore {
           && event.get('guestsAllowed', true) == true;
       }
 
+      // A presença `kind/id` entra (+1) ou sai (-1) do contador do evento neste mesmo lote.
+      function countedIn(kind, id) {
+        let before = get(eventPath()).data;
+        let after = getAfter(eventPath()).data;
+        return after.get('lastAttendance', null) == {'kind': kind, 'id': id}
+          && after.get('attendeeCount', 0) == before.get('attendeeCount', 0) + 1;
+      }
+
+      function countedOut(kind, id) {
+        let before = get(eventPath()).data.get('attendeeCount', 0);
+        let after = getAfter(eventPath()).data;
+        return after.get('lastAttendance', null) == {'kind': kind, 'id': id}
+          && after.get('attendeeCount', 0) == (before > 0 ? before - 1 : 0);
+      }
+
       // Exclusão de evento cancelado: o administrador apaga as presenças no mesmo lote do
       // evento ou, se o evento já não existe, as que sobraram.
       function deletingCancelledEvent() {
@@ -695,13 +756,15 @@ service cloud.firestore {
       }
 
       match /attendees/{uid} {
-        allow get: if (isSelf(uid) && isActive()) || isAdmin();
+        // Durante a exclusão da conta, a pessoa ainda confere as próprias presenças.
+        allow get: if (isSelf(uid) && (isActive() || isDeleting())) || isAdmin();
         allow list: if isAdmin();
 
         // Criar (e nunca sobrescrever: uma segunda confirmação seria `update`, que é negado).
         allow create: if isSelf(uid)
           && isActive()
           && eventIsOpen()
+          && countedIn('attendees', uid)
           && request.resource.data.keys().hasOnly(['confirmedAt'])
           && request.resource.data.confirmedAt == request.time;
 
@@ -711,7 +774,8 @@ service cloud.firestore {
         // o evento estiver ativo e futuro. Depois disso, a pessoa pode confirmar de novo.
         // Na exclusão da conta, a própria pessoa cancela as presenças em eventos futuros.
         allow delete: if ((isSelf(uid) && (isActive() || isDeleting())) || isAdmin())
-          && eventIsOpen();
+          && eventIsOpen()
+          && countedOut('attendees', uid);
 
         // Exclusão de evento cancelado. Fora disso, um evento cancelado mantém a lista de
         // confirmados.
@@ -730,11 +794,12 @@ service cloud.firestore {
 
         allow create: if !isActive()
           && guestsOpen()
+          && countedIn('guests', guestId)
           && validGuest(request.resource.data, guestId);
 
         allow update: if false;
 
-        allow delete: if isAdmin() && eventIsOpen();
+        allow delete: if isAdmin() && eventIsOpen() && countedOut('guests', guestId);
         allow delete: if deletingCancelledEvent();
       }
     }

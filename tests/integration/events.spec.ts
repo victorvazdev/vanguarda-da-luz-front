@@ -59,6 +59,7 @@ const input = (over: Partial<EventInput> = {}): EventInput => ({
   description: '[DESCRIÇÃO DO EVENTO]',
   organizer: 'Maren',
   guestsAllowed: true,
+  maxAttendees: 40,
   ...over,
 });
 
@@ -137,6 +138,7 @@ describe('Criar, editar e cancelar eventos (emuladores)', () => {
       description: 'Traga poções.',
       organizer: 'Dorvan',
       guestsAllowed: true,
+      maxAttendees: 40,
     });
     expect(result).toEqual({ ok: true });
 

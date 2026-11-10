@@ -7,9 +7,11 @@ import {
   getDocs,
   serverTimestamp,
   setDoc,
+  updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { beforeEach, describe, it } from 'vitest';
-import { account, asUser, seed, useRulesEnv } from './env';
+import { account, asUser, presenceWithCount, seed, useRulesEnv } from './env';
 
 const env = useRulesEnv();
 
@@ -45,8 +47,19 @@ beforeEach(() =>
 
 const attendee = (as: string, eventId: string, uid = as) =>
   doc(asUser(env(), as), 'events', eventId, 'attendees', uid);
+/** Confirma com o contador do evento (eventos semeados sem contador: passa a 1). */
 const confirm = (as: string, eventId: string, data: Record<string, unknown> = {}, uid = as) =>
-  setDoc(attendee(as, eventId, uid), { confirmedAt: serverTimestamp(), ...data });
+  presenceWithCount(
+    asUser(env(), as),
+    eventId,
+    'attendees',
+    uid,
+    { confirmedAt: serverTimestamp(), ...data },
+    1,
+  );
+/** Cancela com o contador do evento (sem contador: continua em 0). */
+const cancel = (as: string, eventId: string, uid = as) =>
+  presenceWithCount(asUser(env(), as), eventId, 'attendees', uid, null, 0);
 
 describe('Confirmar presença', () => {
   it('membro confirma a própria presença em evento futuro e ativo', async () => {
@@ -102,33 +115,94 @@ describe('Ler presenças', () => {
 
 describe('Cancelar presença', () => {
   it('membro cancela a própria presença em evento futuro e ativo', async () => {
-    await assertSucceeds(deleteDoc(attendee('dorvan', 'raid')));
+    await assertSucceeds(cancel('dorvan', 'raid'));
   });
 
   it('depois de cancelar, pode confirmar de novo', async () => {
-    await assertSucceeds(deleteDoc(attendee('dorvan', 'raid')));
+    await assertSucceeds(cancel('dorvan', 'raid'));
     await assertSucceeds(confirm('dorvan', 'raid'));
   });
 
   it('membro não cancela a presença de outra pessoa', async () => {
-    await assertFails(deleteDoc(attendee('tavia', 'raid', 'dorvan')));
+    await assertFails(cancel('tavia', 'raid', 'dorvan'));
   });
 
   it('administrador cancela a presença de qualquer confirmado', async () => {
-    await assertSucceeds(deleteDoc(attendee('ana', 'raid', 'dorvan')));
+    await assertSucceeds(cancel('ana', 'raid', 'dorvan'));
   });
 
   it('nem o administrador cancela depois que o evento começou ou foi cancelado', async () => {
-    await assertFails(deleteDoc(attendee('ana', 'antigo', 'dorvan')));
-    await assertFails(deleteDoc(attendee('ana', 'cancelado', 'dorvan')));
+    await assertFails(cancel('ana', 'antigo', 'dorvan'));
+    await assertFails(cancel('ana', 'cancelado', 'dorvan'));
   });
 
   it('não cancela depois que o evento começou ou foi cancelado', async () => {
-    await assertFails(deleteDoc(attendee('dorvan', 'antigo')));
-    await assertFails(deleteDoc(attendee('dorvan', 'cancelado')));
+    await assertFails(cancel('dorvan', 'antigo'));
+    await assertFails(cancel('dorvan', 'cancelado'));
   });
 
   it('conta desativada não altera presenças', async () => {
-    await assertFails(deleteDoc(attendee('brenna', 'raid')));
+    await assertFails(cancel('brenna', 'raid'));
+  });
+});
+
+describe('Contador e limite de confirmados', () => {
+  beforeEach(() =>
+    seed(env(), {
+      'events/quase': event({ maxAttendees: 2, attendeeCount: 1 }),
+      'events/lotado': event({ maxAttendees: 1, attendeeCount: 1 }),
+      'events/lotado/attendees/dorvan': { confirmedAt: new Date() },
+    }),
+  );
+
+  const db = (uid: string) => asUser(env(), uid);
+  const presence = { confirmedAt: serverTimestamp() };
+
+  it('confirma enquanto houver vaga, subindo o contador em 1', async () => {
+    await assertSucceeds(
+      presenceWithCount(db('tavia'), 'quase', 'attendees', 'tavia', presence, 2),
+    );
+  });
+
+  it('não confirma além do limite', async () => {
+    await assertFails(presenceWithCount(db('tavia'), 'lotado', 'attendees', 'tavia', presence, 2));
+  });
+
+  it('não confirma sem atualizar o contador, nem com outro valor', async () => {
+    await assertFails(setDoc(attendee('tavia', 'quase'), presence));
+    await assertFails(presenceWithCount(db('tavia'), 'quase', 'attendees', 'tavia', presence, 1));
+    await assertFails(presenceWithCount(db('tavia'), 'raid', 'attendees', 'tavia', presence, 2));
+  });
+
+  it('o contador aponta a presença alterada', async () => {
+    const d = db('tavia');
+    const batch = writeBatch(d);
+    batch.set(doc(d, 'events', 'quase', 'attendees', 'tavia'), presence);
+    batch.update(doc(d, 'events', 'quase'), {
+      attendeeCount: 2,
+      lastAttendance: { kind: 'attendees', id: 'dorvan' },
+    });
+    await assertFails(batch.commit());
+  });
+
+  it('ninguém altera o contador sem confirmar ou cancelar uma presença', async () => {
+    for (const uid of ['tavia', 'ana']) {
+      await assertFails(
+        updateDoc(doc(db(uid), 'events', 'lotado'), {
+          attendeeCount: 0,
+          lastAttendance: { kind: 'attendees', id: 'ninguem' },
+        }),
+      );
+    }
+    await assertFails(updateDoc(doc(db('ana'), 'events', 'lotado'), { attendeeCount: 0 }));
+  });
+
+  it('cancelar libera a vaga, descendo o contador em 1', async () => {
+    await assertFails(deleteDoc(attendee('dorvan', 'lotado')));
+    await assertFails(presenceWithCount(db('dorvan'), 'lotado', 'attendees', 'dorvan', null, 1));
+    await assertSucceeds(presenceWithCount(db('dorvan'), 'lotado', 'attendees', 'dorvan', null, 0));
+    await assertSucceeds(
+      presenceWithCount(db('tavia'), 'lotado', 'attendees', 'tavia', presence, 1),
+    );
   });
 });

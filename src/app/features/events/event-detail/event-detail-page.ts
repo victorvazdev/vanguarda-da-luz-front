@@ -16,7 +16,7 @@ import { GUILD } from '../../../core/content/guild-content';
 import { ACCOUNT_MESSAGES } from '../../../core/auth/messages';
 import { SessionService } from '../../../core/auth/session.service';
 import type { AttendanceError, MyAttendance } from '../../../core/data/attendance';
-import { isUpcoming, type GuildEvent } from '../../../core/data/events';
+import { isFull, isUpcoming, spotsLeft, type GuildEvent } from '../../../core/data/events';
 import { EventsService } from '../../../core/data/events.service';
 import { PATHS, joinPathFor } from '../../../core/routing/paths';
 import {
@@ -36,12 +36,21 @@ const ATTENDANCE_ERRORS: Record<
   string
 > = {
   past: 'Este evento já começou. Não é mais possível alterar a presença.',
+  full: 'Este evento atingiu o limite de confirmados.',
   cancelled: 'Este evento foi cancelado. Não é possível alterar a presença.',
   'not-found': 'Este evento não existe mais.',
   'not-allowed': 'Sua conta não pode confirmar presença neste evento.',
   network: ACCOUNT_MESSAGES.network,
   unknown: 'Não foi possível salvar sua presença. Tente novamente.',
 };
+
+/** "3 de 40 vagas disponíveis" (ou "1 de 40 vaga disponível"). */
+export function spotsText(e: GuildEvent): string {
+  const left = spotsLeft(e);
+  return left === 1
+    ? `1 de ${e.maxAttendees} vaga disponível`
+    : `${left} de ${e.maxAttendees} vagas disponíveis`;
+}
 
 /** Detalhe de um evento do calendário: título, data, horário, organizador e descrição. */
 @Component({
@@ -99,6 +108,9 @@ export class EventDetailPage {
       cancelled: e.status === 'cancelado',
       upcoming: isUpcoming(e.startsAt),
       guestsAllowed: e.guestsAllowed,
+      full: isFull(e),
+      maxAttendees: e.maxAttendees,
+      spots: spotsText(e),
     };
   });
 
