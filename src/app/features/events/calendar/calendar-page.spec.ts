@@ -30,6 +30,9 @@ const event = (id: string, iso: string, over: Partial<GuildEvent> = {}): GuildEv
   description: '[DESCRIÇÃO DO EVENTO]',
   organizer: 'Maren',
   status: 'ativo',
+  guestsAllowed: true,
+  maxAttendees: 40,
+  attendeeCount: 0,
   ...over,
 });
 

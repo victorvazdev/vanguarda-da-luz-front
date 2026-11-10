@@ -76,7 +76,18 @@
               }
             }
 
-            @if (!e.cancelled && attendance() !== undefined) {
+            @if (!e.cancelled && presenceMode() === 'guest') {
+              <app-guest-presence
+                [eventId]="id()"
+                [upcoming]="e.upcoming"
+                [guestsAllowed]="e.guestsAllowed"
+                [full]="e.full"
+                [spots]="e.spots"
+                [joinPath]="joinPath()"
+              />
+            }
+
+            @if (!e.cancelled && presenceMode() === 'member' && attendance() !== undefined) {
               <section class="presence" aria-labelledby="titulo-presenca">
                 @if (attendance()) {
                   <h2 id="titulo-presenca" class="presence__title">
@@ -103,10 +114,22 @@
                       {{ confirming() ? 'Cancelando…' : 'Cancelar presença' }}
                     </button>
                   }
+                } @else if (e.upcoming && e.full) {
+                  <h2 id="titulo-presenca" class="presence__title">Evento lotado</h2>
+                  @if (presenceNotice(); as notice) {
+                    <p id="presenca-status" class="presence__text" role="status" tabindex="-1">
+                      {{ notice }}
+                    </p>
+                  }
+                  <p class="presence__text muted">
+                    Este evento atingiu o limite de confirmados. Se alguém cancelar, a vaga volta a
+                    ficar disponível.
+                  </p>
                 } @else if (e.upcoming) {
                   <h2 id="titulo-presenca" class="presence__title">
                     Você vai participar deste evento?
                   </h2>
+                  <p class="presence__text muted presence__spots">{{ e.spots }}</p>
                   @if (presenceNotice(); as notice) {
                     <p id="presenca-status" class="presence__text" role="status" tabindex="-1">
                       {{ notice }}
@@ -140,6 +163,7 @@
               [eventId]="id()"
               [eventTitle]="e.title"
               [open]="!e.cancelled && e.upcoming"
+              [maxAttendees]="e.maxAttendees"
             />
           }
         </div>

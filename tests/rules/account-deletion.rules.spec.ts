@@ -13,7 +13,15 @@ import {
   type Firestore,
 } from 'firebase/firestore';
 import { beforeEach, describe, it } from 'vitest';
-import { account, asFreshUser, asUser, asVisitor, seed, useRulesEnv } from './env';
+import {
+  account,
+  asFreshUser,
+  asUser,
+  asVisitor,
+  presenceWithCount,
+  seed,
+  useRulesEnv,
+} from './env';
 
 const env = useRulesEnv();
 
@@ -192,7 +200,7 @@ describe('Exclusão de conta: durante a exclusão', () => {
       }),
     );
     await assertSucceeds(getDocs(collection(db, 'events')));
-    await assertSucceeds(deleteDoc(doc(db, 'events', 'futuro', 'attendees', 'tavia')));
+    await assertSucceeds(presenceWithCount(db, 'futuro', 'attendees', 'tavia', null, 0));
   });
 
   it('não cancela presenças de outras pessoas nem altera o histórico', async () => {
@@ -201,9 +209,13 @@ describe('Exclusão de conta: durante a exclusão', () => {
     await assertFails(deleteDoc(doc(db, 'events', 'passado', 'attendees', 'tavia')));
   });
 
-  it('conta pendente em exclusão não lê eventos', async () => {
+  it('conta pendente em exclusão lê o calendário público, mas não confirma presença', async () => {
     await deleting('novo');
-    await assertFails(getDocs(collection(asFreshUser(env(), 'novo'), 'events')));
+    const db = asFreshUser(env(), 'novo');
+    await assertSucceeds(getDocs(collection(db, 'events')));
+    await assertFails(
+      setDoc(doc(db, 'events', 'futuro', 'attendees', 'novo'), { confirmedAt: serverTimestamp() }),
+    );
   });
 
   it('não troca nome de usuário, e-mail nem cadastra personagens', async () => {

@@ -28,6 +28,12 @@ export interface GuildEvent {
   description: string;
   organizer: string;
   status: EventStatus;
+  /** Visitantes podem confirmar presença (padrão: sim; eventos antigos não têm o campo). */
+  guestsAllowed: boolean;
+  /** Limite de confirmados, membros e visitantes (padrão: 40). */
+  maxAttendees: number;
+  /** Confirmados contados no evento (0 em eventos criados antes do contador). */
+  attendeeCount: number;
 }
 
 export interface EventInput {
@@ -35,10 +41,23 @@ export interface EventInput {
   startsAt: Date;
   description: string;
   organizer: string;
+  guestsAllowed: boolean;
+  maxAttendees: number;
 }
 
 /** Tamanhos máximos (iguais aos de firestore.rules). */
 export const EVENT_LIMITS = { title: 80, organizer: 40, description: 2000 } as const;
+
+/** Limite de confirmados: padrão e faixa aceita (iguais aos de firestore.rules). */
+export const DEFAULT_MAX_ATTENDEES = 40;
+export const MAX_ATTENDEES_RANGE = { min: 1, max: 500 } as const;
+
+/** O evento atingiu o limite de confirmados. */
+export const isFull = (event: GuildEvent) => event.attendeeCount >= event.maxAttendees;
+
+/** Vagas restantes (nunca negativo, mesmo se o limite foi reduzido abaixo do total). */
+export const spotsLeft = (event: GuildEvent) =>
+  Math.max(0, event.maxAttendees - event.attendeeCount);
 
 export type EventActionError =
   'past' | 'cancelled' | 'not-cancelled' | 'not-found' | 'not-allowed' | 'network' | 'unknown';
@@ -64,6 +83,49 @@ export function eventFromData(id: string, data: Record<string, unknown>): GuildE
     description: data['description'] as string,
     organizer: data['organizer'] as string,
     status: data['status'] === 'cancelado' ? 'cancelado' : 'ativo',
+    guestsAllowed: data['guestsAllowed'] !== false,
+    maxAttendees: positiveInt(data['maxAttendees']) ?? DEFAULT_MAX_ATTENDEES,
+    attendeeCount: positiveInt(data['attendeeCount']) ?? 0,
+  };
+}
+
+function positiveInt(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : null;
+}
+
+/**
+ * Repete a transação de presença quando as rules a recusam por concorrência: outra pessoa
+ * confirmou ou cancelou no mesmo instante, então o contador lido ficou velho e a escrita é
+ * negada (o SDK só repete conflitos, não recusas). Na nova tentativa, a transação relê o
+ * evento; se ele lotou, ela termina com "lotado". Recusas de verdade (sem permissão) são
+ * repetidas poucas vezes e então devolvidas.
+ */
+export async function retryCountRace<T>(run: () => Promise<T>, attempts = 5): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await run();
+    } catch (error) {
+      const denied = error instanceof FirebaseError && error.code === 'permission-denied';
+      if (!denied || attempt >= attempts) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 40 * attempt + Math.random() * 80));
+    }
+  }
+}
+
+/**
+ * Entrada (+1) ou saída (-1) de uma presença no contador do evento, no mesmo lote da
+ * presença. `lastAttendance` aponta a presença alterada (as rules conferem os dois lados).
+ * A saída nunca deixa o contador negativo (eventos antigos não tinham contador).
+ */
+export function attendanceCountUpdate(
+  event: GuildEvent,
+  kind: 'attendees' | 'guests',
+  id: string,
+  delta: 1 | -1,
+): { attendeeCount: number; lastAttendance: { kind: string; id: string } } {
+  return {
+    attendeeCount: Math.max(0, event.attendeeCount + delta),
+    lastAttendance: { kind, id },
   };
 }
 
@@ -72,6 +134,8 @@ const clean = (input: EventInput) => ({
   startsAt: Timestamp.fromDate(input.startsAt),
   description: input.description.trim(),
   organizer: input.organizer.trim(),
+  guestsAllowed: input.guestsAllowed,
+  maxAttendees: input.maxAttendees,
 });
 
 class ActionBlocked extends Error {
@@ -149,6 +213,7 @@ export async function createEvent(
   try {
     const ref = await addDoc(collection(db, 'events'), {
       ...clean(input),
+      attendeeCount: 0,
       status: 'ativo',
       createdBy: adminUid,
       createdAt: serverTimestamp(),
@@ -215,9 +280,10 @@ export async function cancelEvent(
 const BATCH_SIZE = 450;
 
 /**
- * Exclui um evento cancelado e a lista de confirmados (subcoleção, que o Firestore não apaga
- * sozinho). As presenças saem no mesmo lote do evento; se houver mais do que cabe num lote, as
- * restantes saem logo depois (as rules só permitem isso nessas duas situações).
+ * Exclui um evento cancelado e as listas de confirmados, de membros e de visitantes
+ * (subcoleções, que o Firestore não apaga sozinho). As presenças saem no mesmo lote do evento;
+ * se houver mais do que cabe num lote, as restantes saem logo depois (as rules só permitem isso
+ * nessas duas situações).
  */
 export async function deleteCancelledEvent(db: Firestore, id: string): Promise<EventActionResult> {
   try {
@@ -228,7 +294,11 @@ export async function deleteCancelledEvent(db: Firestore, id: string): Promise<E
       return { ok: false, error: 'not-cancelled' };
     }
 
-    const attendees = (await getDocs(collection(db, 'events', id, 'attendees'))).docs;
+    const [members, guests] = await Promise.all([
+      getDocs(collection(db, 'events', id, 'attendees')),
+      getDocs(collection(db, 'events', id, 'guests')),
+    ]);
+    const attendees = [...members.docs, ...guests.docs];
     const first = writeBatch(db);
     for (const a of attendees.slice(0, BATCH_SIZE)) first.delete(a.ref);
     first.delete(ref);

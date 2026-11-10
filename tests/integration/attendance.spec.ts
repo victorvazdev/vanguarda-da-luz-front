@@ -56,6 +56,8 @@ async function newEvent(admin: Person): Promise<string> {
     startsAt: new Date(Date.now() + 3 * 86_400_000),
     description: '[DESCRIÇÃO DO EVENTO]',
     organizer: 'Maren',
+    guestsAllowed: true,
+    maxAttendees: 40,
   });
   if (!r.ok) throw new Error(r.error);
   return r.id;

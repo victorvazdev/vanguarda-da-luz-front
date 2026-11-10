@@ -1,5 +1,5 @@
 import type { Routes } from '@angular/router';
-import { adminGuard, authGuard, guestGuard, memberGuard, pendingGuard } from './core/auth/guards';
+import { adminGuard, authGuard, guestGuard, pendingGuard } from './core/auth/guards';
 
 /**
  * Rotas da aplicação. Cada história adiciona suas rotas aqui, com lazy loading
@@ -75,14 +75,14 @@ export const routes: Routes = [
   {
     path: 'calendario',
     title: 'Calendário',
-    canActivate: [memberGuard],
+    // Público: visitantes também veem os eventos e confirmam presença.
     loadComponent: () =>
       import('./features/events/calendar/calendar-page').then((m) => m.CalendarPage),
   },
   {
     path: 'calendario/:id',
     title: 'Evento',
-    canActivate: [memberGuard],
+    // Público: visitantes também veem os eventos e confirmam presença.
     loadComponent: () =>
       import('./features/events/event-detail/event-detail-page').then((m) => m.EventDetailPage),
   },

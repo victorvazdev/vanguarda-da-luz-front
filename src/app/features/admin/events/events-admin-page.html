@@ -47,6 +47,10 @@
                   </h2>
                   <p class="event-row__meta">{{ event.when }}</p>
                   <p class="event-row__meta muted">Organizador: {{ event.organizer }}</p>
+                  <p class="event-row__meta muted">{{ event.attendance }}</p>
+                  @if (!event.guestsAllowed) {
+                    <p class="event-row__meta muted">Somente membros confirmam presença</p>
+                  }
                   @if (editing()?.id === event.id) {
                     <p class="event-row__meta event-row__editing">Em edição</p>
                   }
@@ -191,6 +195,47 @@
         @if (fieldError('description'); as message) {
           <p id="evento-description-erro" class="field__error">{{ message }}</p>
         }
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="evento-maxAttendees">Limite de confirmados</label>
+        <input
+          id="evento-maxAttendees"
+          class="field__input event-form__number"
+          type="number"
+          inputmode="numeric"
+          formControlName="maxAttendees"
+          [min]="attendeesRange.min"
+          [max]="attendeesRange.max"
+          step="1"
+          [attr.aria-invalid]="!!fieldError('maxAttendees')"
+          [attr.aria-describedby]="describedBy('maxAttendees', 'evento-maxAttendees-dica')"
+        />
+        <p id="evento-maxAttendees-dica" class="field__hint">
+          Soma membros e visitantes. Ao atingir o limite, ninguém mais confirma presença.
+        </p>
+        @if (fieldError('maxAttendees'); as message) {
+          <p id="evento-maxAttendees-erro" class="field__error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <div class="checkbox">
+          <input
+            id="evento-guestsAllowed"
+            class="checkbox__input"
+            type="checkbox"
+            formControlName="guestsAllowed"
+            aria-describedby="evento-guestsAllowed-dica"
+          />
+          <label class="checkbox__label" for="evento-guestsAllowed">
+            Visitantes podem confirmar presença
+          </label>
+        </div>
+        <p id="evento-guestsAllowed-dica" class="field__hint">
+          Quem não é membro confirma informando o personagem (nome e sobrenome no WoW Forever; nome
+          e reino no Retail).
+        </p>
       </div>
 
       <button

@@ -4,18 +4,19 @@ const labels = (access: Parameters<typeof navItemsFor>[0]) =>
   navItemsFor(access).map((i) => i.label);
 
 describe('navItemsFor', () => {
-  it('visitante vê as páginas públicas, Entrar e Fazer parte', () => {
+  it('visitante vê as páginas públicas, o calendário, Entrar e Fazer parte', () => {
     expect(labels('visitor')).toEqual([
       'A guilda',
       'Como ingressar',
       'Regras',
+      'Calendário',
       'Entrar',
       'Fazer parte',
     ]);
   });
 
-  it('pendente vê Minha conta', () => {
-    expect(labels('pending')).toEqual(['Minha conta']);
+  it('pendente vê Calendário e Minha conta', () => {
+    expect(labels('pending')).toEqual(['Calendário', 'Minha conta']);
   });
 
   it('membro vê Calendário e Minha conta, e não vê Administração', () => {

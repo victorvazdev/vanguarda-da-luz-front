@@ -83,3 +83,14 @@
 .attendees__empty {
   margin: var(--space-3) 0 0;
 }
+
+// Subtítulo da lista de visitantes (sem conta de membro).
+.attendees__group {
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-gold);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 700;
+}
