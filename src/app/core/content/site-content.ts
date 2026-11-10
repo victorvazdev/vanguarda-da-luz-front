@@ -78,11 +78,46 @@ export function rulesetsLabel(ids: readonly Ruleset[]): string {
 
 export type SocialNetworkId = 'discord' | 'whatsapp' | 'instagram' | 'youtube';
 
-export const SOCIAL_NETWORKS: readonly { id: SocialNetworkId; name: string }[] = [
-  { id: 'discord', name: 'Discord' },
-  { id: 'whatsapp', name: 'WhatsApp' },
-  { id: 'instagram', name: 'Instagram' },
-  { id: 'youtube', name: 'YouTube' },
+export interface SocialNetwork {
+  id: SocialNetworkId;
+  name: string;
+  /** Frase curta sobre o uso da rede (seção "Junte-se à comunidade" da página inicial). */
+  description: string;
+  /** Texto do botão de ação. */
+  action: string;
+  /** Em destaque: cartão maior com botão dourado. */
+  featured: boolean;
+}
+
+export const SOCIAL_NETWORKS: readonly SocialNetwork[] = [
+  {
+    id: 'discord',
+    name: 'Discord',
+    description: 'Nosso ponto de encontro: chamadas de voz, avisos e organização dos eventos.',
+    action: 'Entrar no Discord',
+    featured: true,
+  },
+  {
+    id: 'whatsapp',
+    name: 'WhatsApp',
+    description: 'Avisos rápidos e conversa do dia a dia com a guilda.',
+    action: 'Entrar no grupo',
+    featured: true,
+  },
+  {
+    id: 'instagram',
+    name: 'Instagram',
+    description: 'Fotos, artes e momentos da guilda.',
+    action: 'Seguir no Instagram',
+    featured: false,
+  },
+  {
+    id: 'youtube',
+    name: 'YouTube',
+    description: 'Vídeos de raides, eventos e guias.',
+    action: 'Ver o canal',
+    featured: false,
+  },
 ];
 
 /** `null` = rede sem link cadastrado; não é exibida. */
@@ -121,12 +156,10 @@ export function socialLinksFromData(data: Record<string, unknown> | undefined): 
 }
 
 /** Somente redes com link cadastrado (critério "Redes sem link não são exibidas"). */
-export function visibleSocialLinks(
-  links: SocialLinks,
-): { id: SocialNetworkId; name: string; url: string }[] {
-  return SOCIAL_NETWORKS.flatMap(({ id, name }) => {
-    const url = links[id];
-    return url ? [{ id, name, url }] : [];
+export function visibleSocialLinks(links: SocialLinks): (SocialNetwork & { url: string })[] {
+  return SOCIAL_NETWORKS.flatMap((network) => {
+    const url = links[network.id];
+    return url ? [{ ...network, url }] : [];
   });
 }
 

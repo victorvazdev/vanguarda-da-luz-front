@@ -82,7 +82,7 @@ export class SocialAdminPage {
   protected clear(id: SocialNetworkId, name: string): void {
     this.form.controls[id].setValue('');
     this.form.controls[id].markAsDirty();
-    this.status.set(`Link do ${name} apagado. Salve para retirá-lo do rodapé.`);
+    this.status.set(`Link do ${name} apagado. Salve para retirá-lo do site.`);
     this.focus(`#rede-${id}`);
   }
 
@@ -105,7 +105,7 @@ export class SocialAdminPage {
     this.saving.set(false);
     if (result.ok) {
       this.fill(links);
-      this.status.set('Links salvos. O rodapé de todas as páginas já mostra as alterações.');
+      this.status.set('Links salvos. O rodapé e a página inicial já mostram as alterações.');
     } else {
       this.formError.set(SAVE_CONTENT_ERRORS[result.error]);
       this.focus('.content-form .form-alert');

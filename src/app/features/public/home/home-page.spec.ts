@@ -67,6 +67,13 @@ describe('HomePage (Conhecer a guilda)', () => {
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('Não foi possível carregar');
   });
 
+  it('apresenta as redes sociais logo abaixo da história da guilda', async () => {
+    const { el } = await render('visitor');
+    const community = el.querySelector('app-community-section');
+    expect(community?.textContent).toContain('Junte-se à comunidade');
+    expect(community?.previousElementSibling?.classList).toContain('band');
+  });
+
   it('oferece link para as instruções de ingresso', async () => {
     const { el } = await render('visitor');
     expect(el.querySelector('a[href="/como-ingressar"]')).toBeTruthy();

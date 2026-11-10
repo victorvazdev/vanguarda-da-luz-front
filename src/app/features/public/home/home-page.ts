@@ -7,11 +7,15 @@ import { SiteContentService } from '../../../core/content/site-content.service';
 import { PATHS, joinPathFor } from '../../../core/routing/paths';
 import { formatBrasiliaDate } from '../../../core/time/brasilia';
 import { RichText } from '../../../shared/ui/rich-text/rich-text';
+import { CommunitySection } from './community-section/community-section';
 
-/** História "Conhecer a guilda". História, valores e onde joga vêm do painel administrativo. */
+/**
+ * História "Conhecer a guilda". História, valores, onde joga e redes sociais vêm do painel
+ * administrativo.
+ */
 @Component({
   selector: 'app-home-page',
-  imports: [RouterLink, RichText],
+  imports: [RouterLink, RichText, CommunitySection],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
