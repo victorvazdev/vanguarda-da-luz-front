@@ -45,12 +45,10 @@ describe('CommunitySection (Junte-se à comunidade)', () => {
     );
   });
 
-  it('informa no Discord que o nome do Discord é necessário para o Core (regra 5)', async () => {
+  it('não exibe a nota da regra 5 no cartão do Discord', async () => {
     const { el } = await render();
-    const note = el.querySelector('.network--featured .network__note');
-    expect(note?.textContent).toContain('nome do Discord é necessário para participar do Core');
-    expect(note?.querySelector('a')?.getAttribute('href')).toBe('/regras');
-    expect(el.querySelectorAll('.network__note')).toHaveLength(1);
+    expect(el.querySelector('.network__note')).toBeNull();
+    expect(el.textContent).not.toContain('regra 5');
   });
 
   it('exibe os links definidos no painel e omite redes sem link', async () => {
