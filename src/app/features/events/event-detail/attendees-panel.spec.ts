@@ -60,7 +60,7 @@ const maren: Attendee = {
   uid: 'maren',
   username: 'Maren',
   confirmedAt: new Date('2026-11-01T12:00:00Z'),
-  mainCharacter: {
+  character: {
     game: 'retail',
     characterName: 'Maren',
     server: 'Azralon',
@@ -73,7 +73,7 @@ const tavia: Attendee = {
   uid: 'tavia',
   username: 'TaviaB',
   confirmedAt: new Date('2026-11-02T12:00:00Z'),
-  mainCharacter: {
+  character: {
     game: 'forever',
     characterName: 'Tavia',
     characterSurname: 'Brasaluz',
@@ -123,7 +123,7 @@ const removeButton = (name: string) =>
   );
 
 describe('AttendeesPanel (Ver presenças confirmadas)', () => {
-  it('mostra o total e cada confirmado com personagem principal, classe e função', async () => {
+  it('mostra o total e cada confirmado com o personagem, a classe e a função', async () => {
     await setup();
     expect(events.ids).toEqual(['raid']);
     await emit([maren, tavia]);
@@ -148,15 +148,15 @@ describe('AttendeesPanel (Ver presenças confirmadas)', () => {
     expect(text('.attendees__empty')).toBe('Ainda não há confirmados.');
   });
 
-  it('conta sem personagem principal aparece pelo nome de usuário', async () => {
+  it('conta sem personagem aparece pelo nome de usuário', async () => {
     await setup();
     await emit([
-      { uid: 'x', username: 'Kael', confirmedAt: null, mainCharacter: null, deleted: false },
+      { uid: 'x', username: 'Kael', confirmedAt: null, character: null, deleted: false },
     ]);
-    expect(items()).toEqual([['Kael', 'Sem personagem principal']]);
+    expect(items()).toEqual([['Kael', 'Sem personagem']]);
   });
 
-  it('no histórico, conta excluída aparece como tal, com o personagem principal', async () => {
+  it('no histórico, conta excluída aparece como tal, com o personagem', async () => {
     await setup(false);
     await emit([maren, { ...tavia, username: '', deleted: true }]);
     expect(text('#titulo-confirmados')).toBe('Confirmados: 2');
@@ -167,10 +167,10 @@ describe('AttendeesPanel (Ver presenças confirmadas)', () => {
     expect(el.textContent).not.toContain('TaviaB');
   });
 
-  it('conta excluída sem personagem principal aparece só como conta excluída', async () => {
+  it('conta excluída sem personagem aparece só como conta excluída', async () => {
     await setup(false);
-    await emit([{ uid: 'x', username: '', confirmedAt: null, mainCharacter: null, deleted: true }]);
-    expect(items()).toEqual([['Conta excluída', 'Sem personagem principal']]);
+    await emit([{ uid: 'x', username: '', confirmedAt: null, character: null, deleted: true }]);
+    expect(items()).toEqual([['Conta excluída', 'Sem personagem']]);
   });
 
   describe('Administrador cancela a presença de alguém', () => {

@@ -2,7 +2,8 @@
 // Testado contra os emuladores (tests/integration/guest-attendance.spec.ts).
 //
 // Quem não é membro (visitante sem login ou conta pendente) confirma presença informando o
-// personagem: no WoW Forever, nome e sobrenome; no Retail, nome e reino. As presenças ficam em
+// personagem da versão do jogo do evento: no WoW Forever, nome e sobrenome; no Retail, nome e
+// reino. As presenças ficam em
 // `events/{id}/guests/{guestKey}`; o ID determinístico impede que o mesmo personagem confirme
 // duas vezes. Somente administradores listam e cancelam essas presenças.
 import { FirebaseError } from 'firebase/app';
@@ -39,6 +40,7 @@ export type GuestAttendanceError =
   | 'already-confirmed'
   | 'not-confirmed'
   | 'guests-closed'
+  | 'wrong-game'
   | 'full'
   | 'past'
   | 'cancelled'
@@ -162,6 +164,7 @@ export async function confirmGuestAttendance(
     await retryCountRace(() =>
       runTransaction(db, async (tx) => {
         const event = await openEvent(tx, db, eventId, true);
+        if (event.game && input.game !== event.game) throw new Blocked('wrong-game');
         const ref = guestRef(db, eventId, id);
         if ((await tx.get(ref)).exists()) throw new Blocked('already-confirmed');
         if (isFull(event)) throw new Blocked('full');

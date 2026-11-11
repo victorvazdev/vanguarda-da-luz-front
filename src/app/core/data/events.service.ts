@@ -92,8 +92,9 @@ export class EventsService {
     return this.whenReady((db) => watchMyAttendance(db, eventId, uid, next, error), error);
   }
 
-  async confirmAttendance(eventId: string): Promise<AttendanceResult> {
-    return confirmAttendance(await this.firestore.get(), eventId, this.uid());
+  /** Confirma com um personagem da pessoa (`null` = principal ainda sem documento próprio). */
+  async confirmAttendance(eventId: string, characterId: string | null): Promise<AttendanceResult> {
+    return confirmAttendance(await this.firestore.get(), eventId, this.uid(), characterId);
   }
 
   async cancelAttendance(eventId: string): Promise<AttendanceResult> {

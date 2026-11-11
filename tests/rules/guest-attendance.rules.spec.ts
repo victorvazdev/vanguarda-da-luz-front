@@ -36,8 +36,11 @@ beforeEach(() =>
     'users/ana': account('ana', { status: 'ativo', role: 'admin' }),
     'users/tavia': account('tavia', { status: 'ativo' }),
     'users/kaelen': account('kaelen'),
-    // Evento antigo, sem o campo `guestsAllowed`: visitantes podem confirmar.
+    // Evento antigo, sem os campos `guestsAllowed` e `game`: visitantes dos dois jogos
+    // podem confirmar.
     'events/raid': event(),
+    'events/retail': event({ game: 'retail' }),
+    'events/forever': event({ game: 'forever' }),
     'events/ligado': event({ guestsAllowed: true }),
     'events/fechado': event({ guestsAllowed: false }),
     'events/antigo': event({ startsAt: new Date(Date.now() - DAY) }),
@@ -176,6 +179,18 @@ describe('Visitante confirma presença', () => {
     await assertFails(
       confirm(visitor(), 'raid', { ...forever(), game: 'classic' }, 'classic:Lunara:Sombraviva'),
     );
+  });
+});
+
+describe('Versão do jogo do evento', () => {
+  it('visitante confirma com personagem da versão do jogo do evento', async () => {
+    await assertSucceeds(confirm(visitor(), 'forever', forever()));
+    await assertSucceeds(confirm(visitor(), 'retail', retail(), 'retail:Thalor:Azralon'));
+  });
+
+  it('não confirma com personagem de outra versão do jogo', async () => {
+    await assertFails(confirm(visitor(), 'retail', forever()));
+    await assertFails(confirm(visitor(), 'forever', retail(), 'retail:Thalor:Azralon'));
   });
 });
 

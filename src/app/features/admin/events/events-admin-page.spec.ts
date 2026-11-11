@@ -1,37 +1,20 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import type {
-  CreateEventResult,
-  EventActionResult,
-  EventInput,
-  GuildEvent,
-} from '../../../core/data/events';
+import type { EventActionResult, GuildEvent } from '../../../core/data/events';
 import { EventsService } from '../../../core/data/events.service';
-import { toBrasiliaInputs } from '../../../core/time/brasilia';
 import { ConfirmService } from '../../../shared/ui/confirm-dialog/confirm.service';
 import { EventsAdminPage } from './events-admin-page';
 
 class EventsStub {
   next: ((events: GuildEvent[]) => void) | null = null;
   from: Date | null = null;
-  createResult: CreateEventResult = { ok: true, id: 'novo' };
   result: EventActionResult = { ok: true };
-  created: EventInput[] = [];
-  updated: [string, EventInput][] = [];
   cancelled: string[] = [];
   deleted: string[] = [];
   watchFrom(from: Date, next: (events: GuildEvent[]) => void) {
     this.from = from;
     this.next = next;
     return () => undefined;
-  }
-  create(input: EventInput) {
-    this.created.push(input);
-    return Promise.resolve(this.createResult);
-  }
-  update(id: string, input: EventInput) {
-    this.updated.push([id, input]);
-    return Promise.resolve(this.result);
   }
   cancel(id: string) {
     this.cancelled.push(id);
@@ -52,13 +35,6 @@ class ConfirmStub {
   }
 }
 
-const DAY = 86_400_000;
-/** Data futura, com horário redondo, em Brasília. */
-const inDays = (days: number) => {
-  const { date } = toBrasiliaInputs(new Date(Date.now() + days * DAY));
-  return { date, time: '21:00' };
-};
-
 const raid: GuildEvent = {
   id: 'raid',
   title: 'Raid semanal',
@@ -66,6 +42,7 @@ const raid: GuildEvent = {
   description: '[DESCRIÇÃO DO EVENTO]',
   organizer: 'Maren',
   status: 'ativo',
+  game: 'retail',
   guestsAllowed: true,
   maxAttendees: 40,
   attendeeCount: 0,
@@ -99,36 +76,15 @@ async function emit(list: GuildEvent[]) {
 
 const q = <T extends HTMLElement>(sel: string) => el.querySelector<T>(sel);
 const text = (sel: string) => q(sel)?.textContent?.replace(/\s+/g, ' ').trim() ?? null;
-const errorOf = (field: string) => text(`#evento-${field}-erro`);
 const button = (label: string, scope: ParentNode = el) =>
   [...scope.querySelectorAll<HTMLButtonElement>('button')].find((b) =>
     b.textContent?.replace(/\s+/g, ' ').trim().startsWith(label),
   );
 
-async function set(field: string, value: string) {
-  const input = q<HTMLInputElement>(`#evento-${field}`)!;
-  input.value = value;
-  input.dispatchEvent(new Event('input'));
-  await fixture.whenStable();
-}
-
-async function fill(over: Partial<Record<string, string>> = {}) {
-  const when = inDays(3);
-  const values = {
-    title: 'Raid semanal',
-    date: when.date,
-    time: when.time,
-    organizer: 'Maren',
-    description: 'Traga poções.',
-    ...over,
-  };
-  for (const [field, value] of Object.entries(values)) await set(field, value);
-}
-
-async function submit() {
-  q<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
-  await fixture.whenStable();
-}
+const link = (label: string, scope: ParentNode = el) =>
+  [...scope.querySelectorAll<HTMLAnchorElement>('a')].find((a) =>
+    a.textContent?.replace(/\s+/g, ' ').trim().startsWith(label),
+  );
 
 describe('EventsAdminPage (Criar, editar, cancelar e excluir eventos)', () => {
   it('lista os próximos eventos a partir de agora, com data e horário de Brasília', async () => {
@@ -137,6 +93,18 @@ describe('EventsAdminPage (Criar, editar, cancelar e excluir eventos)', () => {
     expect(text('.event-row__title')).toBe('Raid semanal');
     expect(text('.event-row__meta')).toBe('Sáb, 7 nov. 2099, 21:00');
     expect(text('.events-admin__zone')).toBe('Horários de Brasília');
+  });
+
+  it('mostra a versão do jogo e o organizador de cada evento', async () => {
+    await emit([raid, { ...raid, id: 'wf', game: 'forever' }, { ...raid, id: 'old', game: null }]);
+    const meta = [...el.querySelectorAll('.event-row')].map((row) =>
+      row.querySelectorAll('.event-row__meta')[1]?.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(meta).toEqual([
+      'Retail · Organizador: Maren',
+      'WoW Forever · Organizador: Maren',
+      'Versão do jogo não definida · Organizador: Maren',
+    ]);
   });
 
   it('o título leva ao detalhe do evento no calendário', async () => {
@@ -149,191 +117,21 @@ describe('EventsAdminPage (Criar, editar, cancelar e excluir eventos)', () => {
     expect(el.textContent).toContain('Nenhum evento programado');
   });
 
-  describe('Novo evento', () => {
-    it('solicita título, data, horário, organizador e descrição', async () => {
-      await emit([]);
-      const labels = [...el.querySelectorAll('.event-form label')].map((l) =>
-        l.textContent?.trim(),
-      );
-      expect(labels).toEqual([
-        'Título',
-        'Data',
-        'Horário',
-        'Organizador',
-        'Descrição',
-        'Limite de confirmados',
-        'Visitantes podem confirmar presença',
-      ]);
-      // Por padrão, até 40 confirmados.
-      expect(q<HTMLInputElement>('#evento-maxAttendees')!.value).toBe('40');
-      // Por padrão, visitantes podem confirmar presença.
-      expect(q<HTMLInputElement>('#evento-guestsAllowed')!.checked).toBe(true);
-      expect(text('#evento-fuso')).toBe('Horário de Brasília.');
-    });
-
-    it('não envia com campos vazios ou só com espaços', async () => {
-      await emit([]);
-      await set('title', '   ');
-      await submit();
-      expect(errorOf('title')).toBe('Informe o título.');
-      expect(errorOf('date')).toBe('Informe a data.');
-      expect(errorOf('time')).toBe('Informe o horário.');
-      expect(errorOf('organizer')).toBe('Informe o organizador.');
-      expect(errorOf('description')).toBe('Informe a descrição.');
-      expect(events.created).toHaveLength(0);
-    });
-
-    it('não aceita data e horário no passado', async () => {
-      await emit([]);
-      const { date } = toBrasiliaInputs(new Date(Date.now() - DAY));
-      await fill({ date });
-      await submit();
-      expect(errorOf('date')).toBe('Escolha uma data e um horário futuros.');
-      expect(q('#evento-time')!.getAttribute('aria-invalid')).toBe('true');
-      expect(events.created).toHaveLength(0);
-    });
-
-    it('impede escolher dias anteriores a hoje no seletor', async () => {
-      expect(q<HTMLInputElement>('#evento-date')!.min).toBe(toBrasiliaInputs(new Date()).date);
-    });
-
-    it('cria o evento com o horário interpretado em Brasília e limpa o formulário', async () => {
-      await emit([]);
-      await fill({ title: '  Raid semanal  ', date: '2099-11-07', time: '21:00' });
-      await submit();
-      expect(events.created).toEqual([
-        {
-          title: 'Raid semanal',
-          startsAt: new Date('2099-11-08T00:00:00Z'),
-          organizer: 'Maren',
-          description: 'Traga poções.',
-          guestsAllowed: true,
-          maxAttendees: 40,
-        },
-      ]);
-      expect(text('.notice')).toBe('Evento criado: Raid semanal.');
-      expect(q<HTMLInputElement>('#evento-title')!.value).toBe('');
-    });
-
-    it('permite definir o limite de confirmados, de 1 a 500', async () => {
-      await emit([]);
-      await fill();
-      for (const [value, ok] of [
-        ['0', false],
-        ['501', false],
-        ['2.5', false],
-        ['', false],
-        ['12', true],
-      ] as const) {
-        await set('maxAttendees', value);
-        await submit();
-        if (!ok) {
-          expect(errorOf('maxAttendees')).toMatch(/limite|número inteiro de 1 a 500/);
-          expect(events.created).toHaveLength(0);
-        }
-      }
-      expect(events.created[0].maxAttendees).toBe(12);
-      expect(q<HTMLInputElement>('#evento-maxAttendees')!.value).toBe('40');
-    });
-
-    it('mostra quantos confirmaram de quantas vagas', async () => {
-      await emit([{ ...raid, attendeeCount: 12, maxAttendees: 30 }]);
-      expect(el.textContent).toContain('12 de 30 confirmados');
-    });
-
-    it('permite desativar a confirmação de presença de visitantes', async () => {
-      await emit([]);
-      await fill();
-      q<HTMLInputElement>('#evento-guestsAllowed')!.click();
-      await fixture.whenStable();
-      await submit();
-      expect(events.created[0].guestsAllowed).toBe(false);
-      // O formulário volta ao padrão (visitantes podem confirmar).
-      expect(q<HTMLInputElement>('#evento-guestsAllowed')!.checked).toBe(true);
-    });
-
-    it('mostra o erro do servidor sem perder os dados', async () => {
-      await emit([]);
-      events.createResult = { ok: false, error: 'not-allowed' };
-      await fill();
-      await submit();
-      expect(text('.event-form [role="alert"]')).toBe('Você não tem permissão para esta ação.');
-      expect(q<HTMLInputElement>('#evento-title')!.value).toBe('Raid semanal');
-    });
+  it('a criação e a edição abrem em página própria', async () => {
+    await emit([raid]);
+    expect(el.querySelector('form')).toBeNull();
+    expect(link('Novo evento')!.getAttribute('href')).toBe('/novo');
+    expect(link('Editar')!.getAttribute('href')).toBe('/raid/editar');
   });
 
-  describe('Editar', () => {
-    it('abre o formulário com os dados atuais do evento', async () => {
-      await emit([raid]);
-      button('Editar')!.click();
-      await fixture.whenStable();
-      expect(text('#titulo-form-evento')).toBe('Editar evento');
-      expect(q<HTMLInputElement>('#evento-title')!.value).toBe('Raid semanal');
-      expect(q<HTMLInputElement>('#evento-date')!.value).toBe('2099-11-07');
-      expect(q<HTMLInputElement>('#evento-time')!.value).toBe('21:00');
-      expect(q<HTMLInputElement>('#evento-organizer')!.value).toBe('Maren');
-      expect(text('.event-row--editing .event-row__editing')).toBe('Em edição');
-    });
+  it('mostra quantos confirmaram de quantas vagas', async () => {
+    await emit([{ ...raid, attendeeCount: 12, maxAttendees: 30 }]);
+    expect(el.textContent).toContain('12 de 30 confirmados');
+  });
 
-    it('salva as alterações no mesmo evento', async () => {
-      await emit([raid]);
-      button('Editar')!.click();
-      await fixture.whenStable();
-      await set('title', 'Raid heroica');
-      await submit();
-      expect(events.updated).toEqual([
-        [
-          'raid',
-          {
-            title: 'Raid heroica',
-            startsAt: raid.startsAt,
-            organizer: 'Maren',
-            description: '[DESCRIÇÃO DO EVENTO]',
-            guestsAllowed: true,
-            maxAttendees: 40,
-          },
-        ],
-      ]);
-      expect(events.created).toHaveLength(0);
-      expect(text('.notice')).toBe('Alterações salvas em Raid heroica.');
-      expect(text('#titulo-form-evento')).toBe('Novo evento');
-    });
-
-    it('abre com a opção de visitantes do evento e permite alterá-la', async () => {
-      await emit([{ ...raid, guestsAllowed: false }]);
-      expect(el.textContent).toContain('Somente membros confirmam presença');
-      button('Editar')!.click();
-      await fixture.whenStable();
-      const toggle = q<HTMLInputElement>('#evento-guestsAllowed')!;
-      expect(toggle.checked).toBe(false);
-      await set('maxAttendees', '25');
-      toggle.click();
-      await fixture.whenStable();
-      await submit();
-      expect(events.updated[0][1].guestsAllowed).toBe(true);
-      expect(events.updated[0][1].maxAttendees).toBe(25);
-    });
-
-    it('descartar volta ao formulário de novo evento sem salvar', async () => {
-      await emit([raid]);
-      button('Editar')!.click();
-      await fixture.whenStable();
-      button('Descartar alterações')!.click();
-      await fixture.whenStable();
-      expect(text('#titulo-form-evento')).toBe('Novo evento');
-      expect(q<HTMLInputElement>('#evento-title')!.value).toBe('');
-      expect(events.updated).toHaveLength(0);
-    });
-
-    it('informa quando o evento foi cancelado por outra pessoa', async () => {
-      await emit([raid]);
-      button('Editar')!.click();
-      await fixture.whenStable();
-      events.result = { ok: false, error: 'cancelled' };
-      await submit();
-      expect(text('.event-form [role="alert"]')).toContain('foi cancelado');
-      expect(text('#titulo-form-evento')).toBe('Novo evento');
-    });
+  it('identifica os eventos em que somente membros confirmam presença', async () => {
+    await emit([{ ...raid, guestsAllowed: false }]);
+    expect(el.textContent).toContain('Somente membros confirmam presença');
   });
 
   describe('Cancelar', () => {
@@ -358,7 +156,7 @@ describe('EventsAdminPage (Criar, editar, cancelar e excluir eventos)', () => {
     it('evento cancelado aparece identificado, sem editar nem cancelar', async () => {
       await emit([{ ...raid, status: 'cancelado' }]);
       expect(text('.event-row__badge')).toBe('Cancelado');
-      expect(button('Editar')).toBeUndefined();
+      expect(link('Editar')).toBeUndefined();
       expect(button('Cancelar')).toBeUndefined();
     });
   });
@@ -403,9 +201,9 @@ describe('EventsAdminPage (Criar, editar, cancelar e excluir eventos)', () => {
     });
   });
 
-  it('os botões dizem a qual evento se referem (leitores de tela)', async () => {
+  it('as ações dizem a qual evento se referem (leitores de tela)', async () => {
     await emit([raid]);
-    expect(button('Editar')!.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+    expect(link('Editar')!.textContent?.replace(/\s+/g, ' ').trim()).toBe(
       'Editar Raid semanal, Sáb, 7 nov. 2099, 21:00',
     );
   });

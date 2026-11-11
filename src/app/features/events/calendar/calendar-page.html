@@ -4,19 +4,24 @@
       <h1 id="titulo-mes" class="calendar-page__title" aria-live="polite">{{ title() }}</h1>
       <p class="muted calendar-page__zone">Horários de {{ timeZone }}</p>
     </div>
-    <nav class="calendar-page__nav" aria-label="Navegar entre meses">
-      <a class="btn btn--outline" [routerLink]="paths.calendar" [queryParams]="{ mes: prev() }"
-        >Mês anterior</a
-      >
-      @if (!isThisMonth()) {
-        <a class="btn btn--outline" [routerLink]="paths.calendar" [queryParams]="{ mes: current }"
-          >Mês atual</a
-        >
+    <div class="calendar-page__actions">
+      @if (isAdmin()) {
+        <a class="btn btn--primary" [routerLink]="paths.newEvent">Novo evento</a>
       }
-      <a class="btn btn--outline" [routerLink]="paths.calendar" [queryParams]="{ mes: next() }"
-        >Próximo mês</a
-      >
-    </nav>
+      <nav class="calendar-page__nav" aria-label="Navegar entre meses">
+        <a class="btn btn--outline" [routerLink]="paths.calendar" [queryParams]="{ mes: prev() }"
+          >Mês anterior</a
+        >
+        @if (!isThisMonth()) {
+          <a class="btn btn--outline" [routerLink]="paths.calendar" [queryParams]="{ mes: current }"
+            >Mês atual</a
+          >
+        }
+        <a class="btn btn--outline" [routerLink]="paths.calendar" [queryParams]="{ mes: next() }"
+          >Próximo mês</a
+        >
+      </nav>
+    </div>
   </header>
 
   @if (state() === 'error') {
@@ -76,6 +81,9 @@
                           >&ngsp;
                           <span class="calendar__event-title">{{ event.title }}</span>
                         }
+                        @if (event.game) {
+                          <span class="sr-only">, {{ event.game }}</span>
+                        }
                       </a>
                     </li>
                   }
@@ -107,6 +115,9 @@
                     <span class="badge badge--danger agenda__badge">Cancelado</span>&ngsp;
                   }
                   <span class="agenda__name-text">{{ event.title }}</span>
+                  @if (event.game) {
+                    &ngsp;<span class="agenda__game">· {{ event.game }}</span>
+                  }
                 </span>
               </a>
             </li>

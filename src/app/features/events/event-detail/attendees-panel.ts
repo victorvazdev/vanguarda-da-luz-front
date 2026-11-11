@@ -42,7 +42,7 @@ interface AttendeeView {
 const DELETED = 'Conta excluída';
 
 function toView(a: Attendee): AttendeeView {
-  const c = a.mainCharacter;
+  const c = a.character;
   if (a.deleted) {
     return c
       ? {
@@ -51,10 +51,10 @@ function toView(a: Attendee): AttendeeView {
           details: `${classLabel(c.characterClass)}, ${roleLabel(c.characterRole).toLowerCase()}`,
           meta: `${gameLabel(c.game)} · ${DELETED}`,
         }
-      : { uid: a.uid, name: DELETED, details: 'Sem personagem principal', meta: '' };
+      : { uid: a.uid, name: DELETED, details: 'Sem personagem', meta: '' };
   }
   if (!c) {
-    return { uid: a.uid, name: a.username, details: 'Sem personagem principal', meta: '' };
+    return { uid: a.uid, name: a.username, details: 'Sem personagem', meta: '' };
   }
   const name = characterDisplayName(c);
   const account = name.toLowerCase() === a.username.toLowerCase() ? '' : ` · Conta: ${a.username}`;

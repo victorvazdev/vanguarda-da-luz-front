@@ -17,6 +17,7 @@ import {
   writeBatch,
   type Firestore,
 } from 'firebase/firestore';
+import { isGame, type Game } from '../models/wow';
 import { toDate } from './applications';
 
 export type EventStatus = 'ativo' | 'cancelado';
@@ -28,6 +29,11 @@ export interface GuildEvent {
   description: string;
   organizer: string;
   status: EventStatus;
+  /**
+   * Versão do jogo do evento: visitantes confirmam com um personagem dela e membros, com um
+   * personagem seu dela. `null` em eventos criados antes da escolha (aceitam os dois jogos).
+   */
+  game: Game | null;
   /** Visitantes podem confirmar presença (padrão: sim; eventos antigos não têm o campo). */
   guestsAllowed: boolean;
   /** Limite de confirmados, membros e visitantes (padrão: 40). */
@@ -38,6 +44,7 @@ export interface GuildEvent {
 
 export interface EventInput {
   title: string;
+  game: Game;
   startsAt: Date;
   description: string;
   organizer: string;
@@ -60,7 +67,14 @@ export const spotsLeft = (event: GuildEvent) =>
   Math.max(0, event.maxAttendees - event.attendeeCount);
 
 export type EventActionError =
-  'past' | 'cancelled' | 'not-cancelled' | 'not-found' | 'not-allowed' | 'network' | 'unknown';
+  | 'past'
+  | 'cancelled'
+  | 'not-cancelled'
+  | 'game-locked'
+  | 'not-found'
+  | 'not-allowed'
+  | 'network'
+  | 'unknown';
 interface EventActionFailure {
   ok: false;
   error: EventActionError;
@@ -75,6 +89,13 @@ export const isUpcoming = (startsAt: Date, now = new Date()) => startsAt.getTime
 export const isChangeable = (event: GuildEvent, now = new Date()) =>
   event.status === 'ativo' && isUpcoming(event.startsAt, now);
 
+/**
+ * A versão do jogo só muda enquanto ninguém confirmou presença (os personagens confirmados são
+ * dela). Eventos antigos, sem versão, podem recebê-la a qualquer momento.
+ */
+export const canChangeGame = (event: GuildEvent) =>
+  event.game === null || event.attendeeCount === 0;
+
 export function eventFromData(id: string, data: Record<string, unknown>): GuildEvent {
   return {
     id,
@@ -83,6 +104,7 @@ export function eventFromData(id: string, data: Record<string, unknown>): GuildE
     description: data['description'] as string,
     organizer: data['organizer'] as string,
     status: data['status'] === 'cancelado' ? 'cancelado' : 'ativo',
+    game: isGame(data['game']) ? data['game'] : null,
     guestsAllowed: data['guestsAllowed'] !== false,
     maxAttendees: positiveInt(data['maxAttendees']) ?? DEFAULT_MAX_ATTENDEES,
     attendeeCount: positiveInt(data['attendeeCount']) ?? 0,
@@ -131,6 +153,7 @@ export function attendanceCountUpdate(
 
 const clean = (input: EventInput) => ({
   title: input.title.trim(),
+  game: input.game,
   startsAt: Timestamp.fromDate(input.startsAt),
   description: input.description.trim(),
   organizer: input.organizer.trim(),
@@ -242,6 +265,9 @@ export async function updateEvent(
       if (!isUpcoming(current.startsAt)) throw new ActionBlocked('past');
       const moved = current.startsAt.getTime() !== input.startsAt.getTime();
       if (moved && !isUpcoming(input.startsAt)) throw new ActionBlocked('past');
+      if (current.game !== input.game && !canChangeGame(current)) {
+        throw new ActionBlocked('game-locked');
+      }
       tx.update(ref, { ...clean(input), updatedAt: serverTimestamp(), updatedBy: adminUid });
     });
     return { ok: true };

@@ -46,7 +46,12 @@
   } @else {
     <h2 id="titulo-presenca" class="presence__title">Você vai participar deste evento?</h2>
     <p class="presence__text muted">
-      Visitantes também podem participar. Informe o seu personagem para confirmar presença.
+      @if (eventGameLabel(); as label) {
+        Visitantes também podem participar. Informe o seu personagem do {{ label }} para confirmar
+        presença.
+      } @else {
+        Visitantes também podem participar. Informe o seu personagem para confirmar presença.
+      }
     </p>
     @if (spots()) {
       <p class="presence__text muted presence__spots">{{ spots() }}</p>
@@ -57,26 +62,28 @@
         <p class="form-alert" role="alert" tabindex="-1">{{ message }}</p>
       }
 
-      <fieldset class="choices" [attr.aria-describedby]="describedBy('game')">
-        <legend class="field__label">Em qual jogo você joga?</legend>
-        <div class="choices__options">
-          @for (g of games; track g.id) {
-            <label class="choice">
-              <input
-                class="choice__input"
-                type="radio"
-                formControlName="game"
-                [value]="g.id"
-                [attr.aria-invalid]="!!fieldError('game')"
-              />
-              {{ g.label }}
-            </label>
+      @if (!eventGame()) {
+        <fieldset class="choices" [attr.aria-describedby]="describedBy('game')">
+          <legend class="field__label">Em qual jogo você joga?</legend>
+          <div class="choices__options">
+            @for (g of games; track g.id) {
+              <label class="choice">
+                <input
+                  class="choice__input"
+                  type="radio"
+                  formControlName="game"
+                  [value]="g.id"
+                  [attr.aria-invalid]="!!fieldError('game')"
+                />
+                {{ g.label }}
+              </label>
+            }
+          </div>
+          @if (fieldError('game'); as message) {
+            <p id="visitante-game-erro" class="field__error">{{ message }}</p>
           }
-        </div>
-        @if (fieldError('game'); as message) {
-          <p id="visitante-game-erro" class="field__error">{{ message }}</p>
-        }
-      </fieldset>
+        </fieldset>
+      }
 
       @if (game()) {
         <div class="form-grid">

@@ -23,10 +23,14 @@ import { watchMembers, type MainCharacter, type MemberRow } from './members-admi
 
 export interface MyAttendance {
   confirmedAt: Date | null;
+  /** Personagem com que confirmou (`null` em presenças anteriores à escolha do personagem). */
+  character: MainCharacter | null;
 }
 
 export type AttendanceError =
   | 'already-confirmed'
+  | 'character-not-found'
+  | 'wrong-game'
   | 'not-confirmed'
   | 'full'
   | 'past'
@@ -50,16 +54,31 @@ export function watchMyAttendance(
 ): () => void {
   return onSnapshot(
     attendeeRef(db, eventId, uid),
-    (snap) => next(snap.exists() ? { confirmedAt: toDate(snap.get('confirmedAt')) } : null),
+    (snap) =>
+      next(
+        snap.exists()
+          ? { confirmedAt: toDate(snap.get('confirmedAt')), character: characterOf(snap.data()) }
+          : null,
+      ),
     error,
   );
+}
+
+/** Personagem gravado na presença (presenças antigas não têm). */
+function characterOf(data: Record<string, unknown>): MainCharacter | null {
+  const c = data['character'];
+  return c && typeof c === 'object' ? (c as MainCharacter) : null;
 }
 
 export interface Attendee {
   uid: string;
   /** Vazio quando a conta foi excluída (o nome de usuário é removido). */
   username: string;
-  mainCharacter: MainCharacter | null;
+  /**
+   * Personagem com que confirmou. Em presenças anteriores à escolha do personagem, o
+   * personagem principal atual (ou o que ficou, na conta excluída).
+   */
+  character: MainCharacter | null;
   confirmedAt: Date | null;
   /** Conta excluída: a presença continua no histórico, com o personagem principal. */
   deleted: boolean;
@@ -71,7 +90,7 @@ function byConfirmation(a: Attendee, b: Attendee): number {
 }
 
 /**
- * Confirmados do evento (somente administradores), com o personagem principal atual de cada um.
+ * Confirmados do evento (somente administradores), com o personagem de cada um.
  * Contas desativadas saem da lista, como nas demais listas da guilda. Contas excluídas
  * continuam no histórico (suas presenças em eventos futuros já foram canceladas), sem dados
  * pessoais.
@@ -82,7 +101,8 @@ export function watchAttendees(
   next: (attendees: Attendee[]) => void,
   error: (e: unknown) => void,
 ): () => void {
-  let confirmed: Map<string, Date | null> | null = null;
+  let confirmed: Map<string, { confirmedAt: Date | null; character: MainCharacter | null }> | null =
+    null;
   let members: Map<string, MemberRow> | null = null;
   let deleted: Map<string, MainCharacter | null> | null = null;
   const emit = () => {
@@ -90,18 +110,24 @@ export function watchAttendees(
     const people = members;
     const gone = deleted;
     const list: Attendee[] = [];
-    for (const [uid, confirmedAt] of confirmed) {
+    for (const [uid, { confirmedAt, character }] of confirmed) {
       const m = people.get(uid);
       if (m?.status === 'ativo') {
         list.push({
           uid,
           username: m.username,
-          mainCharacter: m.mainCharacter,
+          character: character ?? m.mainCharacter,
           confirmedAt,
           deleted: false,
         });
       } else if (!m && gone.has(uid)) {
-        list.push({ uid, username: '', mainCharacter: gone.get(uid)!, confirmedAt, deleted: true });
+        list.push({
+          uid,
+          username: '',
+          character: character ?? gone.get(uid)!,
+          confirmedAt,
+          deleted: true,
+        });
       }
     }
     next(list.sort(byConfirmation));
@@ -110,7 +136,12 @@ export function watchAttendees(
   const stopAttendees = onSnapshot(
     collection(db, 'events', eventId, 'attendees'),
     (snap) => {
-      confirmed = new Map(snap.docs.map((d) => [d.id, toDate(d.get('confirmedAt'))]));
+      confirmed = new Map(
+        snap.docs.map((d) => [
+          d.id,
+          { confirmedAt: toDate(d.get('confirmedAt')), character: characterOf(d.data()) },
+        ]),
+      );
       emit();
     },
     error,
@@ -159,13 +190,37 @@ async function openEvent(tx: Transaction, db: Firestore, eventId: string): Promi
 }
 
 /**
- * Confirma a presença de `uid` (a pessoa autenticada) em um evento futuro e ativo, com vaga.
- * O contador de confirmados do evento sobe no mesmo lote.
+ * Lê, na transação, o personagem do membro: um personagem salvo (`characterId`) ou, com
+ * `null`, o principal vindo da candidatura, que ainda não tem documento próprio.
+ */
+async function readCharacter(
+  tx: Transaction,
+  db: Firestore,
+  uid: string,
+  characterId: string | null,
+): Promise<Record<string, unknown>> {
+  if (characterId) {
+    const snap = await tx.get(doc(db, 'members', uid, 'characters', characterId));
+    if (!snap.exists()) throw new Blocked('character-not-found');
+    return snap.data();
+  }
+  const main = (await tx.get(doc(db, 'members', uid))).get('mainCharacter') as
+    Record<string, unknown> | undefined;
+  if (!main) throw new Blocked('character-not-found');
+  return main;
+}
+
+/**
+ * Confirma a presença de `uid` (a pessoa autenticada) em um evento futuro e ativo, com vaga,
+ * com um dos seus personagens (`characterId`; `null` = principal ainda sem documento próprio),
+ * que precisa ser da versão do jogo do evento. O personagem é copiado para a presença, e o
+ * contador de confirmados do evento sobe no mesmo lote.
  */
 export async function confirmAttendance(
   db: Firestore,
   eventId: string,
   uid: string,
+  characterId: string | null,
 ): Promise<AttendanceResult> {
   try {
     await retryCountRace(() =>
@@ -173,8 +228,14 @@ export async function confirmAttendance(
         const event = await openEvent(tx, db, eventId);
         const ref = attendeeRef(db, eventId, uid);
         if ((await tx.get(ref)).exists()) throw new Blocked('already-confirmed');
+        const character = await readCharacter(tx, db, uid, characterId);
+        if (event.game && character['game'] !== event.game) throw new Blocked('wrong-game');
         if (isFull(event)) throw new Blocked('full');
-        tx.set(ref, { confirmedAt: serverTimestamp() });
+        tx.set(ref, {
+          confirmedAt: serverTimestamp(),
+          character,
+          ...(characterId ? { characterId } : {}),
+        });
         tx.update(doc(db, 'events', eventId), attendanceCountUpdate(event, 'attendees', uid, 1));
       }),
     );

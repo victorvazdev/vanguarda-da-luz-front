@@ -261,7 +261,8 @@ A guilda está presente em duas versões de World of Warcraft:
 - [ ] O menu de visitantes e de usuários pendentes inclui o calendário.
 - [ ] O calendário abre no mês atual e permite navegar entre meses.
 - [ ] Os dias com eventos ficam identificados.
-- [ ] Ao selecionar um evento, a pessoa vê o título, a data, o horário, a descrição e o organizador.
+- [ ] Ao selecionar um evento, a pessoa vê o título, a data, o horário, a versão do jogo, a descrição e o organizador.
+- [ ] A lista de eventos do mês identifica a versão do jogo de cada evento.
 - [ ] Datas e horários são exibidos no fuso definido para a guilda e esse fuso fica identificado.
 - [ ] Eventos cancelados são identificados como cancelados.
 
@@ -270,8 +271,10 @@ A guilda está presente em duas versões de World of Warcraft:
 **Como membro**, quero acessar um calendário, para que eu possa confirmar minha presença para algum evento.
 
 - [ ] O detalhe de um evento futuro e ativo oferece a ação de confirmar presença.
-- [ ] A confirmação fica registrada para o membro autenticado.
-- [ ] Após confirmar, o evento indica que a presença do membro está confirmada.
+- [ ] O membro escolhe com qual dos seus personagens confirma; somente personagens da versão do jogo do evento são oferecidos, e o personagem principal vem escolhido quando é dessa versão.
+- [ ] Sem personagem da versão do jogo do evento, o detalhe orienta o membro a adicionar um em Minha conta.
+- [ ] A confirmação fica registrada para o membro autenticado, com o personagem escolhido; o servidor recusa personagens de outra versão do jogo ou que não sejam do membro.
+- [ ] Após confirmar, o evento indica que a presença do membro está confirmada e com qual personagem.
 - [ ] O membro não pode confirmar a presença duas vezes no mesmo evento.
 - [ ] Não é possível confirmar presença em eventos passados ou cancelados.
 - [ ] O detalhe do evento mostra quantas vagas restam; quando o limite de confirmados é atingido, o evento aparece como lotado e não aceita novas confirmações.
@@ -290,8 +293,9 @@ A guilda está presente em duas versões de World of Warcraft:
 **Como visitante**, quero confirmar minha presença em um evento da guilda, para que os organizadores saibam que vou participar mesmo sem ser membro.
 
 - [ ] Visitantes (sem conta ou não autenticados) e usuários pendentes podem confirmar presença em eventos futuros e ativos, quando o administrador permitir.
-- [ ] Ao confirmar, o visitante informa se joga no World of Warcraft Forever ou no Retail.
-- [ ] No WoW Forever, o visitante informa o nome e o sobrenome do personagem; no Retail, o nome e o reino.
+- [ ] O visitante confirma com um personagem da versão do jogo do evento, sem escolher o jogo; o servidor recusa personagens de outra versão.
+- [ ] Em eventos do WoW Forever, o visitante informa o nome e o sobrenome do personagem; em eventos do Retail, o nome e o reino.
+- [ ] Eventos criados antes da escolha da versão do jogo aceitam personagens dos dois jogos (o visitante escolhe o jogo; o membro, qualquer personagem seu) até o administrador definir a versão.
 - [ ] Os nomes têm de 2 a 12 letras, sem espaços ou números, e são gravados como no jogo (só a primeira letra maiúscula); o reino tem até 40 caracteres, sem "/".
 - [ ] Após confirmar, o evento indica a presença confirmada com o personagem informado; neste navegador, a confirmação continua indicada ao voltar à página.
 - [ ] O mesmo personagem não pode confirmar duas vezes no mesmo evento.
@@ -360,7 +364,11 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 
 **Como administrador**, quero criar, editar e cancelar eventos, para que os membros vejam a programação atualizada da guilda.
 
-- [ ] O formulário solicita título, data, horário, descrição e organizador.
+- [ ] A criação e a edição de eventos abrem em página própria, separada da lista de eventos; ao salvar, a página volta à lista e informa o resultado.
+- [ ] O administrador também cria eventos direto do calendário, sem passar pelo painel administrativo; ao criar, o detalhe do novo evento é aberto.
+- [ ] O formulário solicita título, versão do jogo (World of Warcraft Retail ou Forever), data, horário, descrição e organizador.
+- [ ] A versão do jogo pode ser alterada enquanto ninguém confirmou presença; depois, fica bloqueada. Eventos antigos, sem versão, recebem uma ao serem editados.
+- [ ] A administração de eventos mostra a versão do jogo de cada evento.
 - [ ] O formulário permite habilitar ou desabilitar a confirmação de presença de visitantes; por padrão, ela vem habilitada.
 - [ ] Eventos criados antes dessa opção aceitam a confirmação de visitantes.
 - [ ] O formulário solicita o limite de confirmados (membros e visitantes somados), de 1 a 500; por padrão, 40.
@@ -380,7 +388,7 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 **Como administrador**, quero ver quem confirmou presença em um evento, para que eu possa organizar sua realização.
 
 - [ ] O detalhe do evento mostra o total de confirmados, somando membros e visitantes, e o limite do evento.
-- [ ] A lista mostra o nome, o personagem principal, a classe e a função de cada confirmado.
+- [ ] A lista mostra o nome, o personagem com que confirmou, a classe e a função de cada confirmado (em presenças anteriores à escolha do personagem, o personagem principal).
 - [ ] Os visitantes aparecem em uma lista própria, com o personagem (nome e sobrenome no WoW Forever; nome e reino no Retail) e o jogo.
 - [ ] A lista reflete confirmações e cancelamentos já registrados.
 - [ ] Uma mensagem é exibida quando ainda não há confirmados.

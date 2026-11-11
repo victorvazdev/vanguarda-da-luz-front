@@ -1,0 +1,55 @@
+@use '../../../../../styles/mixins' as *;
+
+// Formulário de evento em página própria: coluna única, com largura confortável de leitura.
+.event-form-page {
+  max-width: 40rem;
+}
+
+.event-form-page__back {
+  display: inline-block;
+  margin-bottom: var(--space-4);
+}
+
+.event-form {
+  @include card;
+}
+
+.event-form__title {
+  margin: 0 0 var(--space-4);
+}
+
+.event-form__subtitle {
+  margin: calc(-1 * var(--space-3)) 0 var(--space-4);
+  overflow-wrap: anywhere;
+}
+
+.event-form__when {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-3);
+}
+
+// Limite de confirmados: número curto.
+.event-form__number {
+  max-width: 10rem;
+}
+
+// Mensagens de data e horário ficam juntas, abaixo dos dois campos.
+.event-form__when-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: calc(-1 * var(--space-2));
+}
+
+.event-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+@media (max-width: 520px) {
+  .event-form__actions .btn {
+    flex: 1 1 100%;
+  }
+}

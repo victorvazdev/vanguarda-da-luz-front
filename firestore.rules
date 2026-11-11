@@ -578,12 +578,20 @@ service cloud.firestore {
     // visitantes). `attendeeCount` conta os confirmados: cada confirmação ou cancelamento
     // altera o contador no mesmo lote, e `lastAttendance` aponta a presença alterada, para as
     // rules conferirem os dois lados (ver "Contador de confirmados").
+    // `game` é a versão do jogo do evento: obrigatória em eventos novos; visitantes confirmam
+    // com um personagem dela e membros, com um personagem seu dela. Eventos antigos não têm o
+    // campo e aceitam os dois jogos até um administrador escolher a versão. Com presenças
+    // confirmadas, a versão escolhida não muda mais.
     function eventFields() {
       return ['title', 'startsAt', 'description', 'organizer'];
     }
 
     function editableEventFields() {
-      return eventFields().concat(['guestsAllowed', 'maxAttendees']);
+      return eventFields().concat(['game', 'guestsAllowed', 'maxAttendees']);
+    }
+
+    function isGameId(value) {
+      return value in ['retail', 'forever'];
     }
 
     // Limite padrão e máximo de confirmados (igual a src/app/core/data/events.ts).
@@ -646,8 +654,9 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(
              editableEventFields().concat(
                ['status', 'createdBy', 'createdAt', 'updatedAt', 'attendeeCount']))
-        && request.resource.data.keys().hasAll(eventFields())
+        && request.resource.data.keys().hasAll(eventFields().concat(['game']))
         && validEventContent(request.resource.data)
+        && isGameId(request.resource.data.game)
         && request.resource.data.get('attendeeCount', 0) == 0
         && request.resource.data.startsAt > request.time
         && request.resource.data.status == 'ativo'
@@ -662,6 +671,10 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(editableEventFields().concat(['updatedAt', 'updatedBy']))
         && validEventContent(request.resource.data)
+        && isGameId(request.resource.data.get('game', null))
+        && (request.resource.data.game == resource.data.get('game', null)
+            || !('game' in resource.data)
+            || resource.data.get('attendeeCount', 0) == 0)
         && (request.resource.data.startsAt == resource.data.startsAt
             || request.resource.data.startsAt > request.time)
         && request.resource.data.updatedAt == request.time
@@ -714,7 +727,7 @@ service cloud.firestore {
 
       // ---------- Presenças (ID = uid de quem confirmou) ----------
       // Cada conta ativa registra (ou cancela) somente a própria presença, uma vez por evento,
-      // em evento ativo e futuro. Administradores veem a lista e podem cancelar presenças.
+      // em evento ativo e futuro, com um personagem seu da versão do jogo do evento. Administradores veem a lista e podem cancelar presenças.
       function eventPath() {
         return /databases/$(database)/documents/events/$(eventId);
       }
@@ -730,6 +743,23 @@ service cloud.firestore {
         return event.status == 'ativo'
           && event.startsAt > request.time
           && event.get('guestsAllowed', true) == true;
+      }
+
+      // O personagem é da versão do jogo do evento (eventos antigos, sem versão: qualquer um).
+      function eventGameAccepts(character) {
+        return get(eventPath()).data.get('game', character.game) == character.game;
+      }
+
+      // Personagem da presença do membro: cópia fiel de um personagem seu (`characterId`) ou,
+      // sem `characterId`, do principal (o vindo da candidatura ainda não tem documento).
+      function ownCharacter(uid, d) {
+        return d.character is map
+          && eventGameAccepts(d.character)
+          && (('characterId' in d)
+            ? d.characterId is string
+              && d.characterId.matches('^[A-Za-z0-9]{1,40}$')
+              && get(characterPath(uid, d.characterId)).data == d.character
+            : get(memberPath(uid)).data.mainCharacter == d.character);
       }
 
       // A presença `kind/id` entra (+1) ou sai (-1) do contador do evento neste mesmo lote.
@@ -765,8 +795,9 @@ service cloud.firestore {
           && isActive()
           && eventIsOpen()
           && countedIn('attendees', uid)
-          && request.resource.data.keys().hasOnly(['confirmedAt'])
-          && request.resource.data.confirmedAt == request.time;
+          && request.resource.data.keys().hasOnly(['confirmedAt', 'character', 'characterId'])
+          && request.resource.data.confirmedAt == request.time
+          && ownCharacter(uid, request.resource.data);
 
         allow update: if false;
 
@@ -795,7 +826,8 @@ service cloud.firestore {
         allow create: if !isActive()
           && guestsOpen()
           && countedIn('guests', guestId)
-          && validGuest(request.resource.data, guestId);
+          && validGuest(request.resource.data, guestId)
+          && eventGameAccepts(request.resource.data);
 
         allow update: if false;
 

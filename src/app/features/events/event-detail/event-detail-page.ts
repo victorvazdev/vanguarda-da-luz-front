@@ -8,6 +8,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   signal,
 } from '@angular/core';
 import { Title } from '@angular/platform-browser';
@@ -16,8 +17,18 @@ import { GUILD } from '../../../core/content/guild-content';
 import { ACCOUNT_MESSAGES } from '../../../core/auth/messages';
 import { SessionService } from '../../../core/auth/session.service';
 import type { AttendanceError, MyAttendance } from '../../../core/data/attendance';
+import type { Character } from '../../../core/data/characters';
+import type { MainCharacter } from '../../../core/data/members-admin';
+import { CharactersService } from '../../../core/data/characters.service';
 import { isFull, isUpcoming, spotsLeft, type GuildEvent } from '../../../core/data/events';
 import { EventsService } from '../../../core/data/events.service';
+import {
+  GAMES,
+  characterDisplayName,
+  classLabel,
+  gameLabel,
+  type Game,
+} from '../../../core/models/wow';
 import { PATHS, joinPathFor } from '../../../core/routing/paths';
 import {
   GUILD_TIME_ZONE_LABEL,
@@ -36,6 +47,8 @@ const ATTENDANCE_ERRORS: Record<
   string
 > = {
   past: 'Este evento já começou. Não é mais possível alterar a presença.',
+  'wrong-game': 'Este personagem não é da versão do jogo do evento. Escolha outro.',
+  'character-not-found': 'Este personagem não existe mais. Escolha outro.',
   full: 'Este evento atingiu o limite de confirmados.',
   cancelled: 'Este evento foi cancelado. Não é possível alterar a presença.',
   'not-found': 'Este evento não existe mais.',
@@ -43,6 +56,21 @@ const ATTENDANCE_ERRORS: Record<
   network: ACCOUNT_MESSAGES.network,
   unknown: 'Não foi possível salvar sua presença. Tente novamente.',
 };
+
+/** Valor da opção do personagem principal que ainda não tem documento próprio. */
+const MAIN_FROM_APPLICATION = 'principal';
+const characterKey = (c: Character) => c.id ?? MAIN_FROM_APPLICATION;
+
+/** Nome da versão do jogo por extenso ("World of Warcraft Retail"). */
+const gameName = (game: Game) => GAMES.find((g) => g.id === game)?.label ?? game;
+
+/** "Tavia — Sacerdote, nível 80 (principal)"; com o jogo quando o evento aceita os dois. */
+function characterOption(c: Character, withGame: boolean): string {
+  const level = c.level ? `, nível ${c.level}` : '';
+  const game = withGame ? ` · ${gameLabel(c.game)}` : '';
+  const main = c.isMain ? ' (principal)' : '';
+  return `${characterDisplayName(c)} — ${classLabel(c.characterClass)}${level}${main}${game}`;
+}
 
 /** "3 de 40 vagas disponíveis" (ou "1 de 40 vaga disponível"). */
 export function spotsText(e: GuildEvent): string {
@@ -69,6 +97,7 @@ export class EventDetailPage {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
   private readonly flash = inject(FlashService);
+  private readonly characters = inject(CharactersService);
   /** A lista de confirmados é visível apenas para administradores. */
   protected readonly isAdmin = computed(() => this.session.access() === 'admin');
   /** Membros confirmam com a conta; os demais (visitantes e contas pendentes), como visitantes. */
@@ -92,6 +121,46 @@ export class EventDetailPage {
   /** Aviso após cancelar a presença. */
   protected readonly presenceNotice = signal<string | null>(null);
   protected readonly attendanceError = signal<string | null>(null);
+  /** Personagens do membro: `undefined` enquanto carrega, `null` se não foi possível carregar. */
+  private readonly myCharacters = signal<Character[] | null | undefined>(undefined);
+  /** Personagens que podem confirmar presença: os da versão do jogo do evento. */
+  protected readonly eligible = computed(() => {
+    const list = this.myCharacters() ?? [];
+    const game = this.event()?.game ?? null;
+    return (game ? list.filter((c) => c.game === game) : list).map((c) => ({
+      key: characterKey(c),
+      label: characterOption(c, !game),
+      character: c,
+      summary: {
+        game: c.game,
+        characterName: c.characterName,
+        ...(c.characterSurname ? { characterSurname: c.characterSurname } : {}),
+        characterClass: c.characterClass,
+        characterRole: c.characterRole,
+      } satisfies MainCharacter,
+    }));
+  });
+  protected readonly charactersState = computed(() => {
+    const list = this.myCharacters();
+    return list === undefined ? 'loading' : list === null ? 'error' : 'ready';
+  });
+  /**
+   * Personagem escolhido. Por padrão, o principal, se for da versão do jogo do evento; a escolha
+   * da pessoa é mantida enquanto o personagem continuar disponível.
+   */
+  protected readonly selectedCharacter = linkedSignal({
+    source: this.eligible,
+    computation: (options, previous?: { value: string }) => {
+      if (previous && options.some((o) => o.key === previous.value)) return previous.value;
+      return options.find((o) => o.character.isMain)?.key ?? '';
+    },
+  });
+  /** Nome do personagem com que a pessoa confirmou presença. */
+  protected readonly confirmedWith = computed(() => {
+    const c = this.attendance()?.character;
+    return c ? characterDisplayName(c) : null;
+  });
+  protected readonly characterError = signal<string | null>(null);
   /** Exclusão do evento cancelado em andamento (somente administradores). */
   protected readonly removing = signal(false);
   protected readonly removeError = signal<string | null>(null);
@@ -101,6 +170,7 @@ export class EventDetailPage {
     if (!e) return null;
     return {
       title: e.title,
+      game: e.game ? gameName(e.game) : null,
       date: `${formatBrasiliaWeekday(e.startsAt)}, ${formatBrasiliaDate(e.startsAt)}`,
       time: `${formatBrasiliaTime(e.startsAt)}, ${GUILD_TIME_ZONE_LABEL}`,
       organizer: e.organizer,
@@ -151,6 +221,17 @@ export class EventDetailPage {
       onCleanup(stop);
     });
 
+    // Personagens do membro, para escolher com qual confirmar presença.
+    effect((onCleanup) => {
+      this.myCharacters.set(undefined);
+      if (this.presenceMode() !== 'member') return;
+      const stop = this.characters.watchMine(
+        (list) => this.myCharacters.set(list),
+        () => this.myCharacters.set(null),
+      );
+      onCleanup(stop);
+    });
+
     // Título da aba com o nome do evento.
     effect(() => {
       const title = this.view()?.title;
@@ -158,16 +239,33 @@ export class EventDetailPage {
     });
   }
 
+  protected chooseCharacter(key: string): void {
+    this.selectedCharacter.set(key);
+    this.characterError.set(null);
+  }
+
   protected async confirmPresence(): Promise<void> {
     if (this.confirming()) return;
-    this.confirming.set(true);
     this.attendanceError.set(null);
     this.presenceNotice.set(null);
-    const result = await this.events.confirmAttendance(this.id());
+    const chosen = this.eligible().find((o) => o.key === this.selectedCharacter());
+    if (!chosen) {
+      this.characterError.set('Escolha o personagem.');
+      afterNextRender(
+        () => this.host.nativeElement.querySelector<HTMLElement>('#presenca-personagem')?.focus(),
+        { injector: this.injector },
+      );
+      return;
+    }
+    this.characterError.set(null);
+    this.confirming.set(true);
+    const result = await this.events.confirmAttendance(this.id(), chosen.character.id);
     this.confirming.set(false);
     // "Já confirmada" também é sucesso para a pessoa. O listener traz o horário oficial.
     if (result.ok || result.error === 'already-confirmed') {
-      if (!this.attendance()) this.attendance.set({ confirmedAt: null });
+      if (!this.attendance()) {
+        this.attendance.set({ confirmedAt: null, character: result.ok ? chosen.summary : null });
+      }
       this.focusStatus();
       return;
     }

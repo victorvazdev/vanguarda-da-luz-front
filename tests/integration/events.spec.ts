@@ -55,6 +55,7 @@ async function approvedMember(admin: Person, username: string): Promise<Person> 
 const DAY = 86_400_000;
 const input = (over: Partial<EventInput> = {}): EventInput => ({
   title: '  Raid semanal ',
+  game: 'retail',
   startsAt: new Date(Date.now() + 3 * DAY),
   description: '[DESCRIÇÃO DO EVENTO]',
   organizer: 'Maren',
@@ -134,6 +135,7 @@ describe('Criar, editar e cancelar eventos (emuladores)', () => {
     const newDate = new Date(Date.now() + 6 * DAY);
     const result = await updateEvent(admin.db, admin.uid, created.id, {
       title: 'Raid heroica',
+      game: 'retail',
       startsAt: newDate,
       description: 'Traga poções.',
       organizer: 'Dorvan',
@@ -205,7 +207,7 @@ describe('Excluir evento cancelado (emuladores)', () => {
     const tavia = await approvedMember(admin, 'Tavia');
     const created = await createEvent(admin.db, admin.uid, input());
     if (!created.ok) throw new Error(created.error);
-    expect(await confirmAttendance(tavia.db, created.id, tavia.uid)).toEqual({ ok: true });
+    expect(await confirmAttendance(tavia.db, created.id, tavia.uid, null)).toEqual({ ok: true });
     expect(await cancelEvent(admin.db, admin.uid, created.id)).toEqual({ ok: true });
 
     expect(await deleteCancelledEvent(admin.db, created.id)).toEqual({ ok: true });
@@ -219,6 +221,7 @@ describe('Excluir evento cancelado (emuladores)', () => {
     const admin = await firstAdmin();
     await adminPatch('events/antigo', {
       title: 'Raid antiga',
+      game: 'retail',
       startsAt: new Date(Date.now() - 3 * DAY),
       description: 'Cancelada.',
       organizer: 'Maren',
