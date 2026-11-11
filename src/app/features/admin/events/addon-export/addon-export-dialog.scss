@@ -1,0 +1,55 @@
+.addon-export__intro {
+  margin: 0 0 var(--space-4);
+}
+
+.addon-export__days {
+  max-width: 14rem;
+}
+
+.addon-export__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: 0 0 var(--space-4);
+
+  dt {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+// A string é longa e sem espaços: quebra em qualquer ponto, em fonte monoespaçada.
+.addon-export__string {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  word-break: break-all;
+  resize: vertical;
+}
+
+.addon-export__copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.addon-export__copied {
+  margin: 0;
+}
+
+.addon-export__steps-title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-body);
+  font-size: 1rem;
+}
+
+.addon-export__steps {
+  margin: 0;
+  padding-left: var(--space-5);
+}

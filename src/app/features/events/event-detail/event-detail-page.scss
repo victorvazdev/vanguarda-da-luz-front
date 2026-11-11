@@ -132,6 +132,11 @@
   }
 }
 
+// Ações de administrador no detalhe (exportação para o addon).
+.event-detail__admin {
+  margin-top: var(--space-4);
+}
+
 // Escolha do personagem com que o membro confirma presença.
 .presence__character {
   width: 100%;

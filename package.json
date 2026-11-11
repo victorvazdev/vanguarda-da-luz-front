@@ -15,7 +15,8 @@
     "typecheck:tests": "tsc -p tests/tsconfig.json",
     "dev:reset-link": "node scripts/reset-link.mjs",
     "e2e:serve": "ng build --configuration e2e && firebase emulators:start --config firebase.test.json --project demo-vanguarda-da-luz",
-    "dev:seed": "node scripts/seed-dev.mjs"
+    "dev:seed": "node scripts/seed-dev.mjs",
+    "addon:exemplos": "ATUALIZAR_EXEMPLOS=1 vitest run --config vitest.emulators.config.mts tests/addon"
   },
   "private": true,
   "packageManager": "npm@11.20.0",

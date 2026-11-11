@@ -56,6 +56,15 @@
             <h2 class="event-detail__subtitle">Descrição</h2>
             <p class="event-detail__description">{{ e.description }}</p>
 
+            @if (isAdmin()) {
+              <div class="event-detail__admin">
+                <button type="button" class="btn btn--outline" (click)="addonExport.open()">
+                  Exportar para o addon
+                </button>
+                <app-addon-export-dialog #addonExport />
+              </div>
+            }
+
             @if (e.cancelled) {
               <p class="notice event-detail__notice">
                 Este evento foi cancelado pela administração da guilda.

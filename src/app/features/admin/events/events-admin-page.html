@@ -4,8 +4,14 @@
       <h1 id="titulo-eventos" class="admin__title" tabindex="-1">Próximos eventos</h1>
       <p class="muted events-admin__zone">Horários de {{ timeZone }}</p>
     </div>
-    <a class="btn btn--primary" routerLink="novo">Novo evento</a>
+    <div class="events-admin__actions">
+      <button type="button" class="btn btn--outline" (click)="addonExport.open()">
+        Exportar para o addon
+      </button>
+      <a class="btn btn--primary" routerLink="novo">Novo evento</a>
+    </div>
   </div>
+  <app-addon-export-dialog #addonExport />
 
   <div aria-live="polite">
     @if (status(); as message) {

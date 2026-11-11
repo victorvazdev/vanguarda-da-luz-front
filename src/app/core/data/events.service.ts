@@ -2,6 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import type { Firestore } from 'firebase/firestore';
 import { SessionService } from '../auth/session.service';
 import { FirestoreClient } from '../firebase/firebase.providers';
+import { generateAddonExport, type AddonExportResult } from './addon-export';
+import type { AddonGame } from './addon-format';
 import {
   cancelAttendance,
   confirmAttendance,
@@ -142,6 +144,11 @@ export class EventsService {
   /** Administrador cancela a presença de um visitante. */
   async removeGuest(eventId: string, guestId: string): Promise<GuestAttendanceResult> {
     return removeGuestAttendance(await this.firestore.get(), eventId, guestId);
+  }
+
+  /** String de exportação para o addon da guilda (eventos de hoje e dos próximos `days` dias). */
+  async exportForAddon(days: number, game: AddonGame = 'forever'): Promise<AddonExportResult> {
+    return generateAddonExport(await this.firestore.get(), game, days);
   }
 
   /** Inicia o listener quando o Firestore (carregado sob demanda) estiver pronto. */

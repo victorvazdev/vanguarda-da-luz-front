@@ -214,6 +214,26 @@ describe('EventDetailPage', () => {
     expect(text('.attendees__note')).toBe('Limite: 40 pessoas · Visível para administradores');
   });
 
+  it('a exportação para o addon aparece somente para administradores', async () => {
+    const exportButton = () =>
+      [...el.querySelectorAll('button')].find(
+        (b) => b.textContent?.trim() === 'Exportar para o addon',
+      );
+    await emit(raid);
+    for (const access of ['visitor', 'pending', 'member'] as const) {
+      session.access.set(access);
+      await fixture.whenStable();
+      expect(exportButton()).toBeUndefined();
+      expect(el.querySelector('app-addon-export-dialog')).toBeNull();
+    }
+    session.access.set('admin');
+    await fixture.whenStable();
+    expect(exportButton()).toBeTruthy();
+    // Também em evento cancelado: o addon precisa cancelar o evento no jogo.
+    await emit({ ...raid, status: 'cancelado' });
+    expect(exportButton()).toBeTruthy();
+  });
+
   it('avisa quando o evento não existe', async () => {
     await emit(null);
     expect(text('h1')).toBe('Evento não encontrado');
