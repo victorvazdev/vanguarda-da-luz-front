@@ -51,6 +51,7 @@ const MESSAGES: Record<Field, ErrorMessages> = {
 
 const ERRORS: Record<Exclude<GuestAttendanceError, 'already-confirmed'>, string> = {
   'guests-closed': 'A confirmação de presença de visitantes foi desativada neste evento.',
+  'wrong-game': 'Este evento é de outra versão do jogo. Recarregue a página.',
   full: 'Este evento atingiu o limite de confirmados.',
   past: 'Este evento já começou. Não é mais possível confirmar presença.',
   cancelled: 'Este evento foi cancelado. Não é possível confirmar presença.',
@@ -91,7 +92,8 @@ const realmFormat: ValidatorFn = (control) => {
 
 /**
  * Confirmação de presença de visitantes (sem conta de membro): o personagem do WoW Forever
- * (nome e sobrenome) ou do Retail (nome e reino).
+ * (nome e sobrenome) ou do Retail (nome e reino), na versão do jogo do evento. Somente em
+ * eventos antigos, sem versão definida, o visitante escolhe o jogo.
  */
 @Component({
   selector: 'app-guest-presence',
@@ -106,6 +108,8 @@ export class GuestPresence {
   private readonly injector = inject(Injector);
 
   readonly eventId = input.required<string>();
+  /** Versão do jogo do evento (`null` em eventos antigos: o visitante escolhe). */
+  readonly eventGame = input<Game | null>(null);
   /** Evento ativo e futuro. */
   readonly upcoming = input.required<boolean>();
   /** O administrador permite a confirmação de visitantes neste evento. */
@@ -141,12 +145,24 @@ export class GuestPresence {
     initialValue: this.form.controls.game.value,
   });
 
+  /** Nome da versão do jogo do evento ("World of Warcraft Retail"). */
+  protected readonly eventGameLabel = computed(() => {
+    const game = this.eventGame();
+    return game ? (GAMES.find((g) => g.id === game)?.label ?? null) : null;
+  });
+
   protected readonly confirmedView = computed(() => {
     const g = this.guest();
     return g ? { name: guestDisplayName(g), game: gameLabel(g.game) } : null;
   });
 
   constructor() {
+    // O jogo vem do evento; sem versão definida (eventos antigos), o visitante escolhe.
+    effect(() => {
+      const game = this.eventGame();
+      untracked(() => this.form.controls.game.setValue(game ?? ''));
+    });
+
     // Mostra só o campo do jogo escolhido (sobrenome no Forever, reino no Retail).
     effect(() => {
       const game = this.game();
@@ -214,7 +230,7 @@ export class GuestPresence {
       this.guest.set({ ...guestData(input), id: key, confirmedAt: null });
       this.rememberedId.set(key);
       this.submitted.set(false);
-      this.form.reset({ game: '' });
+      this.form.reset({ game: this.eventGame() ?? '' });
       this.focus('#visitante-status');
       return;
     }
@@ -226,7 +242,7 @@ export class GuestPresence {
   protected another(): void {
     remember(this.eventId(), null);
     this.rememberedId.set(null);
-    this.focus('.guest-form input[type="radio"]');
+    this.focus(this.eventGame() ? '#visitante-characterName' : '.guest-form input[type="radio"]');
   }
 
   private toInput(): GuestInput | null {

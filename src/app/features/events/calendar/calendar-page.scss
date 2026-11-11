@@ -20,6 +20,12 @@
   margin: var(--space-1) 0 0;
 }
 
+.calendar-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .calendar-page__nav {
   display: flex;
   flex-wrap: wrap;
@@ -208,6 +214,11 @@
 .agenda__badge {
   margin-right: var(--space-2);
   font-size: 0.8125rem;
+}
+
+.agenda__game {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
 }
 
 .agenda__item--cancelled .agenda__name-text {

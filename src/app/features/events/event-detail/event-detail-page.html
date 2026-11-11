@@ -41,6 +41,12 @@
                 <dt>Horário</dt>
                 <dd>{{ e.time }}</dd>
               </div>
+              @if (e.game) {
+                <div>
+                  <dt>Jogo</dt>
+                  <dd>{{ e.game }}</dd>
+                </div>
+              }
               <div>
                 <dt>Organizador</dt>
                 <dd>{{ e.organizer }}</dd>
@@ -79,6 +85,7 @@
             @if (!e.cancelled && presenceMode() === 'guest') {
               <app-guest-presence
                 [eventId]="id()"
+                [eventGame]="event()?.game ?? null"
                 [upcoming]="e.upcoming"
                 [guestsAllowed]="e.guestsAllowed"
                 [full]="e.full"
@@ -94,11 +101,21 @@
                     <span class="badge badge--success">Presença confirmada</span>
                   </h2>
                   <p id="presenca-status" class="presence__text" role="status" tabindex="-1">
-                    {{
-                      e.upcoming
-                        ? 'Você confirmou presença neste evento.'
-                        : 'Você confirmou presença neste evento, que já aconteceu.'
-                    }}
+                    @if (confirmedWith(); as name) {
+                      {{
+                        e.upcoming
+                          ? 'Você confirmou presença neste evento com ' + name + '.'
+                          : 'Você confirmou presença com ' +
+                            name +
+                            ' neste evento, que já aconteceu.'
+                      }}
+                    } @else {
+                      {{
+                        e.upcoming
+                          ? 'Você confirmou presença neste evento.'
+                          : 'Você confirmou presença neste evento, que já aconteceu.'
+                      }}
+                    }
                   </p>
                   @if (attendanceError(); as message) {
                     <p class="form-alert presence__error" role="alert">{{ message }}</p>
@@ -138,15 +155,75 @@
                   @if (attendanceError(); as message) {
                     <p class="form-alert presence__error" role="alert">{{ message }}</p>
                   }
-                  <button
-                    type="button"
-                    class="btn btn--primary"
-                    [disabled]="confirming()"
-                    [attr.aria-busy]="confirming()"
-                    (click)="confirmPresence()"
-                  >
-                    {{ confirming() ? 'Confirmando…' : 'Confirmar presença' }}
-                  </button>
+                  @switch (charactersState()) {
+                    @case ('loading') {
+                      <p class="muted loading" role="status">Carregando seus personagens…</p>
+                    }
+                    @case ('error') {
+                      <p class="form-alert presence__error" role="alert">
+                        Não foi possível carregar seus personagens. Recarregue a página.
+                      </p>
+                    }
+                    @default {
+                      @if (eligible().length) {
+                        <div class="field presence__character">
+                          <label class="field__label" for="presenca-personagem">Personagem</label>
+                          <select
+                            id="presenca-personagem"
+                            class="field__input"
+                            [attr.aria-invalid]="!!characterError()"
+                            [attr.aria-describedby]="
+                              characterError()
+                                ? 'presenca-personagem-erro presenca-personagem-dica'
+                                : 'presenca-personagem-dica'
+                            "
+                            (change)="chooseCharacter($any($event.target).value)"
+                          >
+                            <option value="" [selected]="!selectedCharacter()">
+                              Escolha o personagem
+                            </option>
+                            @for (option of eligible(); track option.key) {
+                              <option
+                                [value]="option.key"
+                                [selected]="option.key === selectedCharacter()"
+                              >
+                                {{ option.label }}
+                              </option>
+                            }
+                          </select>
+                          <p id="presenca-personagem-dica" class="field__hint">
+                            {{
+                              e.game
+                                ? 'Somente personagens do ' + e.game + '.'
+                                : 'Este evento aceita personagens dos dois jogos.'
+                            }}
+                          </p>
+                          @if (characterError(); as message) {
+                            <p id="presenca-personagem-erro" class="field__error">
+                              {{ message }}
+                            </p>
+                          }
+                        </div>
+                        <button
+                          type="button"
+                          class="btn btn--primary"
+                          [disabled]="confirming()"
+                          [attr.aria-busy]="confirming()"
+                          (click)="confirmPresence()"
+                        >
+                          {{ confirming() ? 'Confirmando…' : 'Confirmar presença' }}
+                        </button>
+                      } @else {
+                        <p class="presence__text">
+                          Para confirmar presença, você precisa de um personagem do
+                          {{ e.game ?? 'jogo' }}. Adicione um em Minha conta.
+                        </p>
+                        <a class="btn btn--outline" [routerLink]="paths.account">
+                          Adicionar personagem
+                        </a>
+                      }
+                    }
+                  }
                 } @else {
                   <h2 id="titulo-presenca" class="presence__title">Evento encerrado</h2>
                   <p class="presence__text muted">

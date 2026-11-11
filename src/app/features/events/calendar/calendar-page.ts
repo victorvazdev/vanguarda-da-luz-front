@@ -9,7 +9,9 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { GuildEvent } from '../../../core/data/events';
+import { SessionService } from '../../../core/auth/session.service';
 import { EventsService } from '../../../core/data/events.service';
+import { gameLabel } from '../../../core/models/wow';
 import { PATHS } from '../../../core/routing/paths';
 import {
   GUILD_TIME_ZONE_LABEL,
@@ -36,6 +38,8 @@ interface EventChip {
   title: string;
   time: string;
   cancelled: boolean;
+  /** Versão do jogo ("Retail"); `null` em eventos antigos, sem versão. */
+  game: string | null;
   /** Para a lista do celular: "Sáb, 7 nov. 2026". */
   date: string;
 }
@@ -45,6 +49,7 @@ const chip = (e: GuildEvent): EventChip => ({
   title: e.title,
   time: formatBrasiliaTime(e.startsAt),
   cancelled: e.status === 'cancelado',
+  game: e.game ? gameLabel(e.game) : null,
   date: `${formatBrasiliaWeekday(e.startsAt)}, ${formatBrasiliaDate(e.startsAt)}`,
 });
 
@@ -58,11 +63,14 @@ const chip = (e: GuildEvent): EventChip => ({
 })
 export class CalendarPage {
   private readonly events = inject(EventsService);
+  private readonly session = inject(SessionService);
 
   /** Parâmetro `?mes=2026-11` (ligado pelo roteador). Ausente = mês atual. */
   readonly mes = input<string>();
 
   protected readonly paths = PATHS;
+  /** Administradores criam eventos direto do calendário. */
+  protected readonly isAdmin = computed(() => this.session.access() === 'admin');
   protected readonly weekdays = WEEKDAYS;
   protected readonly timeZone = GUILD_TIME_ZONE_LABEL;
   private readonly todayKey = dayKey(new Date());

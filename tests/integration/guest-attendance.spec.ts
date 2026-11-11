@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { signUp } from '../../src/app/core/auth/sign-up';
+import { submitApplication } from '../../src/app/core/data/applications';
 import { cancelAttendance, confirmAttendance } from '../../src/app/core/data/attendance';
 import {
   cancelEvent,
@@ -15,6 +16,7 @@ import {
   watchGuests,
   type Guest,
 } from '../../src/app/core/data/guest-attendance';
+import { approveApplication } from '../../src/app/core/data/review';
 import { adminGet, adminPatch, useEmulators, type Client } from './emulators';
 
 const client = useEmulators();
@@ -36,8 +38,28 @@ async function firstAdmin(): Promise<Person> {
   return a;
 }
 
+/** Membro aprovado com um personagem principal do WoW Forever. */
+async function approvedMember(admin: Person, username: string): Promise<Person> {
+  const m = await register(username);
+  await submitApplication(m.db, m.uid, {
+    game: 'forever',
+    characterName: username,
+    characterSurname: 'Aurora',
+    ruleset: 'normal',
+    characterClass: 'druida',
+    characterRole: 'cura',
+    professions: [],
+    battleTag: 'Jogador#1234',
+    motivation: 'Quero entrar.',
+  });
+  const result = await approveApplication(admin.db, admin.uid, m.uid);
+  if (!result.ok) throw new Error(result.error);
+  return m;
+}
+
 const input = (over: Partial<EventInput> = {}): EventInput => ({
   title: 'Raid semanal',
+  game: 'forever',
   startsAt: new Date(Date.now() + 3 * 86_400_000),
   description: '[DESCRIÇÃO DO EVENTO]',
   organizer: 'Maren',
@@ -69,13 +91,14 @@ describe('Visitantes confirmam presença (emuladores)', () => {
   it('visitante sem login confirma com o personagem, padronizado como no jogo', async () => {
     const admin = await firstAdmin();
     const id = await newEvent(admin);
+    const retail = await newEvent(admin, { game: 'retail' });
     const visitor = client();
 
     expect(await confirmGuestAttendance(visitor.db, id, lunara)).toEqual({
       ok: true,
       id: 'forever:Lunara:Sombraviva',
     });
-    expect(await confirmGuestAttendance(visitor.db, id, thalor)).toEqual({
+    expect(await confirmGuestAttendance(visitor.db, retail, thalor)).toEqual({
       ok: true,
       id: 'retail:Thalor:Tol Barad',
     });
@@ -86,10 +109,17 @@ describe('Visitantes confirmam presença (emuladores)', () => {
     });
 
     const guests = await firstGuests(admin, id);
-    expect(guests.map((g) => g.id)).toEqual([
-      'forever:Lunara:Sombraviva',
-      'retail:Thalor:Tol Barad',
-    ]);
+    expect(guests.map((g) => g.id)).toEqual(['forever:Lunara:Sombraviva']);
+  });
+
+  it('confirma somente com personagem da versão do jogo do evento', async () => {
+    const admin = await firstAdmin();
+    const id = await newEvent(admin);
+    expect(await confirmGuestAttendance(client().db, id, thalor)).toEqual({
+      ok: false,
+      error: 'wrong-game',
+    });
+    expect(await adminGet(`events/${id}/guests/retail:Thalor:Tol Barad`)).toBeNull();
   });
 
   it('o mesmo personagem não confirma duas vezes', async () => {
@@ -110,7 +140,7 @@ describe('Visitantes confirmam presença (emuladores)', () => {
     const admin = await firstAdmin();
     const id = await newEvent(admin);
     const kaelen = await register('Kaelen');
-    expect((await confirmGuestAttendance(kaelen.db, id, thalor)).ok).toBe(true);
+    expect((await confirmGuestAttendance(kaelen.db, id, lunara)).ok).toBe(true);
   });
 
   it('não confirma quando o administrador desativa a confirmação de visitantes', async () => {
@@ -187,23 +217,25 @@ describe('Visitantes confirmam presença (emuladores)', () => {
 
   it('respeita o limite de confirmados, somando membros e visitantes', async () => {
     const admin = await firstAdmin();
+    const tavia = await approvedMember(admin, 'Tavia');
     const id = await newEvent(admin, { maxAttendees: 2 });
-    expect((await confirmAttendance(admin.db, id, admin.uid)).ok).toBe(true);
+    const sylas = { game: 'forever', characterName: 'Sylas', characterSurname: 'Vento' } as const;
+    expect((await confirmAttendance(tavia.db, id, tavia.uid, null)).ok).toBe(true);
     expect((await confirmGuestAttendance(client().db, id, lunara)).ok).toBe(true);
-    expect(await confirmGuestAttendance(client().db, id, thalor)).toEqual({
+    expect(await confirmGuestAttendance(client().db, id, sylas)).toEqual({
       ok: false,
       error: 'full',
     });
     expect(await adminGet(`events/${id}`)).toMatchObject({ attendeeCount: '2' });
 
     // Um cancelamento libera a vaga.
-    expect(await cancelAttendance(admin.db, id, admin.uid)).toEqual({ ok: true });
-    expect((await confirmGuestAttendance(client().db, id, thalor)).ok).toBe(true);
+    expect(await cancelAttendance(tavia.db, id, tavia.uid)).toEqual({ ok: true });
+    expect((await confirmGuestAttendance(client().db, id, sylas)).ok).toBe(true);
   });
 
   it('confirmações simultâneas não passam do limite', async () => {
     const admin = await firstAdmin();
-    const id = await newEvent(admin, { maxAttendees: 3 });
+    const id = await newEvent(admin, { maxAttendees: 3, game: 'retail' });
     const names = ['Aria', 'Brom', 'Cael', 'Dara', 'Eryn', 'Fenn'];
     const results = await Promise.all(
       names.map((n) =>

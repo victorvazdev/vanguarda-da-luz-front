@@ -22,6 +22,7 @@ const past = () => new Date(Date.now() - DAY);
 
 const content = (over: Record<string, unknown> = {}) => ({
   title: 'Raid semanal',
+  game: 'retail',
   startsAt: future(),
   description: '[DESCRIÇÃO DO EVENTO]',
   organizer: 'Maren',
@@ -127,6 +128,14 @@ describe('Criar evento', () => {
     await assertFails(addDoc(events('ana'), newEvent('ana', { attendeeCount: 3 })));
   });
 
+  it('exige a versão do jogo: Retail ou WoW Forever', async () => {
+    await assertSucceeds(addDoc(events('ana'), newEvent('ana', { game: 'forever' })));
+    await assertFails(addDoc(events('ana'), newEvent('ana', { game: 'classic' })));
+    const missing: Record<string, unknown> = newEvent('ana');
+    delete missing['game'];
+    await assertFails(addDoc(events('ana'), missing));
+  });
+
   it('aceita ligar ou desligar a confirmação de presença de visitantes', async () => {
     await assertSucceeds(addDoc(events('ana'), newEvent('ana', { guestsAllowed: true })));
     await assertSucceeds(addDoc(events('ana'), newEvent('ana', { guestsAllowed: false })));
@@ -168,6 +177,32 @@ describe('Editar evento', () => {
     await assertSucceeds(edit('ana', 'raid', { guestsAllowed: true }));
     await assertFails(edit('ana', 'raid', { guestsAllowed: 1 }));
     await assertFails(edit('tavia', 'raid', { guestsAllowed: false }));
+  });
+
+  describe('versão do jogo', () => {
+    beforeEach(() => {
+      const legacy: Record<string, unknown> = stored({ attendeeCount: 2 });
+      delete legacy['game'];
+      return seed(env(), {
+        'events/com-presencas': stored({ attendeeCount: 1 }),
+        'events/legado': legacy,
+      });
+    });
+
+    it('muda enquanto ninguém confirmou presença', async () => {
+      await assertSucceeds(edit('ana', 'raid', { game: 'forever' }));
+      await assertFails(edit('ana', 'raid', { game: 'classic' }));
+    });
+
+    it('não muda depois que alguém confirmou presença', async () => {
+      await assertFails(edit('ana', 'com-presencas', { game: 'forever' }));
+      await assertSucceeds(edit('ana', 'com-presencas', { game: 'retail' }));
+    });
+
+    it('evento antigo, sem versão, recebe uma ao ser editado (mesmo com presenças)', async () => {
+      await assertFails(edit('ana', 'legado'));
+      await assertSucceeds(edit('ana', 'legado', { game: 'forever' }));
+    });
   });
 
   it('não move o evento para o passado', async () => {

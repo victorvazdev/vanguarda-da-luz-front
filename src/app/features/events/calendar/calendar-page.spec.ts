@@ -1,5 +1,6 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { provideSessionStub } from '../../../core/auth/session.stub';
 import type { GuildEvent } from '../../../core/data/events';
 import { EventsService } from '../../../core/data/events.service';
 import { CalendarPage } from './calendar-page';
@@ -30,6 +31,7 @@ const event = (id: string, iso: string, over: Partial<GuildEvent> = {}): GuildEv
   description: '[DESCRIÇÃO DO EVENTO]',
   organizer: 'Maren',
   status: 'ativo',
+  game: 'retail',
   guestsAllowed: true,
   maxAttendees: 40,
   attendeeCount: 0,
@@ -39,12 +41,15 @@ const event = (id: string, iso: string, over: Partial<GuildEvent> = {}): GuildEv
 let fixture: ComponentFixture<CalendarPage>;
 let el: HTMLElement;
 let events: EventsStub;
+let session: ReturnType<typeof provideSessionStub>['stub'];
 
 async function setup(mes?: string) {
   events = new EventsStub();
+  const s = provideSessionStub('visitor');
+  session = s.stub;
   TestBed.configureTestingModule({
     imports: [CalendarPage],
-    providers: [provideRouter([]), { provide: EventsService, useValue: events }],
+    providers: [provideRouter([]), { provide: EventsService, useValue: events }, s.provider],
   });
   fixture = TestBed.createComponent(CalendarPage);
   if (mes !== undefined) fixture.componentRef.setInput('mes', mes);
@@ -68,6 +73,19 @@ const cell = (day: number) =>
   )!;
 
 describe('CalendarPage (Acessar o calendário de eventos)', () => {
+  it('administrador cria evento direto do calendário', async () => {
+    await setup('2026-11');
+    const newEvent = () =>
+      [...el.querySelectorAll('a')].find((a) => a.textContent?.trim() === 'Novo evento');
+    expect(newEvent()).toBeUndefined();
+    session.access.set('member');
+    await fixture.whenStable();
+    expect(newEvent()).toBeUndefined();
+    session.access.set('admin');
+    await fixture.whenStable();
+    expect(newEvent()!.getAttribute('href')).toBe('/calendario/novo');
+  });
+
   it('abre no mês atual, com o fuso identificado', async () => {
     await setup();
     expect(text('h1')).toBe(monthTitle(currentMonth()));
@@ -107,7 +125,7 @@ describe('CalendarPage (Acessar o calendário de eventos)', () => {
     expect(day.classList).toContain('calendar__cell--has-events');
     expect(day.querySelector('.sr-only')?.textContent).toContain('1 evento');
     const a = day.querySelector<HTMLAnchorElement>('.calendar__event')!;
-    expect(a.textContent?.replace(/\s+/g, ' ').trim()).toBe('21:00 Raid semanal');
+    expect(a.textContent?.replace(/\s+/g, ' ').trim()).toBe('21:00 Raid semanal, Retail');
     expect(a.getAttribute('href')).toBe('/calendario/raid');
     expect(cell(8).classList).not.toContain('calendar__cell--has-events');
   });
@@ -130,7 +148,7 @@ describe('CalendarPage (Acessar o calendário de eventos)', () => {
     const items = [...el.querySelectorAll('.agenda__item')].map((a) =>
       a.textContent?.replace(/\s+/g, ' ').trim(),
     );
-    expect(items).toEqual(['Sáb, 7 nov. 2026, 21:00 Raid semanal']);
+    expect(items).toEqual(['Sáb, 7 nov. 2026, 21:00 Raid semanal · Retail']);
   });
 
   it('avisa quando o mês não tem eventos', async () => {

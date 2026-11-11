@@ -1,265 +1,92 @@
-<div class="events-admin">
-  <section class="events-admin__list" aria-labelledby="titulo-eventos">
-    <h1 id="titulo-eventos" class="admin__title" tabindex="-1">Próximos eventos</h1>
-    <p class="muted events-admin__zone">Horários de {{ timeZone }}</p>
-    <button
-      type="button"
-      class="btn btn--primary btn--block events-admin__jump"
-      (click)="goToForm()"
-    >
-      {{ editing() ? 'Ir para a edição do evento' : 'Novo evento' }}
-    </button>
-
-    <div aria-live="polite">
-      @if (status(); as message) {
-        <p class="notice admin__feedback">{{ message }}</p>
-      }
+<section class="events-admin" aria-labelledby="titulo-eventos">
+  <div class="events-admin__header">
+    <div>
+      <h1 id="titulo-eventos" class="admin__title" tabindex="-1">Próximos eventos</h1>
+      <p class="muted events-admin__zone">Horários de {{ timeZone }}</p>
     </div>
-    @if (error(); as message) {
-      <p class="form-alert admin__feedback" role="alert">{{ message }}</p>
-    }
+    <a class="btn btn--primary" routerLink="novo">Novo evento</a>
+  </div>
 
-    @switch (state()) {
-      @case ('loading') {
-        <p class="muted loading" role="status">Carregando…</p>
-      }
-      @case ('error') {
-        <p class="form-alert" role="alert">
-          Não foi possível carregar os eventos. Recarregue a página.
-        </p>
-      }
-      @default {
-        @if (view().length) {
-          <ul class="event-list">
-            @for (event of view(); track event.id) {
-              <li
-                class="event-row"
-                [class.event-row--cancelled]="event.cancelled"
-                [class.event-row--editing]="editing()?.id === event.id"
-                [attr.aria-busy]="busy() === event.id"
-              >
-                <div class="event-row__body">
-                  <h2 class="event-row__title">
-                    @if (event.cancelled) {
-                      <span class="badge badge--danger event-row__badge">Cancelado</span>
-                    }
-                    <a [routerLink]="['/calendario', event.id]">{{ event.title }}</a>
-                  </h2>
-                  <p class="event-row__meta">{{ event.when }}</p>
-                  <p class="event-row__meta muted">Organizador: {{ event.organizer }}</p>
-                  <p class="event-row__meta muted">{{ event.attendance }}</p>
-                  @if (!event.guestsAllowed) {
-                    <p class="event-row__meta muted">Somente membros confirmam presença</p>
+  <div aria-live="polite">
+    @if (status(); as message) {
+      <p class="notice admin__feedback">{{ message }}</p>
+    }
+  </div>
+  @if (error(); as message) {
+    <p class="form-alert admin__feedback" role="alert">{{ message }}</p>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="muted loading" role="status">Carregando…</p>
+    }
+    @case ('error') {
+      <p class="form-alert" role="alert">
+        Não foi possível carregar os eventos. Recarregue a página.
+      </p>
+    }
+    @default {
+      @if (view().length) {
+        <ul class="event-list">
+          @for (event of view(); track event.id) {
+            <li
+              class="event-row"
+              [class.event-row--cancelled]="event.cancelled"
+              [attr.aria-busy]="busy() === event.id"
+            >
+              <div class="event-row__body">
+                <h2 class="event-row__title">
+                  @if (event.cancelled) {
+                    <span class="badge badge--danger event-row__badge">Cancelado</span>
                   }
-                  @if (editing()?.id === event.id) {
-                    <p class="event-row__meta event-row__editing">Em edição</p>
-                  }
-                </div>
-                @if (event.changeable) {
-                  <div class="event-row__actions">
-                    <button
-                      type="button"
-                      class="btn btn--outline"
-                      [id]="'editar-' + event.id"
-                      [disabled]="busy() !== null || saving()"
-                      (click)="edit(event)"
-                    >
-                      Editar<span class="sr-only"> {{ event.title }}, {{ event.when }}</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn--outline"
-                      [disabled]="busy() !== null || saving()"
-                      (click)="cancel(event)"
-                    >
-                      Cancelar<span class="sr-only"> {{ event.title }}, {{ event.when }}</span>
-                    </button>
-                  </div>
-                } @else if (event.cancelled) {
-                  <div class="event-row__actions">
-                    <button
-                      type="button"
-                      class="btn btn--cancel"
-                      [disabled]="busy() !== null || saving()"
-                      (click)="remove(event)"
-                    >
-                      Excluir<span class="sr-only"> {{ event.title }}, {{ event.when }}</span>
-                    </button>
-                  </div>
+                  <a [routerLink]="['/calendario', event.id]">{{ event.title }}</a>
+                </h2>
+                <p class="event-row__meta">{{ event.when }}</p>
+                <p class="event-row__meta muted">
+                  {{ event.game ?? 'Versão do jogo não definida' }} · Organizador:
+                  {{ event.organizer }}
+                </p>
+                <p class="event-row__meta muted">{{ event.attendance }}</p>
+                @if (!event.guestsAllowed) {
+                  <p class="event-row__meta muted">Somente membros confirmam presença</p>
                 }
-              </li>
-            }
-          </ul>
-        } @else {
-          <p class="muted">Nenhum evento programado. Crie o primeiro no formulário.</p>
-        }
+              </div>
+              @if (event.changeable) {
+                <div class="event-row__actions">
+                  <a
+                    class="btn btn--outline"
+                    [id]="'editar-' + event.id"
+                    [routerLink]="[event.id, 'editar']"
+                  >
+                    Editar<span class="sr-only"> {{ event.title }}, {{ event.when }}</span>
+                  </a>
+                  <button
+                    type="button"
+                    class="btn btn--outline"
+                    [disabled]="busy() !== null"
+                    (click)="cancel(event)"
+                  >
+                    Cancelar<span class="sr-only"> {{ event.title }}, {{ event.when }}</span>
+                  </button>
+                </div>
+              } @else if (event.cancelled) {
+                <div class="event-row__actions">
+                  <button
+                    type="button"
+                    class="btn btn--cancel"
+                    [disabled]="busy() !== null"
+                    (click)="remove(event)"
+                  >
+                    Excluir<span class="sr-only"> {{ event.title }}, {{ event.when }}</span>
+                  </button>
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted">Nenhum evento programado. Crie o primeiro em "Novo evento".</p>
       }
     }
-  </section>
-
-  <section class="event-form" aria-labelledby="titulo-form-evento">
-    <h2 id="titulo-form-evento" class="event-form__title">
-      {{ editing() ? 'Editar evento' : 'Novo evento' }}
-    </h2>
-    @if (editing(); as current) {
-      <p class="muted event-form__subtitle">Editando {{ current.title }}</p>
-    }
-
-    <form class="form" [formGroup]="form" (ngSubmit)="save()" novalidate>
-      @if (formError(); as message) {
-        <p class="form-alert" role="alert" tabindex="-1">{{ message }}</p>
-      }
-
-      <div class="field">
-        <label class="field__label" for="evento-title">Título</label>
-        <input
-          id="evento-title"
-          class="field__input"
-          type="text"
-          formControlName="title"
-          autocomplete="off"
-          [attr.maxlength]="limits.title"
-          [attr.aria-invalid]="!!fieldError('title')"
-          [attr.aria-describedby]="describedBy('title')"
-        />
-        @if (fieldError('title'); as message) {
-          <p id="evento-title-erro" class="field__error">{{ message }}</p>
-        }
-      </div>
-
-      <div class="event-form__when">
-        <div class="field">
-          <label class="field__label" for="evento-date">Data</label>
-          <input
-            id="evento-date"
-            class="field__input"
-            type="date"
-            formControlName="date"
-            [min]="today()"
-            [attr.aria-invalid]="!!fieldError('date')"
-            [attr.aria-describedby]="describedBy('date', 'evento-fuso')"
-          />
-        </div>
-        <div class="field">
-          <label class="field__label" for="evento-time">Horário</label>
-          <input
-            id="evento-time"
-            class="field__input"
-            type="time"
-            formControlName="time"
-            [attr.aria-invalid]="!!fieldError('time') || form.hasError('past')"
-            [attr.aria-describedby]="
-              describedBy('time', fieldError('date') ? 'evento-date-erro' : '', 'evento-fuso')
-            "
-          />
-        </div>
-      </div>
-      <div class="event-form__when-messages">
-        <p id="evento-fuso" class="field__hint">Horário de {{ timeZone }}.</p>
-        @if (fieldError('date'); as message) {
-          <p id="evento-date-erro" class="field__error">{{ message }}</p>
-        }
-        @if (fieldError('time'); as message) {
-          <p id="evento-time-erro" class="field__error">{{ message }}</p>
-        }
-      </div>
-
-      <div class="field">
-        <label class="field__label" for="evento-organizer">Organizador</label>
-        <input
-          id="evento-organizer"
-          class="field__input"
-          type="text"
-          formControlName="organizer"
-          autocomplete="off"
-          [attr.maxlength]="limits.organizer"
-          [attr.aria-invalid]="!!fieldError('organizer')"
-          [attr.aria-describedby]="describedBy('organizer')"
-        />
-        @if (fieldError('organizer'); as message) {
-          <p id="evento-organizer-erro" class="field__error">{{ message }}</p>
-        }
-      </div>
-
-      <div class="field">
-        <label class="field__label" for="evento-description">Descrição</label>
-        <textarea
-          id="evento-description"
-          class="field__input field__input--textarea"
-          formControlName="description"
-          rows="5"
-          [attr.maxlength]="limits.description"
-          [attr.aria-invalid]="!!fieldError('description')"
-          [attr.aria-describedby]="describedBy('description')"
-        ></textarea>
-        @if (fieldError('description'); as message) {
-          <p id="evento-description-erro" class="field__error">{{ message }}</p>
-        }
-      </div>
-
-      <div class="field">
-        <label class="field__label" for="evento-maxAttendees">Limite de confirmados</label>
-        <input
-          id="evento-maxAttendees"
-          class="field__input event-form__number"
-          type="number"
-          inputmode="numeric"
-          formControlName="maxAttendees"
-          [min]="attendeesRange.min"
-          [max]="attendeesRange.max"
-          step="1"
-          [attr.aria-invalid]="!!fieldError('maxAttendees')"
-          [attr.aria-describedby]="describedBy('maxAttendees', 'evento-maxAttendees-dica')"
-        />
-        <p id="evento-maxAttendees-dica" class="field__hint">
-          Soma membros e visitantes. Ao atingir o limite, ninguém mais confirma presença.
-        </p>
-        @if (fieldError('maxAttendees'); as message) {
-          <p id="evento-maxAttendees-erro" class="field__error">{{ message }}</p>
-        }
-      </div>
-
-      <div class="field">
-        <div class="checkbox">
-          <input
-            id="evento-guestsAllowed"
-            class="checkbox__input"
-            type="checkbox"
-            formControlName="guestsAllowed"
-            aria-describedby="evento-guestsAllowed-dica"
-          />
-          <label class="checkbox__label" for="evento-guestsAllowed">
-            Visitantes podem confirmar presença
-          </label>
-        </div>
-        <p id="evento-guestsAllowed-dica" class="field__hint">
-          Quem não é membro confirma informando o personagem (nome e sobrenome no WoW Forever; nome
-          e reino no Retail).
-        </p>
-      </div>
-
-      <button
-        type="submit"
-        class="btn btn--primary btn--block"
-        [disabled]="saving()"
-        [attr.aria-busy]="saving()"
-      >
-        @if (saving()) {
-          Salvando…
-        } @else {
-          {{ editing() ? 'Salvar alterações' : 'Criar evento' }}
-        }
-      </button>
-      @if (editing()) {
-        <button
-          type="button"
-          class="btn btn--outline btn--block"
-          [disabled]="saving()"
-          (click)="discard()"
-        >
-          Descartar alterações
-        </button>
-      }
-    </form>
-  </section>
-</div>
+  }
+</section>

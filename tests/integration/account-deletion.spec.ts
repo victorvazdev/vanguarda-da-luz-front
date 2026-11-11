@@ -62,6 +62,7 @@ async function approvedMember(admin: Person, username = 'Tavia'): Promise<Person
 async function futureEvent(admin: Person): Promise<string> {
   const r = await createEvent(admin.db, admin.uid, {
     title: 'Raid semanal',
+    game: 'retail',
     startsAt: new Date(Date.now() + 3 * 86_400_000),
     description: '[DESCRIÇÃO DO EVENTO]',
     organizer: 'Maren',
@@ -77,6 +78,7 @@ async function pastEventWith(uid: string, admin: Person): Promise<string> {
   const id = 'evento-passado';
   await adminPatch(`events/${id}`, {
     title: 'Raid antiga',
+    game: 'retail',
     startsAt: new Date(Date.now() - 7 * 86_400_000),
     description: 'Aconteceu.',
     organizer: 'Maren',
@@ -119,7 +121,7 @@ describe('Excluir conta (emuladores)', () => {
     );
     if (!altId.ok) throw new Error(altId.error);
     const future = await futureEvent(admin);
-    expect(await confirmAttendance(tavia.db, future, tavia.uid)).toEqual({ ok: true });
+    expect(await confirmAttendance(tavia.db, future, tavia.uid, null)).toEqual({ ok: true });
     const past = await pastEventWith(tavia.uid, admin);
 
     expect(await deleteAccount(tavia.auth, tavia.db, PASSWORD)).toEqual({ ok: true });
@@ -154,7 +156,7 @@ describe('Excluir conta (emuladores)', () => {
     expect(history[0]).toMatchObject({
       deleted: true,
       username: '',
-      mainCharacter: { characterName: 'Tavia', characterClass: 'sacerdote' },
+      character: { characterName: 'Tavia', characterClass: 'sacerdote' },
     });
   });
 

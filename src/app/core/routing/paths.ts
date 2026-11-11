@@ -13,6 +13,8 @@ export const PATHS = {
   application: '/candidatura',
   account: '/minha-conta',
   calendar: '/calendario',
+  /** Novo evento a partir do calendário (somente administradores). */
+  newEvent: '/calendario/novo',
   admin: '/admin',
   accessDenied: '/acesso-negado',
 } as const;

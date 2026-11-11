@@ -15,21 +15,73 @@ import { account, asUser, presenceWithCount, seed, useRulesEnv } from './env';
 
 const env = useRulesEnv();
 
+/** Sem os campos `undefined` (o Firestore não os aceita): `{ campo: undefined }` remove. */
+const defined = (data: Record<string, unknown>) =>
+  Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
+
 const DAY = 86_400_000;
-const event = (over: Record<string, unknown> = {}) => ({
-  title: 'Raid semanal',
-  startsAt: new Date(Date.now() + 3 * DAY),
-  description: '[DESCRIÇÃO DO EVENTO]',
-  organizer: 'Maren',
-  status: 'ativo',
-  createdBy: 'ana',
-  createdAt: new Date('2026-11-01T12:00:00Z'),
-  updatedAt: new Date('2026-11-01T12:00:00Z'),
-  ...over,
+const event = (over: Record<string, unknown> = {}) =>
+  defined({
+    title: 'Raid semanal',
+    game: 'retail',
+    startsAt: new Date(Date.now() + 3 * DAY),
+    description: '[DESCRIÇÃO DO EVENTO]',
+    organizer: 'Maren',
+    status: 'ativo',
+    createdBy: 'ana',
+    createdAt: new Date('2026-11-01T12:00:00Z'),
+    updatedAt: new Date('2026-11-01T12:00:00Z'),
+    ...over,
+  });
+
+const retail = (characterName: string) => ({
+  game: 'retail',
+  characterName,
+  server: 'Azralon',
+  characterClass: 'mago',
+  characterRole: 'dano',
+  professions: [],
+  level: 80,
 });
+const forever = {
+  game: 'forever',
+  characterName: 'Lunara',
+  characterSurname: 'Sombraviva',
+  ruleset: 'normal',
+  characterClass: 'druida',
+  characterRole: 'cura',
+  professions: [],
+  level: 60,
+};
+/** Personagem principal de cada membro (o de `ana` veio da candidatura, sem documento). */
+const MAIN: Record<string, Record<string, unknown>> = {
+  ana: defined({ ...retail('Ana'), level: undefined }),
+  tavia: retail('Tavia'),
+  dorvan: retail('Dorvan'),
+  kaelen: retail('Kaelen'),
+  brenna: retail('Brenna'),
+};
 
 beforeEach(() =>
   seed(env(), {
+    'members/ana': { username: 'ana', active: true, mainCharacter: MAIN['ana'] },
+    'members/tavia': {
+      username: 'tavia',
+      active: true,
+      mainCharacter: MAIN['tavia'],
+      mainCharacterId: 'principal',
+    },
+    'members/tavia/characters/principal': MAIN['tavia'],
+    'members/tavia/characters/alt': forever,
+    'members/dorvan': {
+      username: 'dorvan',
+      active: true,
+      mainCharacter: MAIN['dorvan'],
+      mainCharacterId: 'main',
+    },
+    'members/dorvan/characters/main': MAIN['dorvan'],
+    'members/dorvan/characters/alt': { ...retail('Dorvanalt') },
+    'members/brenna': { username: 'brenna', active: false, mainCharacter: MAIN['brenna'] },
     'users/ana': account('ana', { status: 'ativo', role: 'admin' }),
     'users/tavia': account('tavia', { status: 'ativo' }),
     'users/dorvan': account('dorvan', { status: 'ativo' }),
@@ -47,14 +99,17 @@ beforeEach(() =>
 
 const attendee = (as: string, eventId: string, uid = as) =>
   doc(asUser(env(), as), 'events', eventId, 'attendees', uid);
-/** Confirma com o contador do evento (eventos semeados sem contador: passa a 1). */
+/**
+ * Confirma com o contador do evento (eventos semeados sem contador: passa a 1), por padrão com
+ * o personagem principal (sem `characterId`).
+ */
 const confirm = (as: string, eventId: string, data: Record<string, unknown> = {}, uid = as) =>
   presenceWithCount(
     asUser(env(), as),
     eventId,
     'attendees',
     uid,
-    { confirmedAt: serverTimestamp(), ...data },
+    defined({ confirmedAt: serverTimestamp(), character: MAIN[uid], ...data }),
     1,
   );
 /** Cancela com o contador do evento (sem contador: continua em 0). */
@@ -93,6 +148,50 @@ describe('Confirmar presença', () => {
   it('registra só o horário do servidor', async () => {
     await assertFails(confirm('tavia', 'raid', { confirmedAt: new Date() }));
     await assertFails(confirm('tavia', 'raid', { characterName: 'Outro' }));
+  });
+});
+
+describe('Personagem da presença', () => {
+  beforeEach(() =>
+    seed(env(), {
+      'events/forever': event({ game: 'forever' }),
+      'events/sem-jogo': event({ game: undefined }),
+    }),
+  );
+
+  it('confirma com um personagem salvo, da versão do jogo do evento', async () => {
+    await assertSucceeds(confirm('tavia', 'forever', { character: forever, characterId: 'alt' }));
+  });
+
+  it('confirma com o principal vindo da candidatura, ainda sem documento', async () => {
+    await assertSucceeds(confirm('ana', 'raid'));
+  });
+
+  it('não confirma sem personagem', async () => {
+    await assertFails(confirm('tavia', 'raid', { character: undefined }));
+  });
+
+  it('não confirma com personagem de outra versão do jogo', async () => {
+    await assertFails(confirm('tavia', 'raid', { character: forever, characterId: 'alt' }));
+    await assertFails(confirm('tavia', 'forever'));
+  });
+
+  it('o personagem é cópia fiel de um personagem da própria pessoa', async () => {
+    await assertFails(confirm('tavia', 'raid', { character: { ...MAIN['tavia'], level: 90 } }));
+    await assertFails(
+      confirm('tavia', 'raid', {
+        character: { ...MAIN['tavia'], level: 1 },
+        characterId: 'principal',
+      }),
+    );
+    await assertFails(
+      confirm('tavia', 'raid', { character: retail('Dorvanalt'), characterId: 'alt' }),
+    );
+    await assertFails(confirm('tavia', 'raid', { character: MAIN['dorvan'] }));
+  });
+
+  it('evento antigo, sem versão do jogo, aceita personagens dos dois jogos', async () => {
+    await assertSucceeds(confirm('tavia', 'sem-jogo', { character: forever, characterId: 'alt' }));
   });
 });
 
@@ -156,7 +255,7 @@ describe('Contador e limite de confirmados', () => {
   );
 
   const db = (uid: string) => asUser(env(), uid);
-  const presence = { confirmedAt: serverTimestamp() };
+  const presence = { confirmedAt: serverTimestamp(), character: MAIN['tavia'] };
 
   it('confirma enquanto houver vaga, subindo o contador em 1', async () => {
     await assertSucceeds(

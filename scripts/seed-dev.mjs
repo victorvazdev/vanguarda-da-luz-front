@@ -106,6 +106,7 @@ function encode(value) {
   if (value instanceof Date) return { timestampValue: value.toISOString() };
   if (Array.isArray(value)) return { arrayValue: { values: value.map(encode) } };
   if (typeof value === 'boolean') return { booleanValue: value };
+  if (Number.isInteger(value)) return { integerValue: String(value) };
   if (typeof value === 'object') return { mapValue: { fields: fields(value) } };
   return { stringValue: String(value) };
 }
@@ -209,17 +210,21 @@ const atBrasilia = (days, hour, minute = 0) => {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hour + 3, minute));
 };
 const EVENTS = [
-  ['raid-1', 'Raid semanal', atBrasilia(3, 21)],
-  ['masmorras', 'Masmorras em grupo', atBrasilia(7, 20)],
-  ['raid-2', 'Raid semanal', atBrasilia(10, 21)],
-  ['encontro', 'Encontro da guilda', atBrasilia(18, 20), true],
-  ['raid-3', 'Raid semanal', atBrasilia(24, 21)],
-  ['raid-anterior', 'Raid semanal', atBrasilia(-4, 21)],
+  ['raid-1', 'Raid semanal', 'retail', atBrasilia(3, 21)],
+  ['masmorras', 'Masmorras em grupo', 'forever', atBrasilia(7, 20)],
+  ['raid-2', 'Raid semanal', 'retail', atBrasilia(10, 21)],
+  ['encontro', 'Encontro da guilda', 'forever', atBrasilia(18, 20), true],
+  ['raid-3', 'Raid semanal', 'retail', atBrasilia(24, 21)],
+  ['raid-anterior', 'Raid semanal', 'retail', atBrasilia(-4, 21)],
 ];
-for (const [id, title, startsAt, cancelled] of EVENTS) {
+// Presenças confirmadas na primeira raid (Retail), com o personagem principal de cada membro.
+const raiders = PEOPLE.filter((p) => p.member?.game === 'retail' && p.status === 'ativo');
+for (const [id, title, game, startsAt, cancelled] of EVENTS) {
   await put(`events/seed-${id}`, {
     title,
+    game,
     startsAt,
+    ...(id === 'raid-1' ? { attendeeCount: raiders.length } : {}),
     description: '[DESCRIÇÃO DO EVENTO]',
     organizer: 'Maren',
     status: cancelled ? 'cancelado' : 'ativo',
@@ -229,9 +234,13 @@ for (const [id, title, startsAt, cancelled] of EVENTS) {
     ...(cancelled ? { cancelledAt: daysAgo(1), cancelledBy: adminUids[0] } : {}),
   });
 }
-// Presenças confirmadas na primeira raid (protótipo: Maren, Dorvan e Tavia).
-for (const [i, name] of ['Maren', 'Dorvan', 'Tavia'].entries()) {
-  await put(`events/seed-raid-1/attendees/${uids[name]}`, { confirmedAt: daysAgo(3 - i) });
+for (const [i, p] of raiders.entries()) {
+  await put(`events/seed-raid-1/attendees/${uids[p.username]}`, {
+    confirmedAt: daysAgo(3 - i),
+    character: p.member,
+  });
 }
-console.log(`${EVENTS.length} eventos (1 cancelado, 1 passado) e 3 presenças na próxima raid`);
+console.log(
+  `${EVENTS.length} eventos (1 cancelado, 1 passado) e ${raiders.length} presenças na próxima raid`,
+);
 console.log(`\nSenha de todas as contas: ${PASSWORD}`);

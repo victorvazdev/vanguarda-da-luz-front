@@ -1,25 +1,20 @@
 @use '../../../../styles/mixins' as *;
 
-// Protótipo: lista à esquerda e formulário em painel à direita; no celular, um abaixo do outro.
-.events-admin {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
-  align-items: start;
-  gap: var(--space-6) var(--space-7);
-}
+.events-admin__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
 
-.events-admin__list .admin__title {
-  margin-bottom: var(--space-1);
+  .admin__title {
+    margin-bottom: var(--space-1);
+  }
 }
 
 .events-admin__zone {
-  margin: 0 0 var(--space-4);
-}
-
-// Atalho para o formulário, que no celular fica abaixo da lista.
-.events-admin__jump {
-  display: none;
-  margin-bottom: var(--space-4);
+  margin: 0;
 }
 
 .event-list {
@@ -81,62 +76,10 @@
   color: var(--color-text-muted);
 }
 
-.event-row__editing {
-  color: var(--color-gold);
-  font-weight: 600;
-}
-
 .event-row__actions {
   display: flex;
   flex: none;
   gap: var(--space-2);
-}
-
-.event-form {
-  @include card;
-}
-
-.event-form__title {
-  margin: 0 0 var(--space-4);
-  font-size: 1.25rem;
-}
-
-.event-form__subtitle {
-  margin: calc(-1 * var(--space-3)) 0 var(--space-4);
-  overflow-wrap: anywhere;
-}
-
-.event-form__when {
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: var(--space-2);
-
-  .field__input {
-    padding-inline: var(--space-2);
-  }
-}
-
-// Limite de confirmados: número curto.
-.event-form__number {
-  max-width: 10rem;
-}
-
-// Mensagens de data e horário ficam juntas, abaixo dos dois campos.
-.event-form__when-messages {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin-top: calc(-1 * var(--space-2));
-}
-
-@media (max-width: 860px) {
-  .events-admin {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .events-admin__jump {
-    display: flex;
-  }
 }
 
 @media (max-width: 520px) {

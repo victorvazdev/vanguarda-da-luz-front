@@ -131,3 +131,10 @@
     gap: var(--space-3);
   }
 }
+
+// Escolha do personagem com que o membro confirma presença.
+.presence__character {
+  width: 100%;
+  max-width: 28rem;
+  margin: 0;
+}

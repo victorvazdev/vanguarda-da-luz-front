@@ -80,6 +80,15 @@ export const routes: Routes = [
       import('./features/events/calendar/calendar-page').then((m) => m.CalendarPage),
   },
   {
+    // Administradores criam eventos direto do calendário, fora do painel administrativo.
+    path: 'calendario/novo',
+    title: 'Novo evento',
+    canActivate: [adminGuard],
+    data: { from: 'calendar' },
+    loadComponent: () =>
+      import('./features/admin/events/event-form/event-form-page').then((m) => m.EventFormPage),
+  },
+  {
     path: 'calendario/:id',
     title: 'Evento',
     // Público: visitantes também veem os eventos e confirmam presença.
@@ -112,6 +121,18 @@ export const routes: Routes = [
         title: 'Eventos',
         loadComponent: () =>
           import('./features/admin/events/events-admin-page').then((m) => m.EventsAdminPage),
+      },
+      {
+        path: 'eventos/novo',
+        title: 'Novo evento',
+        loadComponent: () =>
+          import('./features/admin/events/event-form/event-form-page').then((m) => m.EventFormPage),
+      },
+      {
+        path: 'eventos/:id/editar',
+        title: 'Editar evento',
+        loadComponent: () =>
+          import('./features/admin/events/event-form/event-form-page').then((m) => m.EventFormPage),
       },
       {
         path: 'guilda',
