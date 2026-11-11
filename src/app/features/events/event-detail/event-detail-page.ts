@@ -39,6 +39,7 @@ import {
 import { ConfirmService } from '../../../shared/ui/confirm-dialog/confirm.service';
 import { FlashService } from '../../../shared/ui/flash/flash.service';
 import { dayKey } from '../calendar/month';
+import { AddonExportDialog } from '../../admin/events/addon-export/addon-export-dialog';
 import { AttendeesPanel } from './attendees-panel';
 import { GuestPresence } from './guest-presence';
 
@@ -83,7 +84,7 @@ export function spotsText(e: GuildEvent): string {
 /** Detalhe de um evento do calendário: título, data, horário, organizador e descrição. */
 @Component({
   selector: 'app-event-detail-page',
-  imports: [RouterLink, AttendeesPanel, GuestPresence],
+  imports: [RouterLink, AttendeesPanel, GuestPresence, AddonExportDialog],
   templateUrl: './event-detail-page.html',
   styleUrl: './event-detail-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -383,6 +383,17 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 - [ ] A exclusão exige confirmação, remove o evento do calendário e apaga a lista de confirmados (membros e visitantes).
 - [ ] Eventos ativos não podem ser excluídos; um evento cancelado que não foi excluído mantém a lista de confirmados.
 
+### Exportar eventos para o addon
+
+**Como administrador**, quero gerar uma string com os próximos eventos, para que o addon da guilda no WoW Forever crie, atualize e cancele esses eventos no jogo.
+
+- [ ] A administração de eventos e o detalhe de um evento oferecem o botão "Exportar para o addon", somente para administradores.
+- [ ] O botão abre um modal com a string em um campo somente leitura, o botão "Copiar", a quantidade de eventos incluídos, a data e a hora da geração e instruções curtas de importação.
+- [ ] A exportação inclui os eventos ativos e cancelados do WoW Forever com início entre hoje e os próximos 60 dias; a quantidade de dias pode ser alterada no modal (de 1 a 180).
+- [ ] Cada evento leva o ID, o título, o início, a descrição, o organizador, a situação e a data da última alteração; nenhum dado pessoal ou de conta é exportado.
+- [ ] A string segue o formato versionado de `docs/formato-string-addon.md`, com checksum para detectar strings incompletas ou corrompidas.
+- [ ] Acima do limite de tamanho, a string não é exibida e o modal informa a maior quantidade de dias que cabe.
+
 ### Ver presenças confirmadas
 
 **Como administrador**, quero ver quem confirmou presença em um evento, para que eu possa organizar sua realização.

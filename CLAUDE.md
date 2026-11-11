@@ -27,6 +27,7 @@ npm run test:emulators # tests/rules + tests/integration against separate test e
 npm run build
 npm run check          # everything above in sequence — this is what CI runs
 npm run e2e:serve      # e2e build served against the test emulators at http://127.0.0.1:5150
+npm run addon:exemplos # regenerate docs/exemplos-addon (addon export string examples)
 ```
 
 Single tests:
@@ -49,6 +50,7 @@ Test emulators use different ports from the dev emulators, so they can run while
 - **Main collections**: `users/{uid}` (status/role), `usernames/{key}`, `applications/{uid}` (one per user), `members/{uid}` (with `mainCharacter`), `config/admins`, `site/guild` and `site/social` (admin-editable content), events with attendance and guest attendance subcollections.
 - **Content**: static guild text in `core/content/guild-content.ts` (pending placeholders are in `[BRACKETS]`); defaults for admin-editable content in `core/content/site-content.ts`, overridden by `site/*` docs once saved.
 - **Domain**: two games — WoW Retail (character name + server, 13 classes) and WoW Forever/Classic (name + surname + ruleset Normal/JxJ, 9 classes); definitions in `core/models/wow.ts`. Times are handled in Brasília time (`core/time/brasilia.ts`); locale is `pt-BR`.
+- **Addon export**: admins generate a `VDL1:` string of upcoming WoW Forever events for the guild's in-game addon (`core/data/addon-format.ts` = format, dependency-free; `addon-export.ts` = Firestore query/window/size limit). The spec in `docs/formato-string-addon.md` and the fixtures in `docs/exemplos-addon/` are consumed by the addon's own tests — keep them in sync with any format change (`tests/addon/` checks this).
 - **Styles**: global design tokens and partials in `src/styles/` (`_tokens.scss`, etc.); component styles are SCSS with a production budget of 8 kB warning / 12 kB error per component.
 - Component/directive selectors must use the `app` prefix (ESLint). Prettier: single quotes, width 100.
 

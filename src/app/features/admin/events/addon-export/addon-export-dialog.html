@@ -1,0 +1,94 @@
+<app-modal heading="Exportar para o addon" size="wide">
+  <p class="addon-export__intro">
+    Eventos ativos e cancelados do WoW Forever, de hoje até a quantidade de dias escolhida. Os
+    cancelados vão junto para o addon cancelar também os eventos já criados no jogo.
+  </p>
+
+  <div class="field addon-export__days">
+    <label class="field__label" for="addon-dias">Dias à frente</label>
+    <input
+      id="addon-dias"
+      class="field__input"
+      type="number"
+      inputmode="numeric"
+      step="1"
+      [min]="range.min"
+      [max]="range.max"
+      [value]="days()"
+      [attr.aria-invalid]="!!daysError()"
+      [attr.aria-describedby]="daysError() ? 'addon-dias-erro addon-dias-dica' : 'addon-dias-dica'"
+      (change)="setDays($any($event.target).value)"
+    />
+    <p id="addon-dias-dica" class="field__hint">
+      De {{ range.min }} a {{ range.max }}. A string é gerada de novo ao alterar.
+    </p>
+    @if (daysError(); as message) {
+      <p id="addon-dias-erro" class="field__error">{{ message }}</p>
+    }
+  </div>
+
+  <div class="addon-export__result" aria-live="polite">
+    @switch (state()) {
+      @case ('loading') {
+        <p class="muted loading" role="status">Gerando a string…</p>
+      }
+      @case ('error') {
+        <p class="form-alert" role="alert">Não foi possível gerar a string. {{ networkMessage }}</p>
+        <button type="button" class="btn btn--outline" (click)="generate()">
+          Tentar novamente
+        </button>
+      }
+      @case ('done') {
+        @if (view(); as v) {
+          @if (v.ok) {
+            <dl class="addon-export__facts">
+              <div>
+                <dt>Eventos</dt>
+                <dd id="addon-quantidade">{{ v.count }}</dd>
+              </div>
+              <div>
+                <dt>Período</dt>
+                <dd>{{ v.period }}</dd>
+              </div>
+              <div>
+                <dt>Gerada em</dt>
+                <dd id="addon-gerada-em">{{ v.generatedAt }}</dd>
+              </div>
+            </dl>
+
+            <div class="field">
+              <label class="field__label" for="addon-string">
+                String de exportação ({{ v.length }} caracteres)
+              </label>
+              <textarea
+                #output
+                id="addon-string"
+                class="field__input addon-export__string"
+                rows="5"
+                readonly
+                spellcheck="false"
+                [value]="v.text"
+              ></textarea>
+            </div>
+            <div class="addon-export__copy">
+              <button type="button" class="btn btn--primary" (click)="copy()">Copiar</button>
+              @if (copyStatus(); as message) {
+                <p class="addon-export__copied" role="status">{{ message }}</p>
+              }
+            </div>
+
+            <h3 class="addon-export__steps-title">Como importar no jogo</h3>
+            <ol class="addon-export__steps">
+              <li>Abra o addon da guilda no WoW Forever.</li>
+              <li>Use o comando de importação do addon.</li>
+              <li>Cole a string e confirme.</li>
+            </ol>
+          } @else {
+            <p class="form-alert" role="alert">{{ v.message }}</p>
+            <p class="muted">Gerada em {{ v.generatedAt }}.</p>
+          }
+        }
+      }
+    }
+  </div>
+</app-modal>

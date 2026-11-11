@@ -15,6 +15,7 @@ import { EventsService } from '../../../core/data/events.service';
 import { gameLabel } from '../../../core/models/wow';
 import { GUILD_TIME_ZONE_LABEL, formatEventDateTime } from '../../../core/time/brasilia';
 import { ConfirmService } from '../../../shared/ui/confirm-dialog/confirm.service';
+import { AddonExportDialog } from './addon-export/addon-export-dialog';
 import { EVENT_ACTION_ERRORS, EVENT_STARTED } from './event-messages';
 
 interface EventView {
@@ -37,7 +38,7 @@ interface EventView {
  */
 @Component({
   selector: 'app-events-admin-page',
-  imports: [RouterLink],
+  imports: [RouterLink, AddonExportDialog],
   templateUrl: './events-admin-page.html',
   styleUrl: './events-admin-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

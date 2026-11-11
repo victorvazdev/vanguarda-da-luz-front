@@ -124,6 +124,12 @@ describe('EventsAdminPage (Criar, editar, cancelar e excluir eventos)', () => {
     expect(link('Editar')!.getAttribute('href')).toBe('/raid/editar');
   });
 
+  it('oferece a exportação para o addon', async () => {
+    await emit([raid]);
+    expect(button('Exportar para o addon')).toBeTruthy();
+    expect(el.querySelector('app-addon-export-dialog')).toBeTruthy();
+  });
+
   it('mostra quantos confirmaram de quantas vagas', async () => {
     await emit([{ ...raid, attendeeCount: 12, maxAttendees: 30 }]);
     expect(el.textContent).toContain('12 de 30 confirmados');
