@@ -273,10 +273,10 @@ describe('Prévia da importação de presenças', () => {
     ]);
   });
 
-  it('recusa visitantes quando o evento não aceita visitantes', () => {
+  it('confirma visitantes mesmo quando o evento não aceita visitantes pelo site', () => {
     expect(
       plan([rec('Árya Ñúñez')], eventState({ guestsAllowed: false })).events[0].items[0],
-    ).toMatchObject({ action: 'refused', reason: 'guests-closed' });
+    ).toMatchObject({ action: 'confirm-guest', guestId: 'forever:Árya:Ñúñez' });
   });
 
   it('ignora eventos desconhecidos, passados, cancelados e que não são do WoW Forever', () => {

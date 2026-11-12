@@ -303,7 +303,6 @@ async function applyItem(
     }
     case 'confirm-guest': {
       const event = await openEvent(tx, db, eventId);
-      if (!event.guestsAllowed) throw refused('guests-closed');
       const ref = presenceRef(db, eventId, 'guests', item.guestId);
       if ((await tx.get(ref)).exists()) throw unchanged();
       const cancellation = await tx.get(cancellationRef(db, eventId, 'guests', item.guestId));

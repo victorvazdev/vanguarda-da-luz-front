@@ -33,8 +33,6 @@ export function refusalMessage(reason: Reason, detail?: string): string {
       return 'A presença foi alterada no site depois desta resposta do jogo.';
     case 'full':
       return 'O evento está lotado.';
-    case 'guests-closed':
-      return 'O evento não aceita visitantes.';
     case 'member-other-character':
       return detail
         ? `O membro já confirmou com outro personagem (${detail}).`

@@ -82,7 +82,7 @@ async function addCharacter(p: Person, input: CharacterInput): Promise<string> {
 
 async function newEvent(
   admin: Person,
-  over: { game?: 'retail' | 'forever'; maxAttendees?: number } = {},
+  over: { game?: 'retail' | 'forever'; maxAttendees?: number; guestsAllowed?: boolean } = {},
 ): Promise<string> {
   const r = await createEvent(admin.db, admin.uid, {
     title: 'Raid semanal',
@@ -90,7 +90,7 @@ async function newEvent(
     startsAt: new Date(Date.now() + 3 * 86_400_000),
     description: '[DESCRIÇÃO DO EVENTO]',
     organizer: 'Maren',
-    guestsAllowed: true,
+    guestsAllowed: over.guestsAllowed ?? true,
     maxAttendees: over.maxAttendees ?? 40,
   });
   if (!r.ok) throw new Error(r.error);
@@ -299,6 +299,17 @@ describe('Importar presenças do addon (emuladores)', () => {
       'Dorvan Pedra': 'full',
     });
     expect(await count(id)).toBe(2);
+  });
+
+  it('confirma visitantes do jogo mesmo com a confirmação de visitantes do site desligada', async () => {
+    const admin = await firstAdmin();
+    const id = await newEvent(admin, { guestsAllowed: false });
+    const report = await importString(
+      admin,
+      await presenceString({ [id]: [rec('Árya Ñúñez', 1, now())] }),
+    );
+    expect(outcomes(report, id)).toEqual({ 'Árya Ñúñez': 'applied:confirm-guest' });
+    expect(await count(id)).toBe(1);
   });
 
   it('revalida na aplicação o que mudou depois da prévia', async () => {

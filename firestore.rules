@@ -882,9 +882,10 @@ service cloud.firestore {
           && eventGameAccepts(request.resource.data);
 
         // Importação de presenças do addon: o administrador confirma o personagem do jogo que
-        // não pertence a nenhum membro, com as mesmas regras de vaga e duplicidade.
+        // não pertence a nenhum membro, com as mesmas regras de vaga e duplicidade. A resposta
+        // veio do jogo, então vale mesmo com a confirmação de visitantes do site desligada.
         allow create: if fromAddon(request.resource.data)
-          && guestsOpen()
+          && eventIsOpen()
           && countedIn('guests', guestId)
           && validGuest(request.resource.data, guestId, addonFields())
           && eventGameAccepts(request.resource.data);

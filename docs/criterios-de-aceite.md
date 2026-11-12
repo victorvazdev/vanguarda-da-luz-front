@@ -6,20 +6,20 @@ Nov 5, 2026 · @Victor Vaz de Oliveira
 
 As 32 histórias abaixo têm critérios verificáveis, agrupados por área. Uma história só está pronta quando todos os seus critérios forem atendidos.
 
-| Perfil | Situação | Acesso |
-| --- | --- | --- |
-| Visitante | Sem conta ou não autenticado | Páginas públicas (inclusive o calendário de eventos), confirmação de presença como visitante, cadastro e login |
-| Usuário cadastrado | Autenticado e aguardando aprovação | Páginas públicas, candidatura e própria conta |
-| Membro | Aprovado por um administrador | Funcionalidades de membros |
-| Administrador | Permissão administrativa | Funcionalidades de membros e área administrativa |
+| Perfil             | Situação                           | Acesso                                                                                                         |
+| ------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Visitante          | Sem conta ou não autenticado       | Páginas públicas (inclusive o calendário de eventos), confirmação de presença como visitante, cadastro e login |
+| Usuário cadastrado | Autenticado e aguardando aprovação | Páginas públicas, candidatura e própria conta                                                                  |
+| Membro             | Aprovado por um administrador      | Funcionalidades de membros                                                                                     |
+| Administrador      | Permissão administrativa           | Funcionalidades de membros e área administrativa                                                               |
 
 **Jogos**
 
 A guilda está presente em duas versões de World of Warcraft:
 
-| Jogo | Personagem | Onde joga | Classes |
-| --- | --- | --- | --- |
-| World of Warcraft Retail | Nome | Servidor | As 13 classes atuais |
+| Jogo                      | Personagem       | Onde joga              | Classes                 |
+| ------------------------- | ---------------- | ---------------------- | ----------------------- |
+| World of Warcraft Retail  | Nome             | Servidor               | As 13 classes atuais    |
 | World of Warcraft Forever | Nome e sobrenome | Ruleset: Normal ou JxJ | As 9 classes do Classic |
 
 **Premissas a validar**
@@ -403,7 +403,8 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 - [ ] Antes de aplicar, a página mostra uma prévia por evento: confirmações de membros, confirmações de visitantes, cancelamentos e registros recusados, com o motivo de cada recusa.
 - [ ] O personagem do jogo ("Nome Sobrenome") é comparado com os personagens do WoW Forever dos membros, sem diferenciar espaços e maiúsculas e mantendo os acentos. Havendo correspondência, a presença é do membro, com aquele personagem; sem correspondência, entra como visitante.
 - [ ] Um personagem de mesmo nome e sobrenome em mais de um membro não é aplicado e aparece como recusado, com os membros envolvidos, para o administrador confirmar manualmente. Personagens de contas desativadas ou excluídas também são recusados.
-- [ ] Uma confirmação continua sujeita ao limite de vagas (membros e visitantes somados), à confirmação de visitantes do evento e à duplicidade: o membro não tem duas presenças no evento e o mesmo personagem não confirma duas vezes, como membro ou visitante. O que violaria essas regras é recusado e aparece no relatório.
+- [ ] Uma confirmação continua sujeita ao limite de vagas (membros e visitantes somados) e à duplicidade: o membro não tem duas presenças no evento e o mesmo personagem não confirma duas vezes, como membro ou visitante. O que violaria essas regras é recusado e aparece no relatório.
+- [ ] Um personagem sem correspondência entra como visitante mesmo em evento com a confirmação de visitantes desativada: a resposta veio do jogo, e a opção vale apenas para a confirmação pelo site.
 - [ ] Um cancelamento no jogo cancela no site a presença daquele personagem no evento, de membro ou de visitante.
 - [ ] Um registro só é aplicado se for mais recente que a última alteração da presença no site (confirmação ou cancelamento), para que uma alteração feita no site depois não seja desfeita por um dado mais antigo do jogo.
 - [ ] Eventos desconhecidos, já iniciados, cancelados ou que não são do WoW Forever são ignorados, com aviso.

@@ -252,12 +252,19 @@ describe('Presença de visitante importada do addon', () => {
     await assertFails(presence(asVisitor(env()), 'raid', 'guests', ARYA_ID, data, 1));
   });
 
-  it('respeita o limite de vagas, a confirmação de visitantes e o ID do personagem', async () => {
+  it('respeita o limite de vagas e o ID do personagem', async () => {
     const ana = asUser(env(), 'ana');
     const data = { ...ARYA, confirmedAt: serverTimestamp(), ...addon('ana') };
     await assertFails(presence(ana, 'cheio', 'guests', ARYA_ID, data, 2));
-    await assertFails(presence(ana, 'fechado', 'guests', ARYA_ID, data, 1));
     await assertFails(presence(ana, 'raid', 'guests', 'forever:Arya:Nunez', data, 1));
+  });
+
+  it('confirma visitante mesmo com a confirmação de visitantes do site desligada', async () => {
+    // Fora da importação, o visitante continua sem poder confirmar.
+    const own = { ...ARYA, confirmedAt: serverTimestamp() };
+    await assertFails(presence(asVisitor(env()), 'fechado', 'guests', ARYA_ID, own, 1));
+    const data = { ...own, ...addon('ana') };
+    await assertSucceeds(presence(asUser(env(), 'ana'), 'fechado', 'guests', ARYA_ID, data, 1));
   });
 });
 

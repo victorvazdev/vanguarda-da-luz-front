@@ -73,7 +73,6 @@ export interface SiteState {
 export type RefusalReason =
   | 'stale'
   | 'full'
-  | 'guests-closed'
   | 'member-other-character'
   | 'duplicate-guest'
   | 'duplicate-member'
@@ -308,8 +307,6 @@ function planEvent(
         items.push(refuse('stale'));
       } else if (memberWithIt) {
         items.push(refuse('duplicate-member'));
-      } else if (!state.event.guestsAllowed) {
-        items.push(refuse('guests-closed'));
       } else if (count >= state.event.maxAttendees) {
         items.push(refuse('full'));
       } else {
