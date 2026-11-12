@@ -51,7 +51,7 @@ export type AddonDecodeError =
 
 export class AddonDecodeFailure extends Error {
   constructor(readonly reason: AddonDecodeError) {
-    super(`String de exportação inválida: ${reason}`);
+    super(`String do addon inválida: ${reason}`);
   }
 }
 
@@ -82,6 +82,11 @@ export function buildPayload(data: AddonExport): string {
   for (const e of events) {
     fields.push(e.id, e.title, e.startsAt, e.description, e.organizer, e.status, e.updatedAt);
   }
+  return encodeFields(fields);
+}
+
+/** Campos `<bytes>:<valor>`, sem separadores (tamanho em bytes UTF-8). */
+export function encodeFields(fields: (string | number)[]): string {
   return fields
     .map((f) => {
       const value = String(f);
@@ -90,8 +95,8 @@ export function buildPayload(data: AddonExport): string {
     .join('');
 }
 
-/** Lê os campos do payload (bytes UTF-8). */
-function readFields(bytes: Uint8Array): string[] {
+/** Lê os campos do payload (bytes UTF-8). Também usado pela string de presenças (VDLP1). */
+export function readFields(bytes: Uint8Array): string[] {
   const COLON = 0x3a;
   const fields: string[] = [];
   let pos = 0;
@@ -112,7 +117,7 @@ function readFields(bytes: Uint8Array): string[] {
   return fields;
 }
 
-function int(value: string): number {
+export function int(value: string): number {
   if (!/^\d+$/.test(value)) throw new AddonDecodeFailure('payload');
   return Number(value);
 }
@@ -249,16 +254,39 @@ export const inflateRaw = (bytes: Uint8Array) =>
 // ---------- String completa ----------
 
 export async function encodeAddonExport(data: AddonExport): Promise<string> {
-  const payload = utf8.encode(buildPayload(data));
-  const compressed = await deflateRaw(payload);
-  return `${ADDON_PREFIX}${adler32(payload)}:${encodeForPrint(compressed)}`;
+  return wrapAddonString('VDL', ADDON_FORMAT_VERSION, buildPayload(data));
 }
 
 /** Decodifica e valida uma string (como o addon faz). Lança `AddonDecodeFailure`. */
 export async function decodeAddonExport(text: string): Promise<AddonExport> {
-  const match = /^VDL(\d+):(\d+):(.+)$/s.exec(text.trim());
+  return parsePayload(await unwrapAddonString(text, 'VDL', ADDON_FORMAT_VERSION));
+}
+
+// ---------- Envelope comum: <prefixo><versão>:<adler32>:<EncodeForPrint(deflate(payload))> ----------
+// Usado pela string de eventos (VDL1) e pela de presenças (VDLP1).
+
+export async function wrapAddonString(
+  prefix: string,
+  version: number,
+  payloadText: string,
+): Promise<string> {
+  const payload = utf8.encode(payloadText);
+  const compressed = await deflateRaw(payload);
+  return `${prefix}${version}:${adler32(payload)}:${encodeForPrint(compressed)}`;
+}
+
+/**
+ * Confere prefixo, versão, codificação, compactação e checksum, e devolve o payload em bytes.
+ * Lança `AddonDecodeFailure`.
+ */
+export async function unwrapAddonString(
+  text: string,
+  prefix: string,
+  version: number,
+): Promise<Uint8Array> {
+  const match = new RegExp(`^${prefix}(\\d+):(\\d+):(.+)$`, 's').exec(text.trim());
   if (!match) throw new AddonDecodeFailure('prefix');
-  if (Number(match[1]) !== ADDON_FORMAT_VERSION) throw new AddonDecodeFailure('version');
+  if (Number(match[1]) !== version) throw new AddonDecodeFailure('version');
   const compressed = decodeForPrint(match[3]);
   let payload: Uint8Array;
   try {
@@ -267,5 +295,5 @@ export async function decodeAddonExport(text: string): Promise<AddonExport> {
     throw new AddonDecodeFailure('compression');
   }
   if (adler32(payload) !== Number(match[2])) throw new AddonDecodeFailure('checksum');
-  return parsePayload(payload);
+  return payload;
 }

@@ -1,4 +1,5 @@
-// Exemplos da string de exportação para os testes do addon (docs/exemplos-addon).
+// Exemplos da string de exportação para os testes do addon (docs/exemplos-addon) e exemplos da
+// string de presenças vindos do addon.
 // Confere os arquivos versionados; com ATUALIZAR_EXEMPLOS=1, gera-os de novo
 // (`npm run addon:exemplos`).
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -10,6 +11,7 @@ import {
   encodeAddonExport,
   type AddonExport,
 } from '../../src/app/core/data/addon-format';
+import { decodePresenceExport } from '../../src/app/core/data/addon-presence-format';
 
 const DIR = 'docs/exemplos-addon';
 const UPDATE = process.env['ATUALIZAR_EXEMPLOS'] === '1';
@@ -127,5 +129,63 @@ describe('Exemplos para o addon (docs/exemplos-addon)', () => {
     const corrupted = read('corrompida.txt').trim();
     expect(valid.startsWith(corrupted)).toBe(true);
     expect(corrupted.length).toBeLessThan(valid.length);
+  });
+});
+
+// ---------- String de presenças (VDLP1), gerada pelo addon ----------
+// Os arquivos vêm do repositório do addon (docs/exemplos-addon); aqui só conferimos que o site
+// os decodifica como o addon espera.
+
+/** Lê `presencas-esperado.lua`: { [id] = { ["Nome Sobrenome"] = { s = 0|1, t = n } } }. */
+function parseExpectedPresences(lua: string) {
+  const header = (key: string) => Number(new RegExp(`${key} = (\\d+)`).exec(lua)![1]);
+  const events: Record<string, Record<string, { status: number; updatedAt: number }>> = {};
+  let current: Record<string, { status: number; updatedAt: number }> | null = null;
+  for (const line of lua.split('\n')) {
+    const event = /^\s*\["([^"]+)"\] = \{$/.exec(line);
+    if (event) events[event[1]] = current = {};
+    const record = /^\s*\["([^"]+)"\] = \{ s = (\d), t = (\d+) \},$/.exec(line);
+    if (record && current) {
+      current[record[1]] = { status: Number(record[2]), updatedAt: Number(record[3]) };
+    }
+  }
+  return {
+    game: /game = "(\w+)"/.exec(lua)![1],
+    generatedAt: header('generatedAt'),
+    exportNumber: header('exportNumber'),
+    events,
+  };
+}
+
+describe('Exemplos de presenças do addon (docs/exemplos-addon)', () => {
+  it('presencas.txt decodifica para os dados de presencas-esperado.lua', async () => {
+    const decoded = await decodePresenceExport(read('presencas.txt'));
+    const expected = parseExpectedPresences(read('presencas-esperado.lua'));
+    expect(Object.keys(expected.events)).toHaveLength(2);
+    expect({
+      game: decoded.game,
+      generatedAt: decoded.generatedAt,
+      exportNumber: decoded.exportNumber,
+      events: Object.fromEntries(
+        decoded.events.map((e) => [
+          e.id,
+          Object.fromEntries(
+            e.records.map((r) => [r.character, { status: r.status, updatedAt: r.updatedAt }]),
+          ),
+        ]),
+      ),
+    }).toEqual(expected);
+  });
+
+  it('os eventos de presencas.txt são os de valida.txt', async () => {
+    const presences = await decodePresenceExport(read('presencas.txt'));
+    const events = await decodeAddonExport(read('valida.txt'));
+    const ids = new Set(events.events.map((e) => e.id));
+    expect(presences.events.every((e) => ids.has(e.id))).toBe(true);
+  });
+
+  it('o teste unitário do decodificador usa a mesma string de presencas.txt', () => {
+    const spec = readFileSync('src/app/core/data/addon-presence-format.spec.ts', 'utf8');
+    expect(spec).toContain(`'${read('presencas.txt').trim()}'`);
   });
 });

@@ -40,6 +40,7 @@ interface AttendeeView {
 }
 
 const DELETED = 'Conta excluída';
+const FROM_ADDON = ' · Pelo addon';
 
 function toView(a: Attendee): AttendeeView {
   const c = a.character;
@@ -49,7 +50,7 @@ function toView(a: Attendee): AttendeeView {
           uid: a.uid,
           name: characterDisplayName(c),
           details: `${classLabel(c.characterClass)}, ${roleLabel(c.characterRole).toLowerCase()}`,
-          meta: `${gameLabel(c.game)} · ${DELETED}`,
+          meta: `${gameLabel(c.game)} · ${DELETED}${a.fromAddon ? FROM_ADDON : ''}`,
         }
       : { uid: a.uid, name: DELETED, details: 'Sem personagem', meta: '' };
   }
@@ -62,7 +63,7 @@ function toView(a: Attendee): AttendeeView {
     uid: a.uid,
     name,
     details: `${classLabel(c.characterClass)}, ${roleLabel(c.characterRole).toLowerCase()}`,
-    meta: `${gameLabel(c.game)}${account}`,
+    meta: `${gameLabel(c.game)}${account}${a.fromAddon ? FROM_ADDON : ''}`,
   };
 }
 
@@ -72,7 +73,7 @@ function guestView(g: Guest): AttendeeView {
     guest: true,
     name: guestDisplayName(g),
     details: g.game === 'forever' ? 'Personagem do WoW Forever' : 'Personagem do Retail',
-    meta: 'Visitante',
+    meta: `Visitante${g.fromAddon ? FROM_ADDON : ''}`,
   };
 }
 

@@ -134,6 +134,23 @@ export async function retryCountRace<T>(run: () => Promise<T>, attempts = 5): Pr
   }
 }
 
+export type PresenceKind = 'attendees' | 'guests';
+
+/** ID do registro de cancelamento de uma presença (`events/{id}/cancellations`). */
+export const cancellationId = (kind: PresenceKind, id: string) => `${kind}:${id}`;
+
+export const cancellationRef = (db: Firestore, eventId: string, kind: PresenceKind, id: string) =>
+  doc(db, 'events', eventId, 'cancellations', cancellationId(kind, id));
+
+/**
+ * Registro do cancelamento, gravado no mesmo lote em que a presença é apagada. Guarda quando a
+ * presença foi cancelada no site, para a importação de presenças do addon não refazê-la com um
+ * dado mais antigo do jogo (ver presence-import.ts).
+ */
+export function cancellationData(kind: PresenceKind, id: string): Record<string, unknown> {
+  return { kind, id, cancelledAt: serverTimestamp() };
+}
+
 /**
  * Entrada (+1) ou saída (-1) de uma presença no contador do evento, no mesmo lote da
  * presença. `lastAttendance` aponta a presença alterada (as rules conferem os dois lados).
@@ -141,7 +158,7 @@ export async function retryCountRace<T>(run: () => Promise<T>, attempts = 5): Pr
  */
 export function attendanceCountUpdate(
   event: GuildEvent,
-  kind: 'attendees' | 'guests',
+  kind: PresenceKind,
   id: string,
   delta: 1 | -1,
 ): { attendeeCount: number; lastAttendance: { kind: string; id: string } } {
@@ -306,8 +323,8 @@ export async function cancelEvent(
 const BATCH_SIZE = 450;
 
 /**
- * Exclui um evento cancelado e as listas de confirmados, de membros e de visitantes
- * (subcoleções, que o Firestore não apaga sozinho). As presenças saem no mesmo lote do evento;
+ * Exclui um evento cancelado, as listas de confirmados, de membros e de visitantes, e o registro
+ * de cancelamentos (subcoleções, que o Firestore não apaga sozinho). As presenças saem no mesmo lote do evento;
  * se houver mais do que cabe num lote, as restantes saem logo depois (as rules só permitem isso
  * nessas duas situações).
  */
@@ -320,11 +337,12 @@ export async function deleteCancelledEvent(db: Firestore, id: string): Promise<E
       return { ok: false, error: 'not-cancelled' };
     }
 
-    const [members, guests] = await Promise.all([
+    const [members, guests, cancellations] = await Promise.all([
       getDocs(collection(db, 'events', id, 'attendees')),
       getDocs(collection(db, 'events', id, 'guests')),
+      getDocs(collection(db, 'events', id, 'cancellations')),
     ]);
-    const attendees = [...members.docs, ...guests.docs];
+    const attendees = [...members.docs, ...guests.docs, ...cancellations.docs];
     const first = writeBatch(db);
     for (const a of attendees.slice(0, BATCH_SIZE)) first.delete(a.ref);
     first.delete(ref);

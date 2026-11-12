@@ -126,6 +126,9 @@
                       }}
                     }
                   </p>
+                  @if (fromAddon(); as note) {
+                    <p class="presence__text muted presence__addon">{{ note }}</p>
+                  }
                   @if (attendanceError(); as message) {
                     <p class="form-alert presence__error" role="alert">{{ message }}</p>
                   }

@@ -129,6 +129,14 @@ export const routes: Routes = [
           import('./features/admin/events/event-form/event-form-page').then((m) => m.EventFormPage),
       },
       {
+        path: 'eventos/importar-presencas',
+        title: 'Importar presenças do addon',
+        loadComponent: () =>
+          import('./features/admin/events/presence-import/presence-import-page').then(
+            (m) => m.PresenceImportPage,
+          ),
+      },
+      {
         path: 'eventos/:id/editar',
         title: 'Editar evento',
         loadComponent: () =>

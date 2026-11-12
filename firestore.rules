@@ -245,6 +245,29 @@ service cloud.firestore {
       allow create, delete: if false;
     }
 
+    // ---------- Última importação de presenças do addon ----------
+    // `generatedAt` da última string de presenças (VDLP1) importada. Só administradores
+    // gravam, sempre com uma string mais nova que a anterior (strings antigas são recusadas).
+    // Ver src/app/core/data/presence-import.ts.
+    function validPresenceImport(d) {
+      return d.keys().hasOnly(['generatedAt', 'exportNumber', 'importedAt', 'importedBy'])
+        && d.generatedAt is int
+        && d.generatedAt > 0
+        && d.exportNumber is int
+        && d.exportNumber >= 0
+        && d.importedAt == request.time
+        && d.importedBy == request.auth.uid;
+    }
+
+    match /config/presenceImport {
+      allow get: if isAdmin();
+      allow create: if isAdmin() && validPresenceImport(request.resource.data);
+      allow update: if isAdmin()
+        && validPresenceImport(request.resource.data)
+        && request.resource.data.generatedAt > resource.data.generatedAt;
+      allow delete: if false;
+    }
+
     // Exatamente um uid entra (e passa a ser admin ativo) ou sai (e deixa de ser).
     function adminListChangeIsConsistent(before, after) {
       let added = after.removeAll(before);
@@ -634,16 +657,33 @@ service cloud.firestore {
         + (d.game == 'forever' ? d.characterSurname : d.realm);
     }
 
-    function validGuest(d, guestId) {
+    // `extra`: campos além do personagem e de `confirmedAt` (ver `fromAddon`).
+    function validGuest(d, guestId, extra) {
       return ((d.game == 'forever'
-          && d.keys().hasOnly(['game', 'characterName', 'characterSurname', 'confirmedAt'])
+          && d.keys().hasOnly(
+               ['game', 'characterName', 'characterSurname', 'confirmedAt'].concat(extra))
           && characterNameText(d.characterSurname))
         || (d.game == 'retail'
-          && d.keys().hasOnly(['game', 'characterName', 'realm', 'confirmedAt'])
+          && d.keys().hasOnly(['game', 'characterName', 'realm', 'confirmedAt'].concat(extra))
           && realmText(d.realm)))
         && characterNameText(d.characterName)
         && d.confirmedAt == request.time
         && guestId == guestKey(d);
+    }
+
+    // Origem "addon": presença (ou cancelamento) importada por um administrador da string de
+    // presenças do addon (VDLP1). `addonUpdatedAt` é o horário da resposta no jogo, usado para
+    // não aplicar dados mais antigos que a última alteração feita no site.
+    function addonFields() {
+      return ['source', 'addonUpdatedAt', 'importedBy'];
+    }
+
+    function fromAddon(d) {
+      return isAdmin()
+        && d.keys().hasAll(addonFields())
+        && d.source == 'addon'
+        && d.addonUpdatedAt is timestamp
+        && d.importedBy == request.auth.uid;
     }
 
     match /events/{eventId} {
@@ -799,6 +839,18 @@ service cloud.firestore {
           && request.resource.data.confirmedAt == request.time
           && ownCharacter(uid, request.resource.data);
 
+        // Importação de presenças do addon: o administrador confirma a presença de um membro
+        // ativo com um personagem dele, uma vez por evento, como o próprio membro faria.
+        allow create: if fromAddon(request.resource.data)
+          && eventIsOpen()
+          && countedIn('attendees', uid)
+          && get(userPath(uid)).data.status == 'ativo'
+          && get(memberPath(uid)).data.active == true
+          && request.resource.data.keys().hasOnly(
+               ['confirmedAt', 'character', 'characterId'].concat(addonFields()))
+          && request.resource.data.confirmedAt == request.time
+          && ownCharacter(uid, request.resource.data);
+
         allow update: if false;
 
         // Cancelar a própria presença, ou (administrador) a de qualquer confirmado, enquanto
@@ -826,12 +878,42 @@ service cloud.firestore {
         allow create: if !isActive()
           && guestsOpen()
           && countedIn('guests', guestId)
-          && validGuest(request.resource.data, guestId)
+          && validGuest(request.resource.data, guestId, [])
+          && eventGameAccepts(request.resource.data);
+
+        // Importação de presenças do addon: o administrador confirma o personagem do jogo que
+        // não pertence a nenhum membro, com as mesmas regras de vaga e duplicidade.
+        allow create: if fromAddon(request.resource.data)
+          && guestsOpen()
+          && countedIn('guests', guestId)
+          && validGuest(request.resource.data, guestId, addonFields())
           && eventGameAccepts(request.resource.data);
 
         allow update: if false;
 
         allow delete: if isAdmin() && eventIsOpen() && countedOut('guests', guestId);
+        allow delete: if deletingCancelledEvent();
+      }
+
+      // ---------- Registro de cancelamentos (ID = '<kind>:<id da presença>') ----------
+      // Cancelar apaga a presença; este registro guarda quando, para a importação de presenças
+      // do addon não refazer, com um dado mais antigo do jogo, um cancelamento feito no site.
+      // Gravado (ou sobrescrito) por quem cancela, no mesmo lote em que a presença é apagada.
+      // Somente administradores leem.
+      match /cancellations/{cancellationId} {
+        allow get, list: if isAdmin();
+
+        allow create, update: if request.resource.data.kind in ['attendees', 'guests']
+          && request.resource.data.id is string
+          && cancellationId == request.resource.data.kind + ':' + request.resource.data.id
+          && exists(presencePath(request.resource.data))
+          && !existsAfter(presencePath(request.resource.data))
+          && request.resource.data.cancelledAt == request.time
+          && (request.resource.data.keys().hasOnly(['kind', 'id', 'cancelledAt'])
+            || (fromAddon(request.resource.data)
+              && request.resource.data.keys().hasOnly(
+                   ['kind', 'id', 'cancelledAt'].concat(addonFields()))));
+
         allow delete: if deletingCancelledEvent();
       }
     }
