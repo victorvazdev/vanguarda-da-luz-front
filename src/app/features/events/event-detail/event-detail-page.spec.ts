@@ -394,14 +394,29 @@ describe('EventDetailPage', () => {
             characterClass: 'guerreiro',
             characterRole: 'tanque',
           },
+          fromAddon: null,
         });
         expect(text('#presenca-status')).toBe('Você confirmou presença neste evento com Dorna.');
+        expect(text('.presence__addon')).toBeUndefined();
+      });
+
+      it('presença vinda do addon do jogo mostra a origem', async () => {
+        await emit(raid);
+        await attendance({
+          confirmedAt: new Date(),
+          character: null,
+          fromAddon: new Date('2026-11-10T23:30:00Z'),
+        });
+        expect(text('.presence__addon')).toBe(
+          'Esta presença veio do addon da guilda no jogo (resposta de Ter, 10 nov. 2026, ' +
+            '20:30, Brasília). Ao cancelar aqui, cancele também no jogo.',
+        );
       });
     });
 
     it('presença já registrada aparece como confirmada, sem nova ação', async () => {
       await emit(raid);
-      await attendance({ confirmedAt: new Date(), character: null });
+      await attendance({ confirmedAt: new Date(), character: null, fromAddon: null });
       expect(presence()).toContain('Você confirmou presença neste evento.');
       expect(confirmButton()).toBeUndefined();
     });
@@ -437,7 +452,7 @@ describe('EventDetailPage', () => {
       await attendance(null);
       expect(text('#titulo-presenca')).toBe('Evento lotado');
       expect(confirmButton()).toBeUndefined();
-      await attendance({ confirmedAt: new Date(), character: null });
+      await attendance({ confirmedAt: new Date(), character: null, fromAddon: null });
       expect(presence()).toContain('Presença confirmada');
     });
 
@@ -471,7 +486,7 @@ describe('EventDetailPage', () => {
       );
     async function confirmedOn(event: GuildEvent) {
       await emit(event);
-      events.mine!({ confirmedAt: new Date(), character: null });
+      events.mine!({ confirmedAt: new Date(), character: null, fromAddon: null });
       await fixture.whenStable();
     }
 

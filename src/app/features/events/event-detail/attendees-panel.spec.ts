@@ -38,6 +38,7 @@ const lunara: Guest = {
   characterName: 'Lunara',
   characterSurname: 'Sombraviva',
   confirmedAt: new Date('2026-11-03T12:00:00Z'),
+  fromAddon: false,
 };
 const thalor: Guest = {
   id: 'retail:Thalor:Azralon',
@@ -45,6 +46,7 @@ const thalor: Guest = {
   characterName: 'Thalor',
   realm: 'Azralon',
   confirmedAt: new Date('2026-11-04T12:00:00Z'),
+  fromAddon: false,
 };
 
 class ConfirmStub {
@@ -68,6 +70,7 @@ const maren: Attendee = {
     characterRole: 'tanque',
   },
   deleted: false,
+  fromAddon: false,
 };
 const tavia: Attendee = {
   uid: 'tavia',
@@ -82,6 +85,7 @@ const tavia: Attendee = {
     characterRole: 'dano',
   },
   deleted: false,
+  fromAddon: false,
 };
 
 let fixture: ComponentFixture<AttendeesPanel>;
@@ -151,7 +155,14 @@ describe('AttendeesPanel (Ver presenças confirmadas)', () => {
   it('conta sem personagem aparece pelo nome de usuário', async () => {
     await setup();
     await emit([
-      { uid: 'x', username: 'Kael', confirmedAt: null, character: null, deleted: false },
+      {
+        uid: 'x',
+        username: 'Kael',
+        confirmedAt: null,
+        character: null,
+        deleted: false,
+        fromAddon: false,
+      },
     ]);
     expect(items()).toEqual([['Kael', 'Sem personagem']]);
   });
@@ -169,7 +180,16 @@ describe('AttendeesPanel (Ver presenças confirmadas)', () => {
 
   it('conta excluída sem personagem aparece só como conta excluída', async () => {
     await setup(false);
-    await emit([{ uid: 'x', username: '', confirmedAt: null, character: null, deleted: true }]);
+    await emit([
+      {
+        uid: 'x',
+        username: '',
+        confirmedAt: null,
+        character: null,
+        deleted: true,
+        fromAddon: false,
+      },
+    ]);
     expect(items()).toEqual([['Conta excluída', 'Sem personagem']]);
   });
 
@@ -228,6 +248,17 @@ describe('AttendeesPanel (Ver presenças confirmadas)', () => {
       events.guestsNext!(guests);
       await fixture.whenStable();
     }
+
+    it('presenças importadas do addon do jogo aparecem marcadas', async () => {
+      await setup();
+      await emit([{ ...tavia, fromAddon: true }]);
+      events.guestsNext!([{ ...lunara, fromAddon: true }]);
+      await fixture.whenStable();
+      expect(items()).toEqual([
+        ['Tavia Brasaluz', 'Mago, dano', 'WoW Forever · Conta: TaviaB · Pelo addon'],
+        ['Lunara Sombraviva', 'Personagem do WoW Forever', 'Visitante · Pelo addon'],
+      ]);
+    });
 
     it('somam ao total e aparecem em lista própria, com o personagem e o jogo', async () => {
       await withGuests([lunara, thalor]);

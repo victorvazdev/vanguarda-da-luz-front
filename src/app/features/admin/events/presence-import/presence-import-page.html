@@ -1,0 +1,157 @@
+<div class="presence-import">
+  <a class="presence-import__back" routerLink="..">Voltar aos eventos</a>
+
+  <section class="presence-import__card" aria-labelledby="titulo-importar-presencas">
+    <h1 id="titulo-importar-presencas" class="admin__title presence-import__title" tabindex="-1">
+      Importar presenças do addon
+    </h1>
+
+    @switch (state()) {
+      @case ('done') {
+        @if (report(); as r) {
+          <p class="notice" role="status">
+            Importação concluída. Confira abaixo o que foi aplicado em cada evento.
+          </p>
+          @if (!r.recorded) {
+            <p class="form-alert">
+              Outra string mais nova foi importada ao mesmo tempo; esta não ficou registrada como a
+              última importada.
+            </p>
+          }
+          <ng-container
+            *ngTemplateOutlet="eventList; context: { $implicit: reportEvents(), report: true }"
+          />
+          <div class="actions">
+            <button type="button" class="btn btn--primary" (click)="restart()">
+              Importar outra string
+            </button>
+            <a class="btn btn--outline" routerLink="..">Voltar aos eventos</a>
+          </div>
+        }
+      }
+      @case ('preview') {
+        @if (summary(); as s) {
+          <dl class="presence-import__facts">
+            <div>
+              <dt>Gerada no jogo em</dt>
+              <dd>{{ s.generatedAt }}</dd>
+            </div>
+            <div>
+              <dt>Última importada</dt>
+              <dd>{{ s.lastGeneratedAt ?? 'Nenhuma' }}</dd>
+            </div>
+          </dl>
+          @if (s.outdated) {
+            <p class="form-alert" role="alert">
+              Esta string não é mais nova que a última importada e não pode ser aplicada. Gere uma
+              string nova no jogo.
+            </p>
+          } @else if (!s.changes) {
+            <p class="notice" role="status">Nada a alterar no site com esta string.</p>
+          }
+        }
+        @if (error(); as message) {
+          <p class="form-alert" role="alert">{{ message }}</p>
+        }
+        <h2 class="presence-import__subtitle">Prévia</h2>
+        <ng-container
+          *ngTemplateOutlet="eventList; context: { $implicit: previewEvents(), report: false }"
+        />
+        <div class="actions">
+          @if (summary()?.changes) {
+            <button type="button" class="btn btn--primary" (click)="confirm()">
+              Confirmar importação
+            </button>
+          }
+          <button type="button" class="btn btn--outline" (click)="restart()">Cancelar</button>
+        </div>
+      }
+      @case ('applying') {
+        <p class="muted loading" role="status">Aplicando as presenças…</p>
+      }
+      @default {
+        <p class="muted">
+          No jogo, o Grão Lorde ou um Lorde gera a string em "Exportar presenças" no addon da
+          guilda. Cole-a abaixo para ver o que muda antes de confirmar.
+        </p>
+        <div class="form">
+          <div class="field">
+            <label class="field__label" for="presencas-string">String de presenças</label>
+            <textarea
+              id="presencas-string"
+              class="field__input presence-import__string"
+              rows="6"
+              spellcheck="false"
+              autocomplete="off"
+              placeholder="VDLP1:..."
+              [value]="text()"
+              [attr.aria-invalid]="!!error()"
+              [attr.aria-describedby]="error() ? 'presencas-erro' : null"
+              (input)="setText($any($event.target).value)"
+            ></textarea>
+            @if (error(); as message) {
+              <p id="presencas-erro" class="field__error" role="alert">{{ message }}</p>
+            }
+          </div>
+          <div class="actions">
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="state() === 'checking'"
+              (click)="check()"
+            >
+              {{ state() === 'checking' ? 'Validando…' : 'Validar e ver prévia' }}
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </section>
+</div>
+
+<ng-template #eventList let-events let-report="report">
+  @if (events.length === 0) {
+    <p class="muted">A string não traz nenhum evento.</p>
+  }
+  @for (e of events; track e.key) {
+    <article class="presence-import__event">
+      <h3 class="presence-import__event-title">{{ e.title }}</h3>
+      @if (e.when) {
+        <p class="muted presence-import__when">{{ e.when }}</p>
+      }
+      @if (e.ignored) {
+        <p class="notice">{{ e.ignored }}</p>
+      } @else {
+        @for (
+          group of [
+            { label: report ? 'Membros confirmados' : 'Confirmações de membros', lines: e.members },
+            {
+              label: report ? 'Visitantes confirmados' : 'Confirmações de visitantes',
+              lines: e.guests,
+            },
+            { label: report ? 'Presenças canceladas' : 'Cancelamentos', lines: e.cancellations },
+            { label: report ? 'Não aplicados' : 'Recusados', lines: e.refused },
+          ];
+          track group.label
+        ) {
+          @if (group.lines.length) {
+            <h4 class="presence-import__group">{{ group.label }} ({{ group.lines.length }})</h4>
+            <ul class="presence-import__lines">
+              @for (line of group.lines; track $index) {
+                <li>
+                  <strong>{{ line.character }}</strong> — {{ line.detail }}
+                </li>
+              }
+            </ul>
+          }
+        }
+        @if (e.unchanged) {
+          <p class="muted presence-import__unchanged">
+            {{ e.unchanged }} {{ e.unchanged === 1 ? 'registro' : 'registros' }} sem alteração (o
+            site já está assim).
+          </p>
+        }
+      }
+    </article>
+  }
+</ng-template>

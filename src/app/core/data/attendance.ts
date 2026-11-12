@@ -13,6 +13,8 @@ import {
 import { toDate } from './applications';
 import {
   attendanceCountUpdate,
+  cancellationData,
+  cancellationRef,
   retryCountRace,
   eventFromData,
   isFull,
@@ -25,6 +27,11 @@ export interface MyAttendance {
   confirmedAt: Date | null;
   /** Personagem com que confirmou (`null` em presenças anteriores à escolha do personagem). */
   character: MainCharacter | null;
+  /**
+   * Presença vinda do addon (importada por um administrador da string de presenças do jogo):
+   * horário da resposta no jogo. `null` = confirmada no site.
+   */
+  fromAddon: Date | null;
 }
 
 export type AttendanceError =
@@ -57,11 +64,20 @@ export function watchMyAttendance(
     (snap) =>
       next(
         snap.exists()
-          ? { confirmedAt: toDate(snap.get('confirmedAt')), character: characterOf(snap.data()) }
+          ? {
+              confirmedAt: toDate(snap.get('confirmedAt')),
+              character: characterOf(snap.data()),
+              fromAddon: addonTime(snap.data()),
+            }
           : null,
       ),
     error,
   );
+}
+
+/** Horário do jogo de uma presença importada do addon; `null` se confirmada no site. */
+export function addonTime(data: Record<string, unknown>): Date | null {
+  return data['source'] === 'addon' ? toDate(data['addonUpdatedAt']) : null;
 }
 
 /** Personagem gravado na presença (presenças antigas não têm). */
@@ -82,6 +98,8 @@ export interface Attendee {
   confirmedAt: Date | null;
   /** Conta excluída: a presença continua no histórico, com o personagem principal. */
   deleted: boolean;
+  /** Presença importada do addon do jogo. */
+  fromAddon: boolean;
 }
 
 /** Ordem de confirmação (quem confirmou primeiro, primeiro). */
@@ -101,8 +119,10 @@ export function watchAttendees(
   next: (attendees: Attendee[]) => void,
   error: (e: unknown) => void,
 ): () => void {
-  let confirmed: Map<string, { confirmedAt: Date | null; character: MainCharacter | null }> | null =
-    null;
+  let confirmed: Map<
+    string,
+    { confirmedAt: Date | null; character: MainCharacter | null; fromAddon: boolean }
+  > | null = null;
   let members: Map<string, MemberRow> | null = null;
   let deleted: Map<string, MainCharacter | null> | null = null;
   const emit = () => {
@@ -110,7 +130,7 @@ export function watchAttendees(
     const people = members;
     const gone = deleted;
     const list: Attendee[] = [];
-    for (const [uid, { confirmedAt, character }] of confirmed) {
+    for (const [uid, { confirmedAt, character, fromAddon }] of confirmed) {
       const m = people.get(uid);
       if (m?.status === 'ativo') {
         list.push({
@@ -119,6 +139,7 @@ export function watchAttendees(
           character: character ?? m.mainCharacter,
           confirmedAt,
           deleted: false,
+          fromAddon,
         });
       } else if (!m && gone.has(uid)) {
         list.push({
@@ -127,6 +148,7 @@ export function watchAttendees(
           character: character ?? gone.get(uid)!,
           confirmedAt,
           deleted: true,
+          fromAddon,
         });
       }
     }
@@ -139,7 +161,11 @@ export function watchAttendees(
       confirmed = new Map(
         snap.docs.map((d) => [
           d.id,
-          { confirmedAt: toDate(d.get('confirmedAt')), character: characterOf(d.data()) },
+          {
+            confirmedAt: toDate(d.get('confirmedAt')),
+            character: characterOf(d.data()),
+            fromAddon: d.get('source') === 'addon',
+          },
         ]),
       );
       emit();
@@ -261,6 +287,7 @@ export async function cancelAttendance(
         const ref = attendeeRef(db, eventId, uid);
         if (!(await tx.get(ref)).exists()) throw new Blocked('not-confirmed');
         tx.delete(ref);
+        tx.set(cancellationRef(db, eventId, 'attendees', uid), cancellationData('attendees', uid));
         tx.update(doc(db, 'events', eventId), attendanceCountUpdate(event, 'attendees', uid, -1));
       }),
     );

@@ -227,7 +227,7 @@ export class GuestPresence {
     if (result.ok || result.error === 'already-confirmed') {
       const key = result.ok ? result.id : guestKey(input);
       remember(eventId, key);
-      this.guest.set({ ...guestData(input), id: key, confirmedAt: null });
+      this.guest.set({ ...guestData(input), id: key, confirmedAt: null, fromAddon: false });
       this.rememberedId.set(key);
       this.submitted.set(false);
       this.form.reset({ game: this.eventGame() ?? '' });

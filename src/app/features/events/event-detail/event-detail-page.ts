@@ -35,6 +35,7 @@ import {
   formatBrasiliaDate,
   formatBrasiliaTime,
   formatBrasiliaWeekday,
+  formatEventDateTime,
 } from '../../../core/time/brasilia';
 import { ConfirmService } from '../../../shared/ui/confirm-dialog/confirm.service';
 import { FlashService } from '../../../shared/ui/flash/flash.service';
@@ -161,6 +162,14 @@ export class EventDetailPage {
     const c = this.attendance()?.character;
     return c ? characterDisplayName(c) : null;
   });
+  /** Presença vinda do addon do jogo (importada por um administrador). */
+  protected readonly fromAddon = computed(() => {
+    const at = this.attendance()?.fromAddon;
+    return at
+      ? `Esta presença veio do addon da guilda no jogo (resposta de ${formatEventDateTime(at)}, ` +
+          `${GUILD_TIME_ZONE_LABEL}). Ao cancelar aqui, cancele também no jogo.`
+      : null;
+  });
   protected readonly characterError = signal<string | null>(null);
   /** Exclusão do evento cancelado em andamento (somente administradores). */
   protected readonly removing = signal(false);
@@ -265,7 +274,11 @@ export class EventDetailPage {
     // "Já confirmada" também é sucesso para a pessoa. O listener traz o horário oficial.
     if (result.ok || result.error === 'already-confirmed') {
       if (!this.attendance()) {
-        this.attendance.set({ confirmedAt: null, character: result.ok ? chosen.summary : null });
+        this.attendance.set({
+          confirmedAt: null,
+          character: result.ok ? chosen.summary : null,
+          fromAddon: null,
+        });
       }
       this.focusStatus();
       return;

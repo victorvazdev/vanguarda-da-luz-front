@@ -1,0 +1,72 @@
+@use '../../../../../styles/mixins' as *;
+
+// Importação de presenças em página própria: coluna única, como o formulário de evento.
+.presence-import {
+  max-width: 48rem;
+}
+
+.presence-import__back {
+  display: inline-block;
+  margin-bottom: var(--space-4);
+}
+
+.presence-import__card {
+  @include card;
+}
+
+.presence-import__title {
+  margin: 0 0 var(--space-4);
+}
+
+.presence-import__string {
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.presence-import__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  margin: 0 0 var(--space-4);
+
+  dt {
+    font-weight: 600;
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.presence-import__subtitle {
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+.presence-import__event {
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.presence-import__event-title {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.presence-import__when,
+.presence-import__unchanged {
+  margin: var(--space-1) 0 0;
+}
+
+.presence-import__group {
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: 1rem;
+}
+
+.presence-import__lines {
+  margin: 0;
+  padding-left: var(--space-5);
+
+  li {
+    overflow-wrap: anywhere;
+  }
+}

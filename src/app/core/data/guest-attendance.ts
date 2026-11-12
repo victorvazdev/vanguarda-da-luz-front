@@ -19,6 +19,8 @@ import {
 import { toDate } from './applications';
 import {
   attendanceCountUpdate,
+  cancellationData,
+  cancellationRef,
   retryCountRace,
   eventFromData,
   isFull,
@@ -34,6 +36,8 @@ export type Guest = GuestInput & {
   /** ID da presença (ver `guestKey`). */
   id: string;
   confirmedAt: Date | null;
+  /** Presença importada do addon do jogo por um administrador. */
+  fromAddon: boolean;
 };
 
 export type GuestAttendanceError =
@@ -113,15 +117,24 @@ export function guestDisplayName(guest: GuestInput): string {
 
 export function guestFromData(id: string, data: Record<string, unknown>): Guest {
   const confirmedAt = toDate(data['confirmedAt']);
+  const fromAddon = data['source'] === 'addon';
   const characterName = String(data['characterName'] ?? '');
   return data['game'] === 'retail'
-    ? { id, game: 'retail', characterName, realm: String(data['realm'] ?? ''), confirmedAt }
+    ? {
+        id,
+        game: 'retail',
+        characterName,
+        realm: String(data['realm'] ?? ''),
+        confirmedAt,
+        fromAddon,
+      }
     : {
         id,
         game: 'forever',
         characterName,
         characterSurname: String(data['characterSurname'] ?? ''),
         confirmedAt,
+        fromAddon,
       };
 }
 
@@ -191,6 +204,7 @@ export async function removeGuestAttendance(
         const ref = guestRef(db, eventId, id);
         if (!(await tx.get(ref)).exists()) throw new Blocked('not-confirmed');
         tx.delete(ref);
+        tx.set(cancellationRef(db, eventId, 'guests', id), cancellationData('guests', id));
         tx.update(doc(db, 'events', eventId), attendanceCountUpdate(event, 'guests', id, -1));
       }),
     );

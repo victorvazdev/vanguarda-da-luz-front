@@ -4,7 +4,7 @@ Nov 5, 2026 · @Victor Vaz de Oliveira
 
 ## Visão geral
 
-As 30 histórias abaixo têm critérios verificáveis, agrupados por área. Uma história só está pronta quando todos os seus critérios forem atendidos.
+As 32 histórias abaixo têm critérios verificáveis, agrupados por área. Uma história só está pronta quando todos os seus critérios forem atendidos.
 
 | Perfil | Situação | Acesso |
 | --- | --- | --- |
@@ -393,6 +393,23 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 - [ ] Cada evento leva o ID, o título, o início, a descrição, o organizador, a situação e a data da última alteração; nenhum dado pessoal ou de conta é exportado.
 - [ ] A string segue o formato versionado de `docs/formato-string-addon.md`, com checksum para detectar strings incompletas ou corrompidas.
 - [ ] Acima do limite de tamanho, a string não é exibida e o modal informa a maior quantidade de dias que cabe.
+
+### Importar presenças do addon
+
+**Como administrador**, quero colar a string de presenças gerada pelo addon da guilda no WoW Forever, para que as confirmações e os cancelamentos feitos no jogo apareçam no site.
+
+- [ ] A administração de eventos oferece o botão "Importar presenças do addon", somente para administradores, que abre uma página para colar a string `VDLP1`.
+- [ ] A string segue o formato de `docs/formato-string-presencas.md`; uma string incompleta, corrompida, de outra versão ou com conteúdo inválido é recusada com o motivo.
+- [ ] Antes de aplicar, a página mostra uma prévia por evento: confirmações de membros, confirmações de visitantes, cancelamentos e registros recusados, com o motivo de cada recusa.
+- [ ] O personagem do jogo ("Nome Sobrenome") é comparado com os personagens do WoW Forever dos membros, sem diferenciar espaços e maiúsculas e mantendo os acentos. Havendo correspondência, a presença é do membro, com aquele personagem; sem correspondência, entra como visitante.
+- [ ] Um personagem de mesmo nome e sobrenome em mais de um membro não é aplicado e aparece como recusado, com os membros envolvidos, para o administrador confirmar manualmente. Personagens de contas desativadas ou excluídas também são recusados.
+- [ ] Uma confirmação continua sujeita ao limite de vagas (membros e visitantes somados), à confirmação de visitantes do evento e à duplicidade: o membro não tem duas presenças no evento e o mesmo personagem não confirma duas vezes, como membro ou visitante. O que violaria essas regras é recusado e aparece no relatório.
+- [ ] Um cancelamento no jogo cancela no site a presença daquele personagem no evento, de membro ou de visitante.
+- [ ] Um registro só é aplicado se for mais recente que a última alteração da presença no site (confirmação ou cancelamento), para que uma alteração feita no site depois não seja desfeita por um dado mais antigo do jogo.
+- [ ] Eventos desconhecidos, já iniciados, cancelados ou que não são do WoW Forever são ignorados, com aviso.
+- [ ] Uma string gerada antes ou no mesmo horário da última string importada é recusada.
+- [ ] Ao confirmar, cada alteração é revalidada e aplicada; a página mostra o relatório do que foi aplicado e do que não foi, com o motivo.
+- [ ] As presenças importadas ficam marcadas como vindas do addon na lista de confirmados, e o membro vê no detalhe do evento que a presença veio do jogo, podendo cancelá-la no site.
 
 ### Ver presenças confirmadas
 
