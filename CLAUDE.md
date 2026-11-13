@@ -8,7 +8,7 @@ Website for the World of Warcraft guild **Vanguarda da Luz**: Angular 22 (standa
 
 The whole product is in Brazilian Portuguese: UI text, route paths (`/entrar`, `/minha-conta`, `/admin/candidaturas`), code comments, commit messages (Conventional Commits, e.g. `feat(eventos): ...`, `fix(home): ...`). Keep that convention.
 
-Sources of truth for requirements: `docs/criterios-de-aceite.md` (32 user stories with acceptance criteria) and `docs/prototipo.pdf`.
+Sources of truth for requirements: `docs/criterios-de-aceite.md` (33 user stories with acceptance criteria) and `docs/prototipo.pdf`.
 
 ## Commands
 

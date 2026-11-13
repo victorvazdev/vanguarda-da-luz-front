@@ -4,7 +4,7 @@ Nov 5, 2026 · @Victor Vaz de Oliveira
 
 ## Visão geral
 
-As 32 histórias abaixo têm critérios verificáveis, agrupados por área. Uma história só está pronta quando todos os seus critérios forem atendidos.
+As 33 histórias abaixo têm critérios verificáveis, agrupados por área. Uma história só está pronta quando todos os seus critérios forem atendidos.
 
 | Perfil | Situação | Acesso |
 | --- | --- | --- |
@@ -82,6 +82,16 @@ A guilda está presente em duas versões de World of Warcraft:
 - [ ] O modal fecha pelo botão, pela tecla Esc e por um clique no fundo.
 - [ ] Ao abrir, o foco entra no modal e permanece nele enquanto estiver aberto; ao fechar, volta ao link.
 - [ ] O texto das regras é o mesmo da página de regras, mantido em um único lugar.
+
+### Baixar o addon da guilda
+
+**Como visitante ou membro**, quero conhecer e baixar o addon da guilda para o WoW Forever, para que eu acompanhe os eventos e confirme minha presença também pelo jogo.
+
+- [ ] A página do addon (`/addon`) pode ser acessada sem login, por qualquer perfil.
+- [ ] O menu principal mostra, para todos os perfis, no desktop e no menu mobile, um botão de destaque "Baixar addon" que leva à página.
+- [ ] A página explica o que o addon faz: recebe os eventos do WoW Forever exportados pelo site, permite confirmar ou cancelar a presença no jogo e gera a string de presenças que os administradores importam no site.
+- [ ] A página informa que, para a presença do jogo ficar no nome do membro, o personagem do WoW Forever cadastrado no site deve ter o mesmo nome e sobrenome do jogo.
+- [ ] Um botão em destaque, "Baixar no CurseForge", abre a página oficial do addon no CurseForge em uma nova aba.
 
 ### Ver a lista de membros
 

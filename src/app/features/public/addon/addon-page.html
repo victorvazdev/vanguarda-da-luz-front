@@ -1,0 +1,45 @@
+<article class="container container--narrow page">
+  <header class="page__header">
+    <p class="eyebrow">WoW Forever</p>
+    <h1>Addon da guilda</h1>
+    <p class="muted">{{ addon.intro }}</p>
+  </header>
+
+  <div class="download">
+    <a
+      class="btn btn--primary download__button"
+      [href]="addon.downloadUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Baixar no CurseForge<span class="sr-only"> (abre em nova aba)</span>
+    </a>
+    <p class="muted download__hint">O download fica na página oficial do addon no CurseForge.</p>
+  </div>
+
+  <section aria-labelledby="titulo-funcoes">
+    <h2 id="titulo-funcoes" class="section-title">O que o addon faz</h2>
+    <ol class="numbered">
+      @for (feature of addon.features; track feature.title) {
+        <li class="numbered__item">
+          <strong class="numbered__title">{{ feature.title }}</strong>
+          <span class="muted">{{ feature.text }}</span>
+        </li>
+      }
+    </ol>
+  </section>
+
+  <section aria-labelledby="titulo-avisos">
+    <h2 id="titulo-avisos" class="section-title">Antes de usar</h2>
+    <ul class="notes">
+      @for (note of addon.notes; track note) {
+        <li>{{ note }}</li>
+      }
+    </ul>
+  </section>
+
+  <section aria-labelledby="titulo-instalar">
+    <h2 id="titulo-instalar" class="section-title">Como instalar</h2>
+    <p class="muted">{{ addon.install }}</p>
+  </section>
+</article>

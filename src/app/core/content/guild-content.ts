@@ -31,3 +31,32 @@ export const JOIN_STEPS = [
   { title: 'Envie sua candidatura', text: 'Conte qual é seu personagem e por que quer entrar.' },
   { title: 'Aguarde o contato e avaliação', text: 'Acompanhe o resultado na sua conta.' },
 ] as const;
+
+/**
+ * Página do addon da guilda. O texto segue `docs/formato-string-addon.md` e
+ * `docs/formato-string-presencas.md`; o que ainda não se conhece fica entre colchetes.
+ */
+export const ADDON = {
+  downloadUrl: 'https://www.curseforge.com/wow/addons/vanguarda-da-luz-guild-hub',
+  intro:
+    'O addon da guilda no WoW Forever leva os eventos do site para o jogo e traz de volta para o site as presenças confirmadas no jogo.',
+  features: [
+    {
+      title: 'Eventos do site no jogo',
+      text: 'Os administradores exportam do site os próximos eventos do WoW Forever. Um oficial importa a exportação no jogo, e o addon cria, atualiza e cancela esses eventos.',
+    },
+    {
+      title: 'Presença confirmada no jogo',
+      text: 'Com o addon, cada membro confirma ou cancela a presença com o personagem que está jogando. As respostas são sincronizadas entre os membros pelo canal da guilda.',
+    },
+    {
+      title: 'Presenças de volta no site',
+      text: 'Um Grão-Lorde ou um Lorde gera no addon a string de presenças, e os administradores a importam no site. As presenças aparecem na lista de confirmados do evento, marcadas como vindas do jogo.',
+    },
+  ],
+  notes: [
+    'O addon é do WoW Forever: eventos do Retail não vão para o jogo.',
+    'Para a presença do jogo ficar no seu nome, cadastre em Minha conta o personagem do WoW Forever com o mesmo nome e sobrenome do jogo. Sem essa correspondência, ela entra como presença de visitante.',
+  ],
+  install: '[INSTRUÇÕES DE INSTALAÇÃO E USO DO ADDON]',
+} as const;
