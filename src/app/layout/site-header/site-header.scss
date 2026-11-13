@@ -169,6 +169,23 @@
   background-size: 100% 2px;
 }
 
+// Destaque do addon: contorno dourado com brilho, para não competir com o "Fazer parte".
+.nav__highlight {
+  padding-inline: var(--space-4);
+  border-color: var(--color-gold-deep);
+  color: var(--color-gold);
+  box-shadow: var(--glow-sm);
+}
+
+.nav__highlight--active {
+  background-color: rgb(242 201 76 / 12%);
+  color: var(--color-heading);
+}
+
+.nav__icon {
+  flex: none;
+}
+
 .nav__button {
   padding: 0;
   border: 0;
@@ -178,7 +195,8 @@
   cursor: pointer;
 }
 
-@media (max-width: 760px) {
+// Abaixo disso o menu de visitante (com "Baixar addon" e "Fazer parte") não cabe numa linha.
+@media (max-width: 960px) {
   .menu-toggle {
     display: inline-flex;
   }
@@ -199,7 +217,8 @@
   }
 
   .nav__link,
-  .nav__cta {
+  .nav__cta,
+  .nav__highlight {
     width: 100%;
   }
 
