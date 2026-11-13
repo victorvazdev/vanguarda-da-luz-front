@@ -21,19 +21,45 @@ describe('AddonPage (Baixar o addon da guilda)', () => {
     expect(link.textContent).toContain('(abre em nova aba)');
   });
 
-  it('explica o caminho dos eventos e das presenças entre o site e o jogo', async () => {
+  it('avisa que o addon só funciona para membros da guilda', async () => {
     const el = await render();
     expect(el.querySelector('h1')?.textContent).toContain('Addon da guilda');
-    const features = el.querySelectorAll('ol li');
-    expect(features).toHaveLength(3);
-    expect(features[0].textContent).toContain('Eventos do site no jogo');
-    expect(features[1].textContent).toContain('Presença confirmada no jogo');
-    expect(features[2].textContent).toContain('Presenças de volta no site');
-    expect(el.textContent).toContain('WoW Forever');
+    expect(el.textContent).toContain('Vanguarda da Luz Guild Hub');
+    expect(el.querySelector('.members-only')?.textContent).toContain(
+      'Todas as funções exigem estar na guilda Vanguarda da Luz',
+    );
   });
 
-  it('mantém entre colchetes o que ainda não se conhece', async () => {
+  it('apresenta as funções do addon', async () => {
     const el = await render();
-    expect(el.textContent).toContain('[INSTRUÇÕES DE INSTALAÇÃO E USO DO ADDON]');
+    const titles = [...el.querySelectorAll('.feature__title')].map((h) => h.textContent?.trim());
+    expect(titles).toEqual([
+      'Início',
+      'Calendário de eventos',
+      'Presença',
+      'Profissões',
+      'Alertas de raide',
+      'Janela da guilda',
+    ]);
+  });
+
+  it('lista as permissões, os comandos e a privacidade', async () => {
+    const el = await render();
+    expect([...el.querySelectorAll('.permissions dt')].map((d) => d.textContent?.trim())).toEqual([
+      'Mestre da guilda e cargo Lorde',
+      'Todos os membros',
+    ]);
+    const commands = [...el.querySelectorAll('.commands tbody th')].map((c) =>
+      c.textContent?.trim(),
+    );
+    expect(commands).toHaveLength(7);
+    expect(commands).toContain('/vdl importar');
+    expect(commands).toContain('/vdl presencas');
+    expect(el.textContent).toContain('O addon nunca acessa a internet.');
+  });
+
+  it('não traz instruções de instalação', async () => {
+    const el = await render();
+    expect(el.textContent).not.toMatch(/instala/i);
   });
 });

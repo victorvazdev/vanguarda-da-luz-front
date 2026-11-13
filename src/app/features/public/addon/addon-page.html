@@ -2,6 +2,7 @@
   <header class="page__header">
     <p class="eyebrow">WoW Forever</p>
     <h1>Addon da guilda</h1>
+    <p class="addon-name">{{ addon.name }}</p>
     <p class="muted">{{ addon.intro }}</p>
   </header>
 
@@ -17,29 +18,70 @@
     <p class="muted download__hint">O download fica na página oficial do addon no CurseForge.</p>
   </div>
 
+  <aside class="members-only" aria-labelledby="titulo-so-membros">
+    <h2 id="titulo-so-membros" class="members-only__title">Só para membros da guilda</h2>
+    <p>{{ addon.membersOnly }}</p>
+  </aside>
+
   <section aria-labelledby="titulo-funcoes">
     <h2 id="titulo-funcoes" class="section-title">O que o addon faz</h2>
-    <ol class="numbered">
+    <div class="features">
       @for (feature of addon.features; track feature.title) {
-        <li class="numbered__item">
-          <strong class="numbered__title">{{ feature.title }}</strong>
-          <span class="muted">{{ feature.text }}</span>
-        </li>
+        <div class="feature">
+          <h3 class="feature__title">{{ feature.title }}</h3>
+          <ul class="bullets">
+            @for (item of feature.items; track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </div>
       }
-    </ol>
+    </div>
   </section>
 
-  <section aria-labelledby="titulo-avisos">
-    <h2 id="titulo-avisos" class="section-title">Antes de usar</h2>
-    <ul class="notes">
-      @for (note of addon.notes; track note) {
-        <li>{{ note }}</li>
+  <section aria-labelledby="titulo-permissoes">
+    <h2 id="titulo-permissoes" class="section-title">Permissões</h2>
+    <dl class="permissions">
+      @for (permission of addon.permissions; track permission.who) {
+        <div class="permissions__row">
+          <dt>{{ permission.who }}</dt>
+          <dd class="muted">{{ permission.what }}</dd>
+        </div>
+      }
+    </dl>
+  </section>
+
+  <section aria-labelledby="titulo-comandos">
+    <h2 id="titulo-comandos" class="section-title">Comandos</h2>
+    <div class="table-scroll">
+      <table class="commands">
+        <thead>
+          <tr>
+            <th scope="col">Comando</th>
+            <th scope="col">O que faz</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of addon.commands; track row.command) {
+            <tr>
+              <th scope="row">
+                <code>{{ row.command }}</code>
+              </th>
+              <td>{{ row.description }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">{{ addon.minimap }}</p>
+  </section>
+
+  <section aria-labelledby="titulo-privacidade">
+    <h2 id="titulo-privacidade" class="section-title">Privacidade e rede</h2>
+    <ul class="bullets">
+      @for (item of addon.privacy; track item) {
+        <li>{{ item }}</li>
       }
     </ul>
-  </section>
-
-  <section aria-labelledby="titulo-instalar">
-    <h2 id="titulo-instalar" class="section-title">Como instalar</h2>
-    <p class="muted">{{ addon.install }}</p>
   </section>
 </article>

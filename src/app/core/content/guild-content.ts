@@ -33,30 +33,89 @@ export const JOIN_STEPS = [
 ] as const;
 
 /**
- * Página do addon da guilda. O texto segue `docs/formato-string-addon.md` e
- * `docs/formato-string-presencas.md`; o que ainda não se conhece fica entre colchetes.
+ * Página do addon da guilda (Vanguarda da Luz Guild Hub), conforme a descrição do addon
+ * no CurseForge. Os formatos das strings trocadas com o site estão em
+ * `docs/formato-string-addon.md` e `docs/formato-string-presencas.md`.
  */
 export const ADDON = {
+  name: 'Vanguarda da Luz Guild Hub',
   downloadUrl: 'https://www.curseforge.com/wow/addons/vanguarda-da-luz-guild-hub',
   intro:
-    'O addon da guilda no WoW Forever leva os eventos do site para o jogo e traz de volta para o site as presenças confirmadas no jogo.',
+    'O addon da Vanguarda da Luz no WoW Forever. Ele leva o calendário de eventos da guilda para o jogo, permite que os membros confirmem presença, mostra as profissões de todos e permite que os oficiais enviem alertas de raide.',
+  membersOnly:
+    'Todas as funções exigem estar na guilda Vanguarda da Luz. Quem está fora da guilda vê apenas uma janela de boas-vindas com o convite para o Discord da guilda. A interface é em português do Brasil.',
   features: [
     {
-      title: 'Eventos do site no jogo',
-      text: 'Os administradores exportam do site os próximos eventos do WoW Forever. Um oficial importa a exportação no jogo, e o addon cria, atualiza e cancela esses eventos.',
+      title: 'Início',
+      items: [
+        'Mostra a Mensagem do Dia e as Informações da Guilda.',
+        'Os links desses textos são clicáveis: um clique coloca o link numa caixa selecionada, pronto para copiar com Ctrl+C.',
+        'Mostra o próximo evento, com quantos membros confirmaram, e quantos membros estão online.',
+      ],
     },
     {
-      title: 'Presença confirmada no jogo',
-      text: 'Com o addon, cada membro confirma ou cancela a presença com o personagem que está jogando. As respostas são sincronizadas entre os membros pelo canal da guilda.',
+      title: 'Calendário de eventos',
+      items: [
+        'Calendário mensal com os eventos da guilda, os eventos do dia e os detalhes completos de cada evento.',
+        'Os eventos são criados no site da guilda. Um oficial importa uma vez a string de exportação do site, e o addon envia os eventos a todos os membros pelo canal de addon da guilda. Quem entra no jogo depois recebe os eventos automaticamente.',
+        'Os horários aparecem no horário de Brasília (UTC−3), com o horário do servidor ao lado quando for diferente.',
+        'A importação confere a string (formato, checksum e versão) e mostra um resumo dos eventos novos, alterados e cancelados antes de aplicar qualquer mudança.',
+      ],
     },
     {
-      title: 'Presenças de volta no site',
-      text: 'Um Grão-Lorde ou um Lorde gera no addon a string de presenças, e os administradores a importam no site. As presenças aparecem na lista de confirmados do evento, marcadas como vindas do jogo.',
+      title: 'Presença',
+      items: [
+        'Os membros confirmam ou cancelam a presença nos próximos eventos com um clique.',
+        'As respostas são compartilhadas entre os membros, e todos veem quem confirmou.',
+        'Os oficiais geram uma string de presenças para colar de volta no site da guilda.',
+        'Para a presença do jogo ficar no seu nome no site, cadastre em Minha conta o personagem do WoW Forever com o mesmo nome e sobrenome do jogo. Sem essa correspondência, ela entra como presença de visitante.',
+      ],
+    },
+    {
+      title: 'Profissões',
+      items: [
+        'Lista todos os membros da guilda com as profissões primárias e o nível de cada uma (por exemplo, "Ferraria 88/150").',
+        'As profissões vêm do roster da guilda no jogo. Os níveis são compartilhados pelos membros que usam o addon; quem não usa aparece com a profissão, sem o nível.',
+        'Filtra por profissão (do maior para o menor nível), mostra só os membros online (o padrão) e abre um sussurro para um membro com um clique.',
+      ],
+    },
+    {
+      title: 'Alertas de raide',
+      items: [
+        'Os oficiais enviam um alerta que aparece no centro da tela de todos os membros online, com o som de aviso de raide, e é publicado uma vez no chat da guilda.',
+        'Os envios têm limite de frequência e nunca acontecem durante encontros em que a comunicação de addons é restrita.',
+      ],
+    },
+    {
+      title: 'Janela da guilda',
+      items: [
+        'Acrescenta as abas Eventos, Profissões e Administração à janela Guilda e Comunidades (J), abaixo das abas da Blizzard.',
+      ],
     },
   ],
-  notes: [
-    'O addon é do WoW Forever: eventos do Retail não vão para o jogo.',
-    'Para a presença do jogo ficar no seu nome, cadastre em Minha conta o personagem do WoW Forever com o mesmo nome e sobrenome do jogo. Sem essa correspondência, ela entra como presença de visitante.',
+  permissions: [
+    {
+      who: 'Mestre da guilda e cargo Lorde',
+      what: 'Importam eventos, exportam as presenças e enviam alertas de raide. Os outros membros só aceitam dados e alertas desses cargos, conferidos no roster da guilda.',
+    },
+    {
+      who: 'Todos os membros',
+      what: 'Calendário, presença, profissões e sussurros.',
+    },
   ],
-  install: '[INSTRUÇÕES DE INSTALAÇÃO E USO DO ADDON]',
+  commands: [
+    { command: '/vdl', description: 'Abre a janela do addon na aba Início' },
+    { command: '/vdl importar', description: 'Importa a string de exportação do site (oficiais)' },
+    { command: '/vdl sincronizar', description: 'Pede à guilda os eventos mais recentes' },
+    { command: '/vdl presencas', description: 'Gera a string de presenças para o site (oficiais)' },
+    { command: '/vdl profissoes', description: 'Abre a lista de profissões' },
+    { command: '/vdl alerta [texto]', description: 'Envia um alerta de raide (oficiais)' },
+    { command: '/vdl minimapa', description: 'Mostra ou esconde o botão do minimapa' },
+  ],
+  minimap:
+    'O botão do minimapa e o compartimento de addons abrem a janela do addon. O clique direito abre um menu de atalhos: Início, Eventos, Profissões, Sincronizar, Administração (só oficiais) e esconder o botão do minimapa.',
+  privacy: [
+    'O addon nunca acessa a internet. Os dados só trafegam pelo canal de addon da guilda, dentro do jogo.',
+    'Tudo é salvo por conta, nas SavedVariables do addon.',
+  ],
 } as const;
