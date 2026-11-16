@@ -95,7 +95,7 @@ const changedAt = (data: DocumentData, siteField: string) =>
   toDate(data['addonUpdatedAt']) ?? toDate(data[siteField]);
 
 /** Personagens do WoW Forever de todos os membros (inclusive desativados, para o relatório). */
-async function loadMemberCharacters(db: Firestore): Promise<MemberCharacter[]> {
+export async function loadMemberCharacters(db: Firestore): Promise<MemberCharacter[]> {
   const members = await getDocs(collection(db, 'members'));
   const lists = await Promise.all(
     members.docs.map(async (m) => {
@@ -122,9 +122,26 @@ async function loadMemberCharacters(db: Firestore): Promise<MemberCharacter[]> {
 }
 
 async function loadEvent(db: Firestore, id: string): Promise<SiteEventState | null> {
+  return (await loadEventState(db, id))?.state ?? null;
+}
+
+/**
+ * Evento, presenças e cancelamentos, e o documento do evento (`data`). As listas só são lidas
+ * quando o evento aceita presenças. Também usado pelo backup do addon (addon-backup.ts).
+ */
+export async function loadEventState(
+  db: Firestore,
+  id: string,
+): Promise<{ state: SiteEventState; data: DocumentData } | null> {
   const snap = await getDoc(doc(db, 'events', id));
   if (!snap.exists()) return null;
-  const event = eventFromData(id, snap.data());
+  const data = snap.data();
+  const state = await eventState(db, id, data);
+  return { state, data };
+}
+
+async function eventState(db: Firestore, id: string, data: DocumentData): Promise<SiteEventState> {
+  const event = eventFromData(id, data);
   const siteEvent = { ...event };
   // Ignorado: não precisa das listas.
   if (ignoredReason(siteEvent, new Date())) {
@@ -334,7 +351,8 @@ async function applyItem(
   }
 }
 
-async function runItem(
+/** Aplica um item numa transação própria. Também usado pelo backup do addon. */
+export async function runPresenceItem(
   db: Firestore,
   eventId: string,
   item: PlanItem,
@@ -373,7 +391,7 @@ export async function applyPresenceImport(
     for (const e of plan.events) {
       const items: AppliedItem[] = [];
       for (const item of e.items) {
-        items.push({ ...item, outcome: await runItem(db, e.eventId, item, adminUid) });
+        items.push({ ...item, outcome: await runPresenceItem(db, e.eventId, item, adminUid) });
       }
       events.push({ eventId: e.eventId, title: e.event?.title ?? null, ignored: e.ignored, items });
     }
@@ -396,7 +414,7 @@ export async function applyPresenceImport(
   }
 }
 
-function errorCode(error: unknown): 'not-allowed' | 'network' | 'unknown' {
+export function errorCode(error: unknown): 'not-allowed' | 'network' | 'unknown' {
   const code = error instanceof FirebaseError ? error.code : '';
   if (code === 'permission-denied') return 'not-allowed';
   if (code === 'unavailable') return 'network';

@@ -1,0 +1,119 @@
+<div class="addon-backup">
+  <section class="addon-backup__card" aria-labelledby="titulo-backup-addon">
+    <div class="addon-backup__header">
+      <h1 id="titulo-backup-addon" class="admin__title addon-backup__title" tabindex="-1">
+        Aplicar backup do addon
+      </h1>
+      <a class="btn btn--outline" routerLink="/admin/backup-addon/dados">Ver dados do addon</a>
+    </div>
+
+    @switch (state()) {
+      @case ('done') {
+        @if (reportView(); as view) {
+          <p class="notice" role="status">
+            Backup aplicado. Confira abaixo o que mudou no site. Os dados ficaram guardados em
+            "Dados do addon".
+          </p>
+          @if (recorded() === 'existing') {
+            <p class="notice">
+              Este backup já estava no histórico; nenhum registro novo foi criado.
+            </p>
+          } @else if (recorded() === 'failed') {
+            <p class="form-alert">
+              As alterações foram aplicadas, mas o backup não ficou guardado no histórico. Aplique a
+              mesma string de novo para guardá-lo.
+            </p>
+          }
+          <app-addon-backup-summary [view]="view" [report]="true" />
+          <div class="actions">
+            <button type="button" class="btn btn--primary" (click)="restart()">
+              Aplicar outro backup
+            </button>
+            <a class="btn btn--outline" routerLink="/admin/backup-addon/dados"
+              >Ver dados do addon</a
+            >
+          </div>
+        }
+      }
+      @case ('preview') {
+        @if (summary(); as s) {
+          <dl class="addon-backup__facts">
+            <div>
+              <dt>Gerado no jogo em</dt>
+              <dd>{{ s.generatedAt }}</dd>
+            </div>
+            <div>
+              <dt>Gerado por</dt>
+              <dd>{{ s.generatedBy }}</dd>
+            </div>
+          </dl>
+          @if (s.alreadyApplied) {
+            <p class="notice" role="status">
+              Este backup já foi aplicado em {{ s.alreadyApplied }}. Aplicá-lo de novo não muda o
+              que já está no site.
+            </p>
+          } @else if (s.older) {
+            <p class="form-alert" role="status">
+              Este backup não é mais novo que o último aplicado (gerado em {{ s.older }}). Ele pode
+              ser aplicado mesmo assim: cada registro só vale se for mais recente que o do site.
+            </p>
+          }
+        }
+        @if (error(); as message) {
+          <p class="form-alert" role="alert">{{ message }}</p>
+        }
+        <p class="addon-backup__subtitle">Prévia do que muda com este backup:</p>
+        @if (previewView(); as view) {
+          <app-addon-backup-summary [view]="view" />
+        }
+        <div class="actions">
+          <button type="button" class="btn btn--primary" (click)="confirm()">
+            Confirmar e aplicar
+          </button>
+          <button type="button" class="btn btn--outline" (click)="restart()">Cancelar</button>
+        </div>
+      }
+      @case ('applying') {
+        <p class="muted loading" role="status">Aplicando o backup…</p>
+      }
+      @default {
+        <p class="muted">
+          No jogo, o Grão Lorde ou um Lorde gera a string em "Administração &gt; Backup do addon
+          &gt; Gerar backup". Cole-a abaixo para ver o que muda antes de confirmar. Eventos criados
+          ou alterados no jogo e presenças são aplicados no site; profissões, item level, main e
+          tempo jogado junto ficam guardados, visíveis só para administradores.
+        </p>
+        <div class="form">
+          <div class="field">
+            <label class="field__label" for="backup-string">String de backup</label>
+            <textarea
+              id="backup-string"
+              class="field__input addon-backup__string"
+              rows="6"
+              spellcheck="false"
+              autocomplete="off"
+              placeholder="VDLB1:..."
+              [value]="text()"
+              [attr.aria-invalid]="!!error()"
+              [attr.aria-describedby]="error() ? 'backup-erro' : null"
+              (input)="setText($any($event.target).value)"
+            ></textarea>
+            @if (error(); as message) {
+              <p id="backup-erro" class="field__error" role="alert">{{ message }}</p>
+            }
+          </div>
+          <div class="actions">
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="state() === 'checking'"
+              (click)="check()"
+            >
+              {{ state() === 'checking' ? 'Validando…' : 'Validar e ver prévia' }}
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </section>
+</div>

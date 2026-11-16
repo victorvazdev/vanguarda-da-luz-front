@@ -1,0 +1,100 @@
+@let v = view();
+<div class="backup-summary" [class.backup-summary--nested]="level() === 3">
+  <div role="heading" [attr.aria-level]="level()" class="backup-summary__subtitle">
+    Eventos ({{ v.events.length }})
+  </div>
+  @if (v.events.length === 0) {
+    <p class="muted">O backup não traz eventos criados ou alterados no jogo.</p>
+  }
+  @for (e of v.events; track e.key) {
+    <article class="backup-summary__event">
+      <div class="backup-summary__event-header">
+        <div role="heading" [attr.aria-level]="level() + 1" class="backup-summary__event-title">
+          {{ e.title }}
+        </div>
+        <span class="badge badge--{{ e.tone }}">{{ e.label }}</span>
+      </div>
+      <p class="muted backup-summary__line">{{ e.when }}</p>
+      <p class="muted backup-summary__line">{{ e.origin }}</p>
+      @if (e.detail) {
+        <p class="backup-summary__line">{{ e.detail }}</p>
+      }
+    </article>
+  }
+
+  <div role="heading" [attr.aria-level]="level()" class="backup-summary__subtitle">Presenças</div>
+  @if (v.presences.length === 0) {
+    <p class="muted">Nenhuma presença em eventos futuros do site.</p>
+  }
+  @for (e of v.presences; track e.key) {
+    <article class="backup-summary__event">
+      <div role="heading" [attr.aria-level]="level() + 1" class="backup-summary__event-title">
+        {{ e.title }}
+      </div>
+      @if (e.when) {
+        <p class="muted backup-summary__line">{{ e.when }}</p>
+      }
+      @for (
+        group of [
+          { label: report() ? 'Membros confirmados' : 'Confirmações de membros', lines: e.members },
+          {
+            label: report() ? 'Visitantes confirmados' : 'Confirmações de visitantes',
+            lines: e.guests,
+          },
+          { label: report() ? 'Presenças canceladas' : 'Cancelamentos', lines: e.cancellations },
+          { label: report() ? 'Não aplicados' : 'Recusados', lines: e.refused },
+        ];
+        track group.label
+      ) {
+        @if (group.lines.length) {
+          <p class="backup-summary__group">{{ group.label }} ({{ group.lines.length }})</p>
+          <ul class="backup-summary__lines">
+            @for (line of group.lines; track $index) {
+              <li>
+                <strong>{{ line.character }}</strong> — {{ line.detail }}
+              </li>
+            }
+          </ul>
+        }
+      }
+      @if (e.unchanged) {
+        <p class="muted backup-summary__line">
+          {{ e.unchanged }} {{ e.unchanged === 1 ? 'registro' : 'registros' }} sem alteração (o site
+          já está assim).
+        </p>
+      }
+    </article>
+  }
+  @if (v.ignoredPresences.length) {
+    <details class="backup-summary__ignored">
+      <summary>
+        Presenças de {{ v.ignoredPresences.length }}
+        {{ v.ignoredPresences.length === 1 ? 'evento ignorado' : 'eventos ignorados' }} (passados,
+        cancelados ou que não existem no site). Elas ficam guardadas para a restauração.
+      </summary>
+      <ul class="backup-summary__lines">
+        @for (e of v.ignoredPresences; track e.key) {
+          <li>
+            <strong>{{ e.title }}</strong>
+            @if (e.when) {
+              ({{ e.when }})
+            }
+            — {{ e.ignored }}
+          </li>
+        }
+      </ul>
+    </details>
+  }
+
+  <div role="heading" [attr.aria-level]="level()" class="backup-summary__subtitle">
+    Dados guardados como backup
+  </div>
+  <dl class="backup-summary__counts">
+    @for (c of v.counts; track c.label) {
+      <div>
+        <dt>{{ c.label }}</dt>
+        <dd>{{ c.text }}</dd>
+      </div>
+    }
+  </dl>
+</div>

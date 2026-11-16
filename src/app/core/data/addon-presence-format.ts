@@ -49,38 +49,34 @@ export interface PresenceExport {
   events: PresenceEvent[];
 }
 
-const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+/** Ordem de texto igual à do addon (bytes UTF-8, como `<` do Lua). */
+export const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
-/** Payload em texto, na ordem da especificação (eventos por `id`, registros por personagem). */
+/** Payload em texto, na ordem da especificação. */
 export function buildPresencePayload(data: PresenceExport): string {
-  const events = [...data.events].sort((a, b) => byText(a.id, b.id));
-  const fields: (string | number)[] = [
+  return encodeFields([
     MARKER,
     data.version,
     data.game,
     data.generatedAt,
     data.exportNumber,
-    events.length,
-  ];
-  for (const e of events) {
-    fields.push(e.id, e.records.length);
-    for (const r of [...e.records].sort((a, b) => byText(a.character, b.character))) {
-      fields.push(r.character, r.status, r.updatedAt);
-    }
-  }
-  return encodeFields(fields);
+    ...presenceSectionFields(data.events),
+  ]);
 }
 
-export function parsePresencePayload(bytes: Uint8Array): PresenceExport {
-  const f = readFields(bytes);
-  if (f.length < HEADER_FIELDS || f[0] !== MARKER) throw new AddonDecodeFailure('payload');
-  const version = int(f[1]);
-  if (version !== PRESENCE_FORMAT_VERSION) throw new AddonDecodeFailure('version');
-  if (f[2] !== 'forever') throw new AddonDecodeFailure('payload');
-  const count = int(f[5]);
+/**
+ * Corpo de presenças a partir de `pos` (`eventCount` e os eventos), igual na VDLP1 e na seção 2
+ * do backup (VDLB1). Devolve os eventos e a posição seguinte. Lança `AddonDecodeFailure`.
+ */
+export function readPresenceSection(
+  f: string[],
+  start: number,
+): { events: PresenceEvent[]; pos: number } {
+  if (start >= f.length) throw new AddonDecodeFailure('payload');
+  const count = int(f[start]);
   const events: PresenceEvent[] = [];
   const ids = new Set<string>();
-  let pos = HEADER_FIELDS;
+  let pos = start + 1;
   for (let i = 0; i < count; i++) {
     if (pos + 2 > f.length) throw new AddonDecodeFailure('payload');
     const id = f[pos];
@@ -101,6 +97,29 @@ export function parsePresencePayload(bytes: Uint8Array): PresenceExport {
     }
     events.push({ id, records });
   }
+  return { events, pos };
+}
+
+/** Campos do corpo de presenças, em ordem (eventos por `id`, registros por personagem). */
+export function presenceSectionFields(events: PresenceEvent[]): (string | number)[] {
+  const sorted = [...events].sort((a, b) => byText(a.id, b.id));
+  const fields: (string | number)[] = [sorted.length];
+  for (const e of sorted) {
+    fields.push(e.id, e.records.length);
+    for (const r of [...e.records].sort((a, b) => byText(a.character, b.character))) {
+      fields.push(r.character, r.status, r.updatedAt);
+    }
+  }
+  return fields;
+}
+
+export function parsePresencePayload(bytes: Uint8Array): PresenceExport {
+  const f = readFields(bytes);
+  if (f.length < HEADER_FIELDS || f[0] !== MARKER) throw new AddonDecodeFailure('payload');
+  const version = int(f[1]);
+  if (version !== PRESENCE_FORMAT_VERSION) throw new AddonDecodeFailure('version');
+  if (f[2] !== 'forever') throw new AddonDecodeFailure('payload');
+  const { events, pos } = readPresenceSection(f, HEADER_FIELDS - 1);
   if (pos !== f.length) throw new AddonDecodeFailure('payload');
   return { version, game: 'forever', generatedAt: int(f[3]), exportNumber: int(f[4]), events };
 }

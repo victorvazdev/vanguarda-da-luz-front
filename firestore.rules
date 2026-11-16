@@ -268,6 +268,88 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---------- Backup do addon (VDLB1) ----------
+    // Dados que só existem no jogo, guardados quando um administrador aplica um backup do
+    // addon. Somente administradores leem e gravam. Ver src/app/core/data/addon-backup.ts.
+
+    // Histórico: um documento por backup aplicado (ID = generatedAt + '-' + checksum), com a
+    // string original e o relatório. Não é alterado nem apagado.
+    function validAddonBackup(d, backupId) {
+      return d.keys().hasOnly(['text', 'generatedAt', 'exportNumber', 'generatedBy',
+                               'appliedAt', 'appliedBy', 'appliedByName', 'report'])
+        && d.keys().hasAll(['text', 'generatedAt', 'exportNumber', 'generatedBy',
+                            'appliedAt', 'appliedBy', 'appliedByName', 'report'])
+        && d.text is string
+        && d.text.size() <= 500000
+        && d.text.matches('VDLB1:[0-9]+:[^:]+')
+        && d.generatedAt is int
+        && d.generatedAt > 0
+        && backupId.matches(string(d.generatedAt) + '-[0-9]+')
+        && d.exportNumber is int
+        && d.exportNumber >= 0
+        && d.generatedBy is string
+        && d.generatedBy.size() <= 60
+        && d.appliedAt == request.time
+        && d.appliedBy == request.auth.uid
+        && d.appliedByName is string
+        && d.appliedByName.size() <= 60
+        && d.report is map;
+    }
+
+    match /addonBackups/{backupId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin() && validAddonBackup(request.resource.data, backupId);
+      allow update, delete: if false;
+    }
+
+    // Estado combinado dos personagens: o registro mais recente de cada um (profissões, item
+    // level e main) e o maior tempo jogado junto.
+    match /addonState/{stateId} {
+      allow get: if isAdmin();
+      allow create, update: if isAdmin()
+        && stateId == 'characters'
+        && request.resource.data.keys().hasOnly(
+             ['professions', 'itemLevels', 'together', 'updatedAt', 'updatedBy'])
+        && request.resource.data.professions is map
+        && request.resource.data.itemLevels is map
+        && request.resource.data.together is map
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.updatedBy == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // Presenças conhecidas pelo addon, por evento (ID = ID do evento), para a restauração.
+    match /addonPresences/{eventId} {
+      allow get, list: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['records', 'startsAt', 'updatedAt'])
+        && request.resource.data.records is map
+        && (request.resource.data.startsAt == null
+          || request.resource.data.startsAt is timestamp)
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    // Última string de eventos (VDL1) do WoW Forever gerada: o `exportNumber` vai na string
+    // de restauração. Só aumenta.
+    function validAddonExport(d) {
+      return d.keys().hasOnly(['game', 'exportNumber', 'generatedAt', 'generatedBy'])
+        && d.game == 'forever'
+        && d.exportNumber is int
+        && d.exportNumber > 0
+        && d.generatedAt == request.time
+        && d.generatedBy == request.auth.uid;
+    }
+
+    match /config/addonExport {
+      allow get: if isAdmin();
+      allow create: if isAdmin() && validAddonExport(request.resource.data);
+      allow update: if isAdmin()
+        && validAddonExport(request.resource.data)
+        && request.resource.data.exportNumber > resource.data.exportNumber;
+      allow delete: if false;
+    }
+
     // Exatamente um uid entra (e passa a ser admin ativo) ou sai (e deixa de ser).
     function adminListChangeIsConsistent(before, after) {
       let added = after.removeAll(before);
@@ -629,7 +711,11 @@ service cloud.firestore {
     function validEventContent(d) {
       return filledText(d.title, 80)
         && filledText(d.organizer, 40)
-        && filledText(d.description, 2000)
+        && (filledText(d.description, 2000)
+          // Eventos criados no jogo (backup do addon) podem não ter descrição.
+          || (d.get('source', '') == 'addon'
+            && d.description is string
+            && d.description.size() <= 2000))
         && d.startsAt is timestamp
         && (!('guestsAllowed' in d) || d.guestsAllowed is bool)
         && (!('maxAttendees' in d)
@@ -704,6 +790,28 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
 
+      // Evento criado no jogo, aplicado de um backup do addon (VDLB1) por um administrador:
+      // o ID é o gerado pelo addon (20 letras e dígitos, como os do Firestore), para o addon
+      // reconhecer o evento quando ele voltar na próxima exportação. Somente WoW Forever, com
+      // limite de vagas e visitantes definidos, e `source = 'addon'`. Ver
+      // src/app/core/data/addon-backup.ts.
+      allow create: if isAdmin()
+        && eventId.matches('[A-Za-z0-9]{20}')
+        && request.resource.data.keys().hasOnly(
+             editableEventFields().concat(
+               ['status', 'createdBy', 'createdAt', 'updatedAt', 'attendeeCount', 'source']))
+        && request.resource.data.keys().hasAll(
+             editableEventFields().concat(['attendeeCount', 'source']))
+        && request.resource.data.source == 'addon'
+        && request.resource.data.game == 'forever'
+        && validEventContent(request.resource.data)
+        && request.resource.data.attendeeCount == 0
+        && request.resource.data.startsAt > request.time
+        && request.resource.data.status == 'ativo'
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
       // Edição: evento ativo e futuro; a nova data também precisa ser futura.
       allow update: if isAdmin()
         && resource.data.status == 'ativo'
@@ -717,6 +825,9 @@ service cloud.firestore {
             || resource.data.get('attendeeCount', 0) == 0)
         && (request.resource.data.startsAt == resource.data.startsAt
             || request.resource.data.startsAt > request.time)
+        // Um novo limite de vagas não fica abaixo dos confirmados.
+        && (maxAttendeesOf(request.resource.data) == maxAttendeesOf(resource.data)
+            || maxAttendeesOf(request.resource.data) >= resource.data.get('attendeeCount', 0))
         && request.resource.data.updatedAt == request.time
         && request.resource.data.updatedBy == request.auth.uid;
 

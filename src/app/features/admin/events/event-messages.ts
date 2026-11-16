@@ -6,6 +6,8 @@ export const EVENT_ACTION_ERRORS: Record<Exclude<EventActionError, 'past'>, stri
   'not-cancelled': 'Somente eventos cancelados podem ser excluídos.',
   'game-locked':
     'A versão do jogo não pode mais ser alterada: já há presenças confirmadas neste evento.',
+  'max-below-count':
+    'O limite de confirmados não pode ficar abaixo do número de presenças já confirmadas.',
   'not-found': 'Este evento não existe mais.',
   'not-allowed': 'Você não tem permissão para esta ação.',
   network: 'Não foi possível conectar. Verifique sua internet e tente novamente.',

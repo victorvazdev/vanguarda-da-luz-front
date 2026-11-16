@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import type { Firestore } from 'firebase/firestore';
 import { SessionService } from '../auth/session.service';
 import { FirestoreClient } from '../firebase/firebase.providers';
+import { recordAddonExport } from './addon-backup';
 import { generateAddonExport, type AddonExportResult } from './addon-export';
 import type { AddonGame } from './addon-format';
 import {
@@ -148,7 +149,14 @@ export class EventsService {
 
   /** String de exportação para o addon da guilda (eventos de hoje e dos próximos `days` dias). */
   async exportForAddon(days: number, game: AddonGame = 'forever'): Promise<AddonExportResult> {
-    return generateAddonExport(await this.firestore.get(), game, days);
+    const db = await this.firestore.get();
+    const result = await generateAddonExport(db, game, days);
+    // A string de restauração do backup leva o `exportNumber` da última VDL1 do WoW Forever.
+    // Falhar ao registrar não impede a exportação.
+    if (result.ok && game === 'forever') {
+      void recordAddonExport(db, Math.floor(result.generatedAt.getTime() / 1000), this.uid());
+    }
+    return result;
   }
 
   /** Inicia o listener quando o Firestore (carregado sob demanda) estiver pronto. */

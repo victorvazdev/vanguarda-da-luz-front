@@ -20,6 +20,7 @@ describe('AdminShell', () => {
       'Candidaturas',
       'Membros',
       'Eventos',
+      'Backup do addon',
       'Guilda',
       'Redes sociais',
     ]);

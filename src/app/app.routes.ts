@@ -149,6 +149,18 @@ export const routes: Routes = [
           import('./features/admin/events/event-form/event-form-page').then((m) => m.EventFormPage),
       },
       {
+        path: 'backup-addon',
+        title: 'Backup do addon',
+        loadComponent: () =>
+          import('./features/admin/addon-backup/addon-backup-page').then((m) => m.AddonBackupPage),
+      },
+      {
+        path: 'backup-addon/dados',
+        title: 'Dados do addon',
+        loadComponent: () =>
+          import('./features/admin/addon-backup/addon-data-page').then((m) => m.AddonDataPage),
+      },
+      {
         path: 'guilda',
         title: 'Informações da guilda',
         loadComponent: () =>

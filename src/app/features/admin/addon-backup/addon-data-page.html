@@ -1,0 +1,228 @@
+<div class="addon-data">
+  <div class="addon-data__header">
+    <h1 id="titulo-dados-addon" class="admin__title" tabindex="-1">Dados do addon</h1>
+    <a class="btn btn--outline" routerLink="/admin/backup-addon">Aplicar backup</a>
+  </div>
+  <p class="muted">
+    Dados que só existem no jogo, juntados dos backups aplicados: vale o registro mais recente de
+    cada personagem e o maior tempo jogado junto. Visíveis só para administradores.
+  </p>
+
+  <section class="addon-data__card" aria-labelledby="titulo-restaurar">
+    <h2 id="titulo-restaurar" class="addon-data__title">Restaurar no jogo</h2>
+    <p class="muted">
+      Gera uma string de backup com os dados guardados (profissões, item level e main, tempo jogado
+      junto e presenças), sem eventos: eles voltam pela exportação para o addon. No jogo, o addon só
+      junta os dados mais novos e nunca apaga nada.
+    </p>
+    <div class="checkbox">
+      <input
+        id="restaurar-antigas"
+        class="checkbox__input"
+        type="checkbox"
+        [checked]="includeOld()"
+        (change)="setIncludeOld($any($event.target).checked)"
+      />
+      <label class="checkbox__label" for="restaurar-antigas">
+        Incluir presenças de eventos de mais de {{ recentDays }} dias atrás
+      </label>
+    </div>
+    <div class="actions">
+      <button
+        type="button"
+        class="btn btn--primary"
+        [disabled]="restoring()"
+        (click)="copyRestore()"
+      >
+        {{ restoring() ? 'Gerando…' : 'Copiar string para restaurar' }}
+      </button>
+    </div>
+    <div aria-live="polite">
+      @if (restoreError(); as message) {
+        <p class="form-alert">{{ message }}</p>
+      }
+      @if (copyStatus(); as message) {
+        <p class="notice">{{ message }}</p>
+      }
+    </div>
+    @if (restoreView(); as r) {
+      @if (r.tooLong) {
+        <p class="form-alert">
+          A string tem {{ r.length }} caracteres, acima de {{ r.limit }}, e pode ficar lenta para
+          colar no jogo.
+          @if (includeOld()) {
+            Desmarque as presenças antigas para reduzi-la.
+          }
+        </p>
+      }
+      <div class="field">
+        <label class="field__label" for="restaurar-string">
+          String de restauração ({{ r.length }} caracteres, {{ r.characters }}
+          {{ r.characters === 1 ? 'personagem' : 'personagens' }}, presenças de
+          {{ r.presenceEvents }} {{ r.presenceEvents === 1 ? 'evento' : 'eventos' }})
+        </label>
+        <textarea
+          #output
+          id="restaurar-string"
+          class="field__input addon-data__string"
+          rows="4"
+          readonly
+          spellcheck="false"
+          [value]="r.text"
+        ></textarea>
+      </div>
+    }
+  </section>
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="muted loading" role="status">Carregando os dados do addon…</p>
+    }
+    @case ('error') {
+      <p class="form-alert" role="alert">
+        Não foi possível carregar os dados do addon.
+        <button type="button" class="link-button" (click)="load()">Tentar de novo</button>
+      </p>
+    }
+    @default {
+      <section class="addon-data__card" aria-labelledby="titulo-personagens">
+        <div class="addon-data__section-header">
+          <h2 id="titulo-personagens" class="addon-data__title">Personagens</h2>
+          <div class="field addon-data__search">
+            <label class="field__label" for="dados-filtro">Filtrar por nome</label>
+            <input
+              id="dados-filtro"
+              class="field__input"
+              type="search"
+              autocomplete="off"
+              [value]="filter()"
+              (input)="filter.set($any($event.target).value)"
+            />
+          </div>
+        </div>
+        @if (characterRows().length === 0) {
+          <p class="muted">
+            {{ filter() ? 'Nenhum personagem com este nome.' : 'Nenhum dado guardado ainda.' }}
+          </p>
+        } @else {
+          <table class="data-table">
+            <caption class="sr-only">
+              Profissões, item level e main de cada personagem
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Personagem</th>
+                <th scope="col">Main ou alt</th>
+                <th scope="col">Item level</th>
+                <th scope="col">Profissões</th>
+                <th scope="col">Atualizado no jogo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of characterRows(); track row.character) {
+                <tr>
+                  <th scope="row" data-label="Personagem">{{ row.character }}</th>
+                  <td data-label="Main ou alt">{{ row.role }}</td>
+                  <td data-label="Item level">{{ row.itemLevelText }}</td>
+                  <td data-label="Profissões">{{ row.professionsText }}</td>
+                  <td data-label="Atualizado no jogo">{{ row.updatedText }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
+
+      <section class="addon-data__card" aria-labelledby="titulo-tempo">
+        <h2 id="titulo-tempo" class="addon-data__title">Tempo jogado junto</h2>
+        <p class="muted">Tempo em grupo com outros membros da guilda, somando os alts no main.</p>
+        @if (togetherRows().length === 0) {
+          <p class="muted">
+            {{ filter() ? 'Nenhum personagem com este nome.' : 'Nenhum dado guardado ainda.' }}
+          </p>
+        } @else {
+          <table class="data-table">
+            <caption class="sr-only">
+              Tempo jogado junto por main
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Main</th>
+                <th scope="col">Alts somados</th>
+                <th scope="col">Tempo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of togetherRows(); track row.character) {
+                <tr>
+                  <th scope="row" data-label="Main">{{ row.character }}</th>
+                  <td data-label="Alts somados">{{ row.altsText }}</td>
+                  <td data-label="Tempo">{{ row.time }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
+
+      <section class="addon-data__card" aria-labelledby="titulo-historico">
+        <h2 id="titulo-historico" class="addon-data__title">
+          Backups aplicados ({{ historyRows().length }})
+        </h2>
+        @if (historyRows().length === 0) {
+          <p class="muted">Nenhum backup aplicado ainda.</p>
+        }
+        @for (b of historyRows(); track b.id) {
+          <article class="addon-data__backup">
+            <dl class="addon-data__facts">
+              <div>
+                <dt>Gerado no jogo em</dt>
+                <dd>{{ b.generatedAt }}</dd>
+              </div>
+              <div>
+                <dt>Gerado por</dt>
+                <dd>{{ b.generatedBy }}</dd>
+              </div>
+              <div>
+                <dt>Aplicado em</dt>
+                <dd>{{ b.appliedAt }} por {{ b.appliedBy }}</dd>
+              </div>
+            </dl>
+            <details class="addon-data__details">
+              <summary>Ver relatório e string original</summary>
+              <app-addon-backup-summary [view]="b.view" [report]="true" [level]="3" />
+              <div class="field addon-data__original">
+                <label class="field__label" [for]="'original-' + b.id">String original</label>
+                <textarea
+                  #original
+                  [id]="'original-' + b.id"
+                  class="field__input addon-data__string"
+                  rows="3"
+                  readonly
+                  spellcheck="false"
+                  [value]="b.text"
+                ></textarea>
+              </div>
+            </details>
+            <div class="actions">
+              <button
+                type="button"
+                class="btn btn--outline"
+                (click)="copyOriginal(b.id, b.text, original)"
+              >
+                Copiar string original
+              </button>
+            </div>
+            <div aria-live="polite">
+              @if (copiedBackup(); as c) {
+                @if (c.id === b.id) {
+                  <p class="notice">{{ c.message }}</p>
+                }
+              }
+            </div>
+          </article>
+        }
+      </section>
+    }
+  }
+</div>
