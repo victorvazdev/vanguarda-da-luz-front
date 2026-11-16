@@ -408,6 +408,7 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 - [ ] A string segue o formato versionado de `docs/formato-string-addon.md`, com checksum para detectar strings incompletas ou corrompidas.
 - [ ] Acima do limite de tamanho, a string não é exibida e o modal informa a maior quantidade de dias que cabe.
 - [ ] O site registra o número da última exportação do WoW Forever gerada, que vai na string de restauração do backup do addon.
+- [ ] Um evento excluído nunca aparece na exportação, e o número da exportação é o horário da geração. O addon depende dos dois para remover um evento do site alterado no jogo e depois excluído no site.
 
 ### Importar presenças do addon
 
@@ -435,7 +436,10 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 - [ ] Antes de aplicar, a página mostra uma prévia por evento (criar, alterar, cancelar, sem mudança, conflito, recusado ou ignorado, com o motivo e quem alterou no jogo), a prévia das presenças como na importação de presenças e as quantidades de profissões, item levels e tempos jogados junto.
 - [ ] Um evento criado no jogo que não existe no site é criado com o mesmo ID gerado pelo addon, no WoW Forever, com o limite de vagas e a confirmação de visitantes informados (padrão: 40 vagas e visitantes aceitos). Ao voltar na próxima exportação, o addon reconhece o evento, sem duplicá-lo.
 - [ ] Um evento criado no jogo pode não ter descrição; o detalhe do evento mostra "Sem descrição".
-- [ ] Um evento que chega já cancelado e nunca existiu no site é ignorado, com aviso. Um evento do site que foi excluído e chega alterado também é ignorado, com aviso.
+- [ ] Um evento que chega já cancelado e nunca existiu no site é ignorado, com aviso.
+- [ ] Um evento excluído no site continua excluído, mesmo que tenha sido alterado no jogo antes da exclusão: um evento do site (`origin = site`) que não existe mais é ignorado, com o aviso "Evento excluído no site; a alteração do jogo foi ignorada." na prévia, no relatório e no histórico. O site não recria o evento, as presenças dele são ignoradas como as de um evento desconhecido, e os demais eventos e presenças do backup são aplicados.
+- [ ] Um evento cancelado e excluído no jogo (situação `excluido`) é excluído no site, com a mesma rotina do botão "Excluir evento" (evento, confirmados, visitantes e cancelamentos), se estiver cancelado no site e a exclusão no jogo for mais recente que a última alteração do site; aparece como "Excluir" na prévia e "Excluído" no relatório. Se o evento estiver ativo no site ou a alteração do site for mais recente, aparece como conflito e vale o site. Se o evento não existir no site, aparece como "Já excluído", sem aviso.
+- [ ] As exclusões são aplicadas depois das criações e edições do backup e antes das presenças; as presenças de um evento excluído (neste backup ou antes) são ignoradas, sem recriar nada, e não ficam guardadas para a restauração. Se a exclusão falhar, o relatório mostra o erro e as demais alterações continuam valendo.
 - [ ] A alteração de um evento que já existe no site só é aplicada se for mais recente que a última alteração do evento no site (criação, edição ou cancelamento); senão, aparece como conflito e vale o site. Um evento que já está como o jogo informa aparece sem mudança.
 - [ ] Sem limite de vagas ou sem a opção de visitantes na string, o evento mantém os valores do site.
 - [ ] Continuam valendo as regras de edição e cancelamento: somente eventos ativos do WoW Forever que ainda não começaram, novo horário no futuro, limite de vagas entre 1 e 500 e não abaixo dos confirmados. Uma alteração que violaria uma regra não é aplicada e aparece no relatório com o motivo.

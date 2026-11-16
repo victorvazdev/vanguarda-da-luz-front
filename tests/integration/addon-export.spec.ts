@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { signUp } from '../../src/app/core/auth/sign-up';
 import { generateAddonExport } from '../../src/app/core/data/addon-export';
 import { decodeAddonExport } from '../../src/app/core/data/addon-format';
-import { cancelEvent, createEvent, type EventInput } from '../../src/app/core/data/events';
+import {
+  cancelEvent,
+  createEvent,
+  deleteCancelledEvent,
+  type EventInput,
+} from '../../src/app/core/data/events';
 import { adminPatch, useEmulators, type Client } from './emulators';
 
 const client = useEmulators();
@@ -84,6 +89,29 @@ describe('Exportação para o addon (emuladores)', () => {
     // Nada de contas: nem o uid de quem criou, nem e-mail.
     expect(JSON.stringify(decoded)).not.toContain(admin.uid);
     expect(JSON.stringify(decoded)).not.toContain('@');
+  });
+
+  it('um evento excluído some da exportação seguinte, com exportNumber da geração', async () => {
+    // O addon remove um evento do site alterado no jogo quando uma exportação gerada depois
+    // da alteração não o traz (docs/formato-string-backup.md).
+    const admin = await firstAdmin();
+    const kept = await newEvent(admin, { title: 'Raid' });
+    const removed = await newEvent(admin, { title: 'Masmorras' });
+    await cancelEvent(admin.db, admin.uid, removed);
+
+    const before = await generateAddonExport(admin.db, 'forever', 60, new Date());
+    if (!before.ok) throw new Error('esperava sucesso');
+    const first = await decodeAddonExport(before.text);
+    expect(first.events.map((e) => e.id).sort()).toEqual([kept, removed].sort());
+
+    expect(await deleteCancelledEvent(admin.db, removed)).toEqual({ ok: true });
+    const now = new Date(Date.now() + 1000);
+    const after = await generateAddonExport(admin.db, 'forever', 60, now);
+    if (!after.ok) throw new Error('esperava sucesso');
+    const second = await decodeAddonExport(after.text);
+    expect(second.events.map((e) => e.id)).toEqual([kept]);
+    expect(second.exportNumber).toBe(Math.floor(now.getTime() / 1000));
+    expect(second.exportNumber).toBeGreaterThan(first.exportNumber);
   });
 
   it('a janela de dias é respeitada', async () => {

@@ -139,6 +139,32 @@ describe('String de backup do addon (VDLB1)', () => {
     expect(buildBackupPayload(reversed)).toBe(buildBackupPayload(ESPERADO));
   });
 
+  it('ida e volta com um evento excluído no jogo', async () => {
+    const deleted: AddonBackup = {
+      ...ESPERADO,
+      events: [{ ...ESPERADO.events[1], status: 'excluido', updatedAt: 1794419000 }],
+    };
+    const payload = buildBackupPayload(deleted);
+    expect(payload).toContain('8:excluido10:1794419000');
+    expect(await decodeAddonBackup(await encodeAddonBackup(deleted))).toEqual(deleted);
+  });
+
+  it('a string de eventos (VDL1) continua recusando "excluido"', async () => {
+    const { decodeAddonExport } = await import('./addon-format');
+    const vdl1 = (status: string) =>
+      wrapAddonString(
+        'VDL',
+        1,
+        encodeFields(['VDL', 1, 'forever', 1, 0, 9, 1, 'e1', 'Raid', 5, '', 'Maren', status, 3]),
+      );
+    await expect(decodeAddonExport(await vdl1('cancelado'))).resolves.toMatchObject({
+      events: [{ status: 'cancelado' }],
+    });
+    await expect(decodeAddonExport(await vdl1('excluido'))).rejects.toBeInstanceOf(
+      AddonDecodeFailure,
+    );
+  });
+
   it('aceita espaços e quebras de linha nas pontas', async () => {
     expect((await decodeAddonBackup(`  ${EXEMPLO}\n`)).events).toHaveLength(2);
   });
@@ -172,6 +198,8 @@ describe('String de backup do addon (VDLB1)', () => {
     const event = (i: number, v: string) => EVENT.map((f, k) => (k === i ? v : f));
     expect(await bad([...HEADER, 1, ...event(1, 'addon'), ...rest])).toBe('payload');
     expect(await bad([...HEADER, 1, ...event(6, 'ok'), ...rest])).toBe('payload');
+    expect(await bad([...HEADER, 1, ...event(6, 'excluída'), ...rest])).toBe('payload');
+    expect(await bad([...HEADER, 1, ...event(6, 'excluido'), ...rest])).toBeNull();
     expect(await bad([...HEADER, 1, ...event(9, 'sim'), ...rest])).toBe('payload');
     // Número inválido.
     expect(await bad([...HEADER, 1, ...event(3, '-5'), ...rest])).toBe('payload');

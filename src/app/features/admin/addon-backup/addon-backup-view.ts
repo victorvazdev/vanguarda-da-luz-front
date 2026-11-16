@@ -45,6 +45,7 @@ const ACTION_LABELS: Record<EventAction, { preview: string; report: string; tone
   create: { preview: 'Criar', report: 'Criado', tone: 'success' },
   update: { preview: 'Alterar', report: 'Alterado', tone: 'success' },
   cancel: { preview: 'Cancelar', report: 'Cancelado', tone: 'success' },
+  delete: { preview: 'Excluir', report: 'Excluído', tone: 'success' },
   unchanged: { preview: 'Sem mudança', report: 'Sem mudança', tone: 'info' },
   conflict: { preview: 'Conflito', report: 'Conflito', tone: 'warning' },
   refused: { preview: 'Recusado', report: 'Não aplicado', tone: 'danger' },
@@ -58,8 +59,9 @@ const REASONS: Record<string, string> = {
   invalid: 'Título, organizador, descrição ou limite de vagas fora do que o site aceita.',
   'invalid-id': 'O ID do evento não está no formato do addon (20 letras e dígitos).',
   'max-below-count': 'O limite de vagas ficaria abaixo das presenças já confirmadas.',
-  deleted: 'O evento foi excluído do site.',
+  deleted: 'Evento excluído no site; a alteração do jogo foi ignorada.',
   'cancelled-new': 'O evento foi criado e cancelado no jogo antes de chegar ao site.',
+  'already-deleted': 'O evento excluído no jogo já não existe no site.',
   'not-allowed': 'Sem permissão para alterar este evento.',
   error: 'Não foi possível aplicar. Tente aplicar o backup de novo.',
 };
@@ -101,16 +103,26 @@ export interface BackupView {
 }
 
 function eventLine(
-  e: Pick<EventReport, 'id' | 'origin' | 'title' | 'startsAt' | 'changedBy' | 'updatedAt'>,
+  e: Pick<EventReport, 'id' | 'origin' | 'title' | 'startsAt' | 'changedBy' | 'updatedAt'> & {
+    /** Situação no jogo (relatórios antigos não têm). */
+    status?: string;
+  },
   action: EventAction,
   reason: string | null,
   changed: string[],
   report: boolean,
 ): EventLineView {
-  const label = ACTION_LABELS[action];
+  const deletion = e.status === 'excluido';
+  // Já excluído no site: informativo, não é aviso.
+  const label =
+    reason === 'already-deleted'
+      ? { preview: 'Já excluído', report: 'Já excluído', tone: 'info' as const }
+      : ACTION_LABELS[action];
   let detail: string | null = reason ? (REASONS[reason] ?? reason) : null;
   if (action === 'conflict') {
-    detail = 'O evento foi alterado no site depois desta alteração do jogo. Vale o site.';
+    detail = deletion
+      ? 'O evento está ativo no site ou foi alterado no site depois da exclusão no jogo. Vale o site.'
+      : 'O evento foi alterado no site depois desta alteração do jogo. Vale o site.';
   } else if (action === 'update' && changed.length) {
     detail = `${report ? 'Mudou' : 'Muda'}: ${changed
       .map((f) => FIELD_LABELS[f as keyof EventChanges] ?? f)
@@ -123,7 +135,7 @@ function eventLine(
     label: report ? label.report : label.preview,
     tone: label.tone,
     origin:
-      `${e.origin === 'jogo' ? 'Criado' : 'Alterado'} no jogo` +
+      `${deletion ? 'Excluído' : e.origin === 'jogo' ? 'Criado' : 'Alterado'} no jogo` +
       `${e.changedBy ? ` por ${e.changedBy}` : ''} em ${dateTime(unixDate(e.updatedAt))}`,
     detail,
   };
@@ -135,6 +147,7 @@ const planReason = (item: EventPlanItem) =>
 const fromBackupEvent = (item: EventPlanItem) => ({
   id: item.backup.id,
   origin: item.backup.origin,
+  status: item.backup.status,
   title: item.backup.title,
   startsAt: item.backup.startsAt,
   changedBy: item.backup.changedBy,

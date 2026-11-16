@@ -20,6 +20,7 @@ export const IGNORED_EVENTS: Record<EventIgnoredReason, string> = {
   past: 'O evento já começou. Ignorado.',
   cancelled: 'O evento foi cancelado. Ignorado.',
   'not-forever': 'O evento não é do WoW Forever. Ignorado.',
+  deleted: 'O evento foi excluído. Ignorado.',
 };
 
 type Reason =

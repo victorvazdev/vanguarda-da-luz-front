@@ -36,6 +36,9 @@ export const MAX_PROFESSIONS = 2;
 
 export type BackupEventOrigin = 'jogo' | 'site';
 
+/** Situação do evento no backup: além das da VDL1, `excluido` (cancelado e excluído no jogo). */
+export type BackupEventStatus = AddonEventStatus | 'excluido';
+
 /** Evento criado ou alterado no jogo, ainda aguardando o site. */
 export interface BackupEvent {
   /** ID do evento. Nos criados no jogo, 20 letras e dígitos: o site cria o evento com ele. */
@@ -46,7 +49,7 @@ export interface BackupEvent {
   startsAt: number;
   description: string;
   organizer: string;
-  status: AddonEventStatus;
+  status: BackupEventStatus;
   /** Horário da alteração no jogo, em segundos Unix (UTC). */
   updatedAt: number;
   /** Limite de confirmados; `0` = sem alteração (o addon não conhece o do site). */
@@ -183,7 +186,9 @@ function readEvent(c: Cursor): BackupEvent {
   const description = c.text();
   const organizer = c.text();
   const status = c.text();
-  if (status !== 'ativo' && status !== 'cancelado') throw new AddonDecodeFailure('payload');
+  if (status !== 'ativo' && status !== 'cancelado' && status !== 'excluido') {
+    throw new AddonDecodeFailure('payload');
+  }
   const updatedAt = c.int();
   const maxAttendees = c.int();
   const guests = c.text();

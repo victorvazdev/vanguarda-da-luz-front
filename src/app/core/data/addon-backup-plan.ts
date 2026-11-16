@@ -81,7 +81,9 @@ export type EventIgnored =
   /** Evento do site que não existe mais (excluído). */
   | 'deleted'
   /** Criado no jogo e cancelado antes de chegar ao site. */
-  | 'cancelled-new';
+  | 'cancelled-new'
+  /** Excluído no jogo e que não existe no site (já excluído ou nunca aplicado). Sem aviso. */
+  | 'already-deleted';
 
 /** Campos do evento que o backup grava no site. */
 export interface EventChanges {
@@ -97,6 +99,8 @@ export type EventPlanItem = { backup: BackupEvent; current: BackupSiteEvent | nu
   | { action: 'create'; changes: EventChanges }
   | { action: 'update'; changes: EventChanges; changed: (keyof EventChanges)[] }
   | { action: 'cancel' }
+  /** Excluir o evento cancelado (status `excluido` no jogo). */
+  | { action: 'delete' }
   | { action: 'unchanged' }
   | { action: 'conflict' }
   | { action: 'refused'; reason: EventRefusal }
@@ -177,6 +181,7 @@ export function planEvent(
   now: Date,
 ): EventPlanItem {
   const base = { backup: e, current };
+  if (e.status === 'excluido') return planDeletion(e, current);
   if (!current) {
     if (e.origin === 'site') return { ...base, action: 'ignored', reason: 'deleted' };
     if (e.status === 'cancelado') return { ...base, action: 'ignored', reason: 'cancelled-new' };
@@ -218,6 +223,26 @@ export function planEvent(
   return { ...base, action: 'update', changes, changed };
 }
 
+/**
+ * Evento cancelado e excluído no jogo: exclui o evento cancelado no site se a exclusão for mais
+ * nova que a última alteração do site; ativo no site ou alteração do site mais nova é conflito.
+ * O site não reativa nem edita eventos cancelados, então "ativo" quer dizer que o site não
+ * chegou a cancelá-lo.
+ */
+function planDeletion(e: BackupEvent, current: BackupSiteEvent | null): EventPlanItem {
+  const base = { backup: e, current };
+  if (!current) return { ...base, action: 'ignored', reason: 'already-deleted' };
+  if (current.status !== 'cancelado' || e.updatedAt * 1000 <= current.lastChangedAt.getTime()) {
+    return { ...base, action: 'conflict' };
+  }
+  if (current.game !== 'forever') return { ...base, action: 'refused', reason: 'not-forever' };
+  return { ...base, action: 'delete' };
+}
+
+/** Evento excluído pelo item (neste backup ou antes): as presenças dele são ignoradas. */
+export const deletesEvent = (item: EventPlanItem) =>
+  item.action === 'delete' || (item.action === 'ignored' && item.reason === 'already-deleted');
+
 /** Evento como fica depois do item, para a prévia das presenças. */
 function eventAfter(item: EventPlanItem): BackupSiteEvent | null {
   const { current } = item;
@@ -236,6 +261,8 @@ function eventAfter(item: EventPlanItem): BackupSiteEvent | null {
       return current && { ...current, ...item.changes };
     case 'cancel':
       return current && { ...current, status: 'cancelado' };
+    case 'delete':
+      return null;
     default:
       return current;
   }
@@ -255,6 +282,8 @@ function countNewer<T extends { character: string }>(
 /** Monta a prévia do backup. Não altera nada. */
 export function planBackup(data: AddonBackup, site: BackupSiteState, now = new Date()): BackupPlan {
   const events = data.events.map((e) => planEvent(e, site.events.get(e.id)?.event ?? null, now));
+
+  const deleted = new Set(events.filter(deletesEvent).map((i) => i.backup.id));
 
   // Presenças sobre o estado dos eventos depois do backup (criados entram sem confirmados).
   const presenceEvents = new Map<string, SiteEventState>();
@@ -280,7 +309,10 @@ export function planBackup(data: AddonBackup, site: BackupSiteState, now = new D
     },
     { lastGeneratedAt: null, characters: site.characters, events: presenceEvents },
     now,
-  ).events;
+  ).events.map((p) =>
+    // Presenças de evento excluído (neste backup ou antes) são ignoradas, sem recriar nada.
+    deleted.has(p.eventId) ? { ...p, event: null, ignored: 'deleted' as const, items: [] } : p,
+  );
 
   const older =
     site.latest && site.latest.id !== site.same?.id && data.generatedAt <= site.latest.generatedAt
@@ -305,6 +337,7 @@ export function countEventActions(items: { action: EventAction }[]): Record<Even
     create: 0,
     update: 0,
     cancel: 0,
+    delete: 0,
     unchanged: 0,
     conflict: 0,
     refused: 0,

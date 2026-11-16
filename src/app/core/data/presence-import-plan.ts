@@ -83,7 +83,13 @@ export type RefusalReason =
   /** O personagem foi removido ou renomeado depois da prévia. */
   | 'character-not-found';
 
-export type EventIgnoredReason = 'unknown' | 'past' | 'cancelled' | 'not-forever';
+export type EventIgnoredReason =
+  | 'unknown'
+  | 'past'
+  | 'cancelled'
+  | 'not-forever'
+  /** Evento excluído no jogo (backup do addon, VDLB1). */
+  | 'deleted';
 
 interface ItemBase {
   /** Personagem como veio do jogo. */

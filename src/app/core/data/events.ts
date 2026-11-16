@@ -5,6 +5,7 @@ import {
   Timestamp,
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -331,9 +332,10 @@ const BATCH_SIZE = 450;
 
 /**
  * Exclui um evento cancelado, as listas de confirmados, de membros e de visitantes, e o registro
- * de cancelamentos (subcoleções, que o Firestore não apaga sozinho). As presenças saem no mesmo lote do evento;
- * se houver mais do que cabe num lote, as restantes saem logo depois (as rules só permitem isso
- * nessas duas situações).
+ * de cancelamentos (subcoleções, que o Firestore não apaga sozinho). Usado pelo botão "Excluir
+ * evento" e pelo backup do addon (evento excluído no jogo). As presenças saem no mesmo lote do
+ * evento; se houver mais do que cabe num lote, as restantes saem logo depois (as rules só
+ * permitem isso nessas duas situações).
  */
 export async function deleteCancelledEvent(db: Firestore, id: string): Promise<EventActionResult> {
   try {
@@ -359,6 +361,9 @@ export async function deleteCancelledEvent(db: Firestore, id: string): Promise<E
       for (const a of attendees.slice(i, i + BATCH_SIZE)) batch.delete(a.ref);
       await batch.commit();
     }
+    // Presenças guardadas dos backups do addon (addon-backup.ts): a string de restauração não
+    // deve levá-las de volta ao jogo. Sem esse registro, ou se falhar, a exclusão vale igual.
+    await deleteDoc(doc(db, 'addonPresences', id)).catch(() => undefined);
     return { ok: true };
   } catch (error) {
     return actionError(error);

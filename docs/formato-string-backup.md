@@ -8,9 +8,14 @@ Implementação de referência no addon: [`VanguardaDaLuz/logic/BackupCodec.lua`
 
 - **Eventos criados ou alterados no jogo.** O Grão Lorde ou um Lorde pode, no jogo:
   - criar um evento;
-  - editar ou cancelar um evento ativo que ainda não começou, seja do site ou criado no jogo.
+  - editar ou cancelar um evento ativo que ainda não começou, seja do site ou criado no jogo;
+  - excluir um evento cancelado, como o botão "Excluir evento" do site.
 
   A alteração vai na hora para os membros da guilda, pelo canal do addon. Ela fica **aguardando o site** até voltar numa exportação `VDL1` com `updatedAt` igual ou maior.
+
+  Exceção: um evento do site (`origin = site`) alterado no jogo que não vem numa `VDL1` com `exportNumber` maior que o `updatedAt` da alteração (e com início dentro da janela) foi excluído no site depois da alteração. O addon o remove, e mensagens de outros membros com essa alteração não o trazem de volta.
+
+  Um evento excluído no jogo sai do calendário e das presenças do addon, mas o addon guarda um registro da exclusão (`status = excluido`) que também aguarda o site. Enquanto ele existe, uma `VDL1` com uma versão do evento igual ou mais antiga que a exclusão não o traz de volta. O registro sai quando chega uma `VDL1` gerada depois da exclusão sem o evento, ou quando o início do evento fica antes da janela. Se o site trouxer uma versão mais nova, ela vale e o registro sai.
 - **Presenças.** Confirmações e cancelamentos do jogo, como na `VDLP1`.
 - **Profissões.** Profissões primárias e nível de cada personagem da guilda, anunciados pelo addon de cada um.
 - **Item level e main.** Item level equipado de cada personagem e o main da conta.
@@ -70,7 +75,7 @@ Contém `eventCount` e depois os blocos de **11 campos**, em ordem alfabética d
 | 4   | `startsAt`      | inteiro | Início                                                                                                                                                     |
 | 5   | `description`   | texto   | Descrição, com até 2000 caracteres. Pode ter quebras de linha                                                                                              |
 | 6   | `organizer`     | texto   | Organizador, com até 40 caracteres                                                                                                                         |
-| 7   | `status`        | texto   | `ativo` ou `cancelado`                                                                                                                                     |
+| 7   | `status`        | texto   | `ativo`, `cancelado` ou `excluido` (evento cancelado excluído no jogo)                                                                                     |
 | 8   | `updatedAt`     | inteiro | Horário da alteração no jogo                                                                                                                               |
 | 9   | `maxAttendees`  | inteiro | Limite de confirmados (1 a 500). `0` = sem alteração (eventos do site: o addon não conhece o limite)                                                     |
 | 10  | `guestsAllowed` | texto   | `1` aceita visitantes, `0` não aceita, vazio = sem alteração (eventos do site)                                                                            |
@@ -162,6 +167,12 @@ Para cada evento da seção 1:
   - Aplicar só se `updatedAt` for **mais recente** que a última alteração do evento no site. Se não for, o evento aparece como **conflito** no relatório, e vale o site.
   - `maxAttendees = 0` e `guestsAllowed` vazio mantêm os valores do site.
   - Valem as regras do site: só eventos ativos que ainda não começaram são editados ou cancelados; o limite de vagas não fica abaixo dos confirmados; e as demais.
+- **Evento do site excluído** (`origin = site`, ID inexistente no site): ignorar, com aviso no relatório. A exclusão vale; a próxima `VDL1` também o remove no addon.
+- **`status = excluido`** (evento cancelado excluído no jogo):
+  - Se o evento existe no site, está **cancelado** e o `updatedAt` é mais recente que a última alteração do site: excluir o evento com a mesma rotina do botão "Excluir evento" do site, junto com as listas de confirmados, visitantes e cancelamentos.
+  - Se o evento está **ativo** no site (foi reativado ou editado depois) ou a alteração do site é mais recente: **conflito** no relatório, e vale o site.
+  - Se o ID não existe no site (já excluído, ou criado no jogo e nunca aplicado): ignorar sem aviso.
+  - As presenças do backup para um evento excluído são ignoradas.
 - **Depois de aplicar**, a próxima `VDL1` traz o evento com o `updatedAt` gravado pelo site, que é igual ou maior que o do jogo. Assim, o addon para de marcá-lo como aguardando o site.
 
 ### Presenças
