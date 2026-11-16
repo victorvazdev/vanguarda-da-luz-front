@@ -4,7 +4,7 @@ Nov 5, 2026 · @Victor Vaz de Oliveira
 
 ## Visão geral
 
-As 32 histórias abaixo têm critérios verificáveis, agrupados por área. Uma história só está pronta quando todos os seus critérios forem atendidos.
+As 35 histórias abaixo têm critérios verificáveis, agrupados por área. Uma história só está pronta quando todos os seus critérios forem atendidos.
 
 | Perfil | Situação | Acesso |
 | --- | --- | --- |
@@ -373,6 +373,7 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 - [ ] Eventos criados antes dessa opção aceitam a confirmação de visitantes.
 - [ ] O formulário solicita o limite de confirmados (membros e visitantes somados), de 1 a 500; por padrão, 40.
 - [ ] O limite é verificado no servidor, inclusive com confirmações simultâneas; um cancelamento libera a vaga.
+- [ ] Ao editar, o novo limite não pode ficar abaixo das presenças já confirmadas; um evento que já está acima do limite continua editável sem alterar o limite.
 - [ ] A administração de eventos mostra quantos confirmaram de quantas vagas.
 - [ ] A administração de eventos identifica os eventos em que somente membros confirmam presença.
 - [ ] Um novo evento não pode ter data e horário no passado.
@@ -393,6 +394,7 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 - [ ] Cada evento leva o ID, o título, o início, a descrição, o organizador, a situação e a data da última alteração; nenhum dado pessoal ou de conta é exportado.
 - [ ] A string segue o formato versionado de `docs/formato-string-addon.md`, com checksum para detectar strings incompletas ou corrompidas.
 - [ ] Acima do limite de tamanho, a string não é exibida e o modal informa a maior quantidade de dias que cabe.
+- [ ] O site registra o número da última exportação do WoW Forever gerada, que vai na string de restauração do backup do addon.
 
 ### Importar presenças do addon
 
@@ -410,6 +412,46 @@ Todas as ações desta seção exigem permissão de administrador, verificada no
 - [ ] Uma string gerada antes ou no mesmo horário da última string importada é recusada.
 - [ ] Ao confirmar, cada alteração é revalidada e aplicada; a página mostra o relatório do que foi aplicado e do que não foi, com o motivo.
 - [ ] As presenças importadas ficam marcadas como vindas do addon na lista de confirmados, e o membro vê no detalhe do evento que a presença veio do jogo, podendo cancelá-la no site.
+
+### Aplicar backup do addon
+
+**Como administrador**, quero colar a string de backup gerada pelo addon da guilda no WoW Forever, para que os eventos criados, editados ou cancelados no jogo e as presenças apareçam no site, e os dados que só existem no jogo fiquem guardados.
+
+- [ ] A área administrativa tem uma seção própria, "Backup do addon", somente para administradores, com uma página para colar a string `VDLB1`.
+- [ ] A string segue o formato de `docs/formato-string-backup.md`; uma string incompleta, corrompida, de outra versão ou com conteúdo inválido é recusada com o motivo.
+- [ ] Antes de aplicar, a página mostra uma prévia por evento (criar, alterar, cancelar, sem mudança, conflito, recusado ou ignorado, com o motivo e quem alterou no jogo), a prévia das presenças como na importação de presenças e as quantidades de profissões, item levels e tempos jogados junto.
+- [ ] Um evento criado no jogo que não existe no site é criado com o mesmo ID gerado pelo addon, no WoW Forever, com o limite de vagas e a confirmação de visitantes informados (padrão: 40 vagas e visitantes aceitos). Ao voltar na próxima exportação, o addon reconhece o evento, sem duplicá-lo.
+- [ ] Um evento criado no jogo pode não ter descrição; o detalhe do evento mostra "Sem descrição".
+- [ ] Um evento que chega já cancelado e nunca existiu no site é ignorado, com aviso. Um evento do site que foi excluído e chega alterado também é ignorado, com aviso.
+- [ ] A alteração de um evento que já existe no site só é aplicada se for mais recente que a última alteração do evento no site (criação, edição ou cancelamento); senão, aparece como conflito e vale o site. Um evento que já está como o jogo informa aparece sem mudança.
+- [ ] Sem limite de vagas ou sem a opção de visitantes na string, o evento mantém os valores do site.
+- [ ] Continuam valendo as regras de edição e cancelamento: somente eventos ativos do WoW Forever que ainda não começaram, novo horário no futuro, limite de vagas entre 1 e 500 e não abaixo dos confirmados. Uma alteração que violaria uma regra não é aplicada e aparece no relatório com o motivo.
+- [ ] As presenças seguem as regras da importação de presenças do addon; as dos eventos criados no backup são aplicadas depois da criação deles.
+- [ ] Um backup gerado antes ou no mesmo horário do último aplicado é aceito, com aviso. Aplicar o mesmo backup duas vezes não muda nada e não cria outro registro no histórico.
+- [ ] Ao confirmar, cada alteração é revalidada e aplicada; a página mostra o relatório do que foi aplicado e do que não foi, com o motivo.
+- [ ] Cada backup aplicado fica guardado com a string original, a data de geração, quem o gerou no jogo, quem o aplicou e quando, e o relatório.
+
+### Ver dados do addon
+
+**Como administrador**, quero ver os dados guardados dos backups do addon, para que eu conheça as profissões, o item level e o tempo jogado junto dos personagens da guilda.
+
+- [ ] Na seção "Backup do addon", a página "Dados do addon" mostra os dados guardados, somente para administradores; nenhum outro perfil lê esses dados.
+- [ ] Os dados juntam todos os backups aplicados: de cada personagem vale o registro mais recente (profissões, item level e main) e o maior tempo jogado junto.
+- [ ] Uma tabela mostra cada personagem com main ou alt (e de quem é alt), item level, profissões com nível atual e máximo, e a data da leitura no jogo.
+- [ ] Outra tabela mostra o tempo jogado junto por main, somando os alts no main, como o addon.
+- [ ] As tabelas podem ser filtradas pelo nome do personagem, sem diferenciar acentos e maiúsculas; o filtro pelo main também mostra os alts dele.
+- [ ] A página lista os backups aplicados, do mais novo para o mais antigo, com o relatório de cada um.
+
+### Restaurar dados no addon
+
+**Como administrador**, quero gerar uma string de restauração para o addon, para que o Grão Lorde ou um Lorde recupere no jogo os dados guardados no site.
+
+- [ ] O botão "Copiar string para restaurar" gera e copia uma string `VDLB1` com os dados combinados: profissões, item level e main, tempo jogado junto e as presenças dos backups guardados.
+- [ ] A string não leva eventos (eles voltam pela exportação para o addon); leva o horário de geração, o número da última exportação do WoW Forever gerada pelo site (ou 0) e nenhum autor.
+- [ ] Por padrão, entram as presenças de eventos com início nos últimos 30 dias ou no futuro; uma opção inclui as presenças antigas.
+- [ ] Acima do tamanho que o jogo aceita bem, a página avisa.
+- [ ] Cada backup do histórico permite copiar a string original.
+- [ ] No jogo, a restauração só junta os dados mais novos e nunca apaga nada.
 
 ### Ver presenças confirmadas
 

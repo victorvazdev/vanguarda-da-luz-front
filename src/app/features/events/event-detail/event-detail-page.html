@@ -54,7 +54,12 @@
             </dl>
 
             <h2 class="event-detail__subtitle">Descrição</h2>
-            <p class="event-detail__description">{{ e.description }}</p>
+            @if (e.description) {
+              <p class="event-detail__description">{{ e.description }}</p>
+            } @else {
+              <!-- Eventos criados no jogo (backup do addon) podem não ter descrição. -->
+              <p class="muted">Sem descrição.</p>
+            }
 
             @if (isAdmin()) {
               <div class="event-detail__admin">

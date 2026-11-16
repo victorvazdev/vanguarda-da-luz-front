@@ -71,6 +71,7 @@ export type EventActionError =
   | 'cancelled'
   | 'not-cancelled'
   | 'game-locked'
+  | 'max-below-count'
   | 'not-found'
   | 'not-allowed'
   | 'network'
@@ -284,6 +285,12 @@ export async function updateEvent(
       if (moved && !isUpcoming(input.startsAt)) throw new ActionBlocked('past');
       if (current.game !== input.game && !canChangeGame(current)) {
         throw new ActionBlocked('game-locked');
+      }
+      if (
+        input.maxAttendees !== current.maxAttendees &&
+        input.maxAttendees < current.attendeeCount
+      ) {
+        throw new ActionBlocked('max-below-count');
       }
       tx.update(ref, { ...clean(input), updatedAt: serverTimestamp(), updatedBy: adminUid });
     });

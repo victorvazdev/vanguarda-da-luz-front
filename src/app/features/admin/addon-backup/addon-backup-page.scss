@@ -1,0 +1,47 @@
+@use '../../../../styles/mixins' as *;
+
+// Backup do addon em página própria: coluna única, como a importação de presenças.
+.addon-backup {
+  max-width: 48rem;
+}
+
+.addon-backup__card {
+  @include card;
+}
+
+.addon-backup__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.addon-backup__title {
+  margin: 0;
+}
+
+.addon-backup__string {
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.addon-backup__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  margin: 0 0 var(--space-4);
+
+  dt {
+    font-weight: 600;
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.addon-backup__subtitle {
+  margin: var(--space-4) 0 0;
+}

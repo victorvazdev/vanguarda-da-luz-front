@@ -8,6 +8,7 @@ export const ADMIN_TABS = [
   { label: 'Candidaturas', path: '/admin/candidaturas' },
   { label: 'Membros', path: '/admin/membros' },
   { label: 'Eventos', path: '/admin/eventos' },
+  { label: 'Backup do addon', path: '/admin/backup-addon' },
   { label: 'Guilda', path: '/admin/guilda' },
   { label: 'Redes sociais', path: '/admin/redes-sociais' },
 ] as const;
