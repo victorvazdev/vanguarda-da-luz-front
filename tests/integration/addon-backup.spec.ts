@@ -19,7 +19,12 @@ import {
   type BackupEvent,
 } from '../../src/app/core/data/addon-backup-format';
 import { submitApplication } from '../../src/app/core/data/applications';
-import { createEvent, updateEvent } from '../../src/app/core/data/events';
+import {
+  cancelEvent,
+  createEvent,
+  deleteCancelledEvent,
+  updateEvent,
+} from '../../src/app/core/data/events';
 import { approveApplication } from '../../src/app/core/data/review';
 import { adminGet, adminPatch, useEmulators, type Client } from './emulators';
 
@@ -201,6 +206,78 @@ describe('Backup do addon: eventos', () => {
     expect(await adminGet(`events/${cancelled}`)).toMatchObject({ status: 'cancelado' });
     expect(await adminGet(`events/${conflict}`)).toMatchObject({ title: 'Encontro da guilda' });
     expect(await adminGet(`events/${gone}`)).toBeNull();
+  });
+
+  it('não recria um evento do site excluído e aplica o resto do backup', async () => {
+    const admin = await firstAdmin();
+    const member = await foreverMember(admin, 'Tavia', 'Lunara', 'Sombraviva');
+    const edited = await siteEvent(admin);
+    // Editado no jogo e, depois, cancelado e excluído no site.
+    const deleted = await siteEvent(admin);
+    expect(await cancelEvent(admin.db, admin.uid, deleted)).toEqual({ ok: true });
+    expect(await deleteCancelledEvent(admin.db, deleted)).toEqual({ ok: true });
+    const later = now() + 120;
+
+    const { report, recorded } = await apply(
+      admin,
+      backupOf({
+        events: [
+          gameEvent(),
+          gameEvent({
+            id: deleted,
+            origin: 'site',
+            title: 'Alterado no jogo antes da exclusão',
+            description: 'Nova descrição.',
+            maxAttendees: 0,
+            guestsAllowed: null,
+            updatedAt: now() - 600,
+          }),
+          gameEvent({
+            id: edited,
+            origin: 'site',
+            title: 'Encontro (novo título)',
+            description: 'Nova descrição.',
+            startsAt: now() + 5 * DAY,
+            maxAttendees: 0,
+            guestsAllowed: null,
+            updatedAt: later,
+          }),
+        ],
+        attendance: [
+          { id: ID, records: [{ character: 'Árya Ñúñez', status: 1, updatedAt: now() }] },
+          {
+            id: deleted,
+            records: [{ character: 'Lunara Sombraviva', status: 1, updatedAt: now() }],
+          },
+          {
+            id: edited,
+            records: [{ character: 'Lunara Sombraviva', status: 1, updatedAt: now() }],
+          },
+        ],
+      }),
+    );
+
+    expect(actions(report)).toEqual({
+      [ID]: 'create',
+      [deleted]: 'ignored:deleted',
+      [edited]: 'update',
+    });
+    expect(recorded).toBe('new');
+    // O evento excluído não volta, nem pelas presenças.
+    expect(await adminGet(`events/${deleted}`)).toBeNull();
+    expect(await adminGet(`events/${deleted}/attendees/${member.uid}`)).toBeNull();
+    const presence = (eventId: string) => report.presences.find((p) => p.eventId === eventId)!;
+    expect(presence(deleted)).toMatchObject({ ignored: 'unknown', items: [] });
+    // Os demais eventos e presenças foram aplicados.
+    expect(await adminGet(`events/${ID}/guests/forever:Árya:Ñúñez`)).not.toBeNull();
+    expect(await adminGet(`events/${edited}`)).toMatchObject({ title: 'Encontro (novo título)' });
+    expect(await adminGet(`events/${edited}/attendees/${member.uid}`)).not.toBeNull();
+    // O aviso fica no histórico.
+    const [stored] = await listBackups(admin.db);
+    expect(stored.report.events.find((e) => e.id === deleted)).toMatchObject({
+      action: 'ignored',
+      reason: 'deleted',
+    });
   });
 
   it('não baixa o limite de vagas abaixo dos confirmados', async () => {

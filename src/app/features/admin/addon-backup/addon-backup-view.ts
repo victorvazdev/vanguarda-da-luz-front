@@ -58,7 +58,7 @@ const REASONS: Record<string, string> = {
   invalid: 'Título, organizador, descrição ou limite de vagas fora do que o site aceita.',
   'invalid-id': 'O ID do evento não está no formato do addon (20 letras e dígitos).',
   'max-below-count': 'O limite de vagas ficaria abaixo das presenças já confirmadas.',
-  deleted: 'O evento foi excluído do site.',
+  deleted: 'Evento excluído no site; a alteração do jogo foi ignorada.',
   'cancelled-new': 'O evento foi criado e cancelado no jogo antes de chegar ao site.',
   'not-allowed': 'Sem permissão para alterar este evento.',
   error: 'Não foi possível aplicar. Tente aplicar o backup de novo.',

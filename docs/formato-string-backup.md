@@ -11,6 +11,8 @@ Implementação de referência no addon: [`VanguardaDaLuz/logic/BackupCodec.lua`
   - editar ou cancelar um evento ativo que ainda não começou, seja do site ou criado no jogo.
 
   A alteração vai na hora para os membros da guilda, pelo canal do addon. Ela fica **aguardando o site** até voltar numa exportação `VDL1` com `updatedAt` igual ou maior.
+
+  Exceção: um evento do site (`origin = site`) alterado no jogo que não vem numa `VDL1` com `exportNumber` maior que o `updatedAt` da alteração (e com início dentro da janela) foi excluído no site depois da alteração. O addon o remove, e mensagens de outros membros com essa alteração não o trazem de volta.
 - **Presenças.** Confirmações e cancelamentos do jogo, como na `VDLP1`.
 - **Profissões.** Profissões primárias e nível de cada personagem da guilda, anunciados pelo addon de cada um.
 - **Item level e main.** Item level equipado de cada personagem e o main da conta.
@@ -162,6 +164,7 @@ Para cada evento da seção 1:
   - Aplicar só se `updatedAt` for **mais recente** que a última alteração do evento no site. Se não for, o evento aparece como **conflito** no relatório, e vale o site.
   - `maxAttendees = 0` e `guestsAllowed` vazio mantêm os valores do site.
   - Valem as regras do site: só eventos ativos que ainda não começaram são editados ou cancelados; o limite de vagas não fica abaixo dos confirmados; e as demais.
+- **Evento do site excluído** (`origin = site`, ID inexistente no site): ignorar, com aviso no relatório. A exclusão vale; a próxima `VDL1` também o remove no addon.
 - **Depois de aplicar**, a próxima `VDL1` traz o evento com o `updatedAt` gravado pelo site, que é igual ou maior que o do jogo. Assim, o addon para de marcá-lo como aguardando o site.
 
 ### Presenças
