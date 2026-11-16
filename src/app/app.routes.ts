@@ -22,6 +22,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/public/rules/rules-page').then((m) => m.RulesPage),
   },
   {
+    // Público: qualquer perfil baixa o addon.
+    path: 'addon',
+    title: 'Addon da guilda',
+    loadComponent: () => import('./features/public/addon/addon-page').then((m) => m.AddonPage),
+  },
+  {
     path: 'cadastro',
     title: 'Crie sua conta',
     canActivate: [guestGuard],

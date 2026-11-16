@@ -1,0 +1,137 @@
+.addon-name {
+  margin: 0 0 var(--space-2);
+  color: var(--color-gold);
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+// Chamada de download logo abaixo do cabeçalho, com o brilho dourado da marca.
+.download {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--gradient-radiance), var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.download__button {
+  padding-inline: var(--space-6);
+  font-size: 1.05rem;
+}
+
+.download__hint {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+// Aviso de que o addon só funciona dentro da guilda.
+.members-only {
+  margin-bottom: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  border-left: 3px solid var(--color-azure);
+  border-radius: var(--radius);
+  background: rgb(127 168 255 / 8%);
+
+  p {
+    margin: 0;
+  }
+}
+
+.members-only__title {
+  margin: 0 0 var(--space-1);
+  color: var(--color-azure);
+  font-family: var(--font-body);
+  font-size: 1rem;
+}
+
+.features {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.feature {
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.feature__title {
+  margin: 0 0 var(--space-2);
+  color: var(--color-heading);
+  font-size: 1.05rem;
+}
+
+.bullets {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-left: var(--space-5);
+  color: var(--color-text-muted);
+
+  li::marker {
+    color: var(--color-gold);
+  }
+}
+
+.permissions {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.permissions__row {
+  dt {
+    color: var(--color-heading);
+    font-weight: 700;
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.table-scroll {
+  margin-bottom: var(--space-3);
+  overflow-x: auto;
+}
+
+.commands {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: var(--space-2) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  thead th {
+    background: linear-gradient(180deg, var(--color-azure-deep), var(--color-surface));
+    color: var(--color-gold);
+  }
+
+  tbody th {
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  code {
+    color: var(--color-gold-light);
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .download__button {
+    width: 100%;
+  }
+}

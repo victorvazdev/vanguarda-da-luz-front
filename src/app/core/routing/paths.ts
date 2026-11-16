@@ -13,6 +13,8 @@ export const PATHS = {
   application: '/candidatura',
   account: '/minha-conta',
   calendar: '/calendario',
+  /** Download do addon da guilda (público, em destaque no menu). */
+  addon: '/addon',
   /** Novo evento a partir do calendário (somente administradores). */
   newEvent: '/calendario/novo',
   admin: '/admin',

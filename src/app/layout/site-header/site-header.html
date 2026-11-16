@@ -22,6 +22,32 @@
           <li>
             @if (item.kind === 'cta') {
               <a class="btn btn--primary nav__cta" [routerLink]="item.path">{{ item.label }}</a>
+            } @else if (item.kind === 'highlight') {
+              <a
+                class="btn btn--outline nav__highlight"
+                [routerLink]="item.path"
+                routerLinkActive="nav__highlight--active"
+                ariaCurrentWhenActive="page"
+              >
+                <svg
+                  class="nav__icon"
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path
+                    d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                {{ item.label }}
+              </a>
             } @else {
               <a
                 class="nav__link"

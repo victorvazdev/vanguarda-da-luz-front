@@ -43,6 +43,17 @@ describe('SiteHeader', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
   });
 
+  it('mostra o botão de destaque do addon para visitantes e membros', async () => {
+    for (const access of ['visitor', 'member'] as const) {
+      TestBed.resetTestingModule();
+      const { el } = await render(access);
+      const addon = el.querySelector<HTMLAnchorElement>('nav a.nav__highlight');
+      expect(addon?.getAttribute('href')).toBe('/addon');
+      expect(addon?.textContent?.trim()).toBe('Baixar addon');
+      expect(addon?.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    }
+  });
+
   it('Sair encerra a sessão', async () => {
     const { el, stub } = await render('pending');
     const sair = [...el.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Sair');
