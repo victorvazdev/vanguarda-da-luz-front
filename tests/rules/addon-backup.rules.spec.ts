@@ -252,6 +252,17 @@ describe('Estado combinado e presenças guardadas', () => {
     await assertFails(setDoc(ref, presences({ records: [] })));
   });
 
+  it('as presenças guardadas saem só depois que o evento não existe mais', async () => {
+    const { deleteDoc } = await import('firebase/firestore');
+    await seed(env(), {
+      'addonPresences/raid': { records: {} },
+      'addonPresences/sumiu': { records: {} },
+    });
+    await assertFails(deleteDoc(doc(admin, 'addonPresences', 'raid')));
+    await assertFails(deleteDoc(doc(member, 'addonPresences', 'sumiu')));
+    await assertSucceeds(deleteDoc(doc(admin, 'addonPresences', 'sumiu')));
+  });
+
   it('ninguém além de administradores lê ou grava', async () => {
     await seed(env(), {
       'addonState/characters': { together: {} },

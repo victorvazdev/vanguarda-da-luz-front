@@ -60,6 +60,8 @@ const backup: AddonBackup = {
     gameEvent({ id: 'Hq2mB8xY4nRcT0vKs9Ue', status: 'cancelado' }),
     // Evento do site excluído depois da alteração no jogo.
     gameEvent({ id: 'Zx9wE1dN7sA3gF6hJ0Ko', origin: 'site', title: 'Excluído no site' }),
+    // Excluído no jogo e que já não existe no site: informativo.
+    gameEvent({ id: 'Yx9wE1dN7sA3gF6hJ0Ko', status: 'excluido', title: 'Excluído no jogo' }),
   ],
   attendance: [
     {
@@ -214,6 +216,9 @@ describe('AddonBackupPage', () => {
     expect(text).toContain('criado e cancelado no jogo antes de chegar ao site');
     expect(text).toContain('Excluído no site Ignorado');
     expect(text).toContain('Evento excluído no site; a alteração do jogo foi ignorada.');
+    expect(text).toContain('Excluído no jogo Já excluído');
+    expect(text).toContain('Excluído no jogo por Victor Vaz');
+    expect(text).toContain('O evento excluído no jogo já não existe no site.');
     expect(text).toContain('Confirmações de visitantes (1) Árya Ñúñez — Visitante');
     expect(text).toContain('Presenças de 1 evento ignorado');
     expect(text).toContain('Profissões 1 personagem, 1 mais recente que o guardado');

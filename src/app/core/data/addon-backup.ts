@@ -55,7 +55,7 @@ import {
   type PresenceRecords,
 } from './addon-backup-state';
 import { toDate } from './applications';
-import { eventFromData } from './events';
+import { deleteCancelledEvent, eventFromData } from './events';
 import {
   errorCode,
   loadEventState,
@@ -83,6 +83,8 @@ const PRESENCE_CHUNK = 100;
 export interface EventReport {
   id: string;
   origin: 'jogo' | 'site';
+  /** Situação no jogo: `ativo`, `cancelado` ou `excluido` (relatórios antigos não têm). */
+  status?: string;
   title: string;
   /** Início pedido pelo jogo, em segundos Unix. */
   startsAt: number;
@@ -271,6 +273,7 @@ function eventReport(item: EventPlanItem, override?: { reason: string }): EventR
   return {
     id: e.id,
     origin: e.origin,
+    status: e.status,
     title: e.title,
     startsAt: e.startsAt,
     changedBy: e.changedBy,
@@ -352,6 +355,35 @@ async function applyEvent(
   }
 }
 
+/**
+ * Exclui um evento cancelado e excluído no jogo, com a mesma rotina do botão "Excluir evento"
+ * do site (evento, confirmados, visitantes e cancelamentos). Relê o evento e refaz a decisão
+ * antes; a exclusão não cabe numa transação porque as subcoleções precisam ser listadas.
+ */
+async function applyDeletion(db: Firestore, planned: EventPlanItem): Promise<EventReport> {
+  if (planned.action !== 'delete') return eventReport(planned);
+  try {
+    const snap = await getDoc(doc(db, 'events', planned.backup.id));
+    const current = snap.exists() ? backupSiteEvent(snap.id, snap.data()) : null;
+    const item = planEvent(planned.backup, current, new Date());
+    if (item.action !== 'delete') return eventReport(item);
+    const result = await deleteCancelledEvent(db, planned.backup.id);
+    if (result.ok) return eventReport(item);
+    // Excluído ou alterado por outra pessoa entre a leitura e a exclusão.
+    if (result.error === 'not-found') {
+      return eventReport({ ...item, action: 'ignored', reason: 'already-deleted' });
+    }
+    if (result.error === 'not-cancelled') return eventReport({ ...item, action: 'conflict' });
+    return eventReport(planned, {
+      reason: result.error === 'not-allowed' ? 'not-allowed' : 'error',
+    });
+  } catch (error) {
+    const code = errorCode(error);
+    if (code === 'network') throw error;
+    return eventReport(planned, { reason: code === 'not-allowed' ? 'not-allowed' : 'error' });
+  }
+}
+
 function presenceItemReport(item: PlanItem, outcome: ItemOutcome): PresenceItemReport {
   return {
     character: item.character,
@@ -370,18 +402,33 @@ function presenceItemReport(item: PlanItem, outcome: ItemOutcome): PresenceItemR
   };
 }
 
-/** Junta as presenças do backup em `addonPresences`, em transações de até 100 eventos. */
+/**
+ * Junta as presenças do backup em `addonPresences`, em transações de até 100 eventos. As de
+ * eventos excluídos (`deleted`) não são guardadas, e as já guardadas saem, para a string de
+ * restauração não levá-las de volta ao jogo.
+ */
 async function storePresences(
   db: Firestore,
   data: AddonBackup,
   startsAt: Map<string, number | null>,
+  deleted: Set<string>,
 ): Promise<void> {
   for (let i = 0; i < data.attendance.length; i += PRESENCE_CHUNK) {
     const chunk = data.attendance.slice(i, i + PRESENCE_CHUNK);
     await runTransaction(db, async (tx) => {
       const refs = chunk.map((e) => doc(db, ADDON_PRESENCES, e.id));
       const snaps = await Promise.all(refs.map((ref) => tx.get(ref)));
+      // Só sai o registro de evento que não existe mais (igual às rules).
+      const gone = await Promise.all(
+        chunk.map(async (e) =>
+          deleted.has(e.id) ? !(await tx.get(doc(db, 'events', e.id))).exists() : false,
+        ),
+      );
       chunk.forEach((e, k) => {
+        if (deleted.has(e.id)) {
+          if (gone[k] && snaps[k].exists()) tx.delete(refs[k]);
+          return;
+        }
         const stored = (snaps[k].get('records') ?? {}) as PresenceRecords;
         const merged = mergePresences(stored, e.records);
         const start = startsAt.get(e.id) ?? null;
@@ -419,9 +466,15 @@ export async function applyAddonBackup(
   try {
     const data = plan.backup;
 
-    // 1. Eventos (antes das presenças: as dos eventos criados vêm depois da criação).
-    const events: EventReport[] = [];
-    for (const item of plan.events) events.push(await applyEvent(db, item, adminUid));
+    // 1. Eventos: criações, edições e cancelamentos; depois, as exclusões; as presenças vêm
+    // por último (as dos eventos criados, depois da criação). O relatório segue a ordem da prévia.
+    const events: EventReport[] = new Array(plan.events.length);
+    for (const [k, item] of plan.events.entries()) {
+      if (item.action !== 'delete') events[k] = await applyEvent(db, item, adminUid);
+    }
+    for (const [k, item] of plan.events.entries()) {
+      if (item.action === 'delete') events[k] = await applyDeletion(db, item);
+    }
 
     // 2. Presenças, com as mesmas transações da importação da VDLP1.
     const presences: PresenceEventReport[] = [];
@@ -441,7 +494,15 @@ export async function applyAddonBackup(
     }
 
     // 3. Estado combinado das presenças (com o início do evento, para filtrar a restauração).
-    await storePresences(db, data, new Map(presences.map((p) => [p.eventId, p.startsAt])));
+    const deleted = new Set(
+      events
+        .filter(
+          (e) =>
+            e.action === 'delete' || (e.action === 'ignored' && e.reason === 'already-deleted'),
+        )
+        .map((e) => e.id),
+    );
+    await storePresences(db, data, new Map(presences.map((p) => [p.eventId, p.startsAt])), deleted);
 
     const report: BackupReport = {
       events,

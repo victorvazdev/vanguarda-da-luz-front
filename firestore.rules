@@ -327,7 +327,10 @@ service cloud.firestore {
         && (request.resource.data.startsAt == null
           || request.resource.data.startsAt is timestamp)
         && request.resource.data.updatedAt == request.time;
-      allow delete: if false;
+      // Sai quando o evento é excluído (no site ou no jogo), para a restauração não levar de
+      // volta ao jogo presenças de um evento que não existe mais.
+      allow delete: if isAdmin()
+        && !exists(/databases/$(database)/documents/events/$(eventId));
     }
 
     // Última string de eventos (VDL1) do WoW Forever gerada: o `exportNumber` vai na string

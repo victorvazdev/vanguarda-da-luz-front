@@ -280,6 +280,100 @@ describe('Backup do addon: eventos', () => {
     });
   });
 
+  it('exclui de verdade o evento cancelado e excluído no jogo, com as subcoleções', async () => {
+    const admin = await firstAdmin();
+    const member = await foreverMember(admin, 'Tavia', 'Lunara', 'Sombraviva');
+    const removed = await siteEvent(admin);
+    const active = await siteEvent(admin);
+    // Confirmados (membro e visitante) e um cancelamento registrado, vindos do jogo.
+    const record = (character: string, status: 0 | 1, updatedAt: number) => ({
+      character,
+      status,
+      updatedAt,
+    });
+    await apply(
+      admin,
+      backupOf({
+        attendance: [
+          {
+            id: removed,
+            records: [
+              record('Lunara Sombraviva', 1, now() - 60),
+              record('Árya Ñúñez', 1, now() - 60),
+              record('Dorvan Pedra', 1, now() - 60),
+            ],
+          },
+        ],
+      }),
+    );
+    await apply(
+      admin,
+      backupOf({ attendance: [{ id: removed, records: [record('Dorvan Pedra', 0, now() - 30)] }] }),
+    );
+    expect(
+      await adminGet(`events/${removed}/cancellations/guests:forever:Dorvan:Pedra`),
+    ).not.toBeNull();
+    expect(await adminGet(`addonPresences/${removed}`)).not.toBeNull();
+    expect(await cancelEvent(admin.db, admin.uid, removed)).toEqual({ ok: true });
+
+    const later = now() + 120;
+    const { report, plan } = await apply(
+      admin,
+      backupOf({
+        events: [
+          gameEvent({ id: removed, origin: 'site', status: 'excluido', updatedAt: later }),
+          gameEvent({ id: active, origin: 'site', status: 'excluido', updatedAt: later }),
+          // Criado, cancelado e excluído no jogo antes de chegar ao site: não é criado.
+          gameEvent({ status: 'excluido', updatedAt: later }),
+        ],
+        attendance: [
+          { id: removed, records: [record('Lunara Sombraviva', 1, later)] },
+          { id: ID, records: [record('Árya Ñúñez', 1, later)] },
+          { id: active, records: [record('Lunara Sombraviva', 1, later)] },
+        ],
+      }),
+    );
+    expect(plan.events.find((e) => e.backup.id === removed)?.action).toBe('delete');
+    expect(actions(report)).toEqual({
+      [removed]: 'delete',
+      [active]: 'conflict',
+      [ID]: 'ignored:already-deleted',
+    });
+
+    // Evento, confirmados, visitantes, cancelamentos e presenças guardadas: tudo excluído.
+    expect(await adminGet(`events/${removed}`)).toBeNull();
+    expect(await adminGet(`events/${removed}/attendees/${member.uid}`)).toBeNull();
+    expect(await adminGet(`events/${removed}/guests/forever:Árya:Ñúñez`)).toBeNull();
+    expect(
+      await adminGet(`events/${removed}/cancellations/guests:forever:Dorvan:Pedra`),
+    ).toBeNull();
+    expect(await adminGet(`addonPresences/${removed}`)).toBeNull();
+    // O evento criado no jogo e já excluído não é criado, nem pelas presenças.
+    expect(await adminGet(`events/${ID}`)).toBeNull();
+    expect(await adminGet(`addonPresences/${ID}`)).toBeNull();
+    // Presenças de eventos excluídos são ignoradas; a do evento ativo (conflito) vale.
+    const presence = (eventId: string) => report.presences.find((p) => p.eventId === eventId)!;
+    expect(presence(removed)).toMatchObject({ ignored: 'deleted', items: [] });
+    expect(presence(ID)).toMatchObject({ ignored: 'deleted', items: [] });
+    expect(await adminGet(`events/${active}`)).toMatchObject({ status: 'ativo' });
+    expect(await adminGet(`events/${active}/attendees/${member.uid}`)).not.toBeNull();
+  });
+
+  it('o botão "Excluir evento" do site também remove as presenças guardadas', async () => {
+    const admin = await firstAdmin();
+    const id = await siteEvent(admin);
+    await apply(
+      admin,
+      backupOf({
+        attendance: [{ id, records: [{ character: 'Maren Luz', status: 1, updatedAt: now() }] }],
+      }),
+    );
+    expect(await adminGet(`addonPresences/${id}`)).not.toBeNull();
+    await cancelEvent(admin.db, admin.uid, id);
+    expect(await deleteCancelledEvent(admin.db, id)).toEqual({ ok: true });
+    expect(await adminGet(`addonPresences/${id}`)).toBeNull();
+  });
+
   it('não baixa o limite de vagas abaixo dos confirmados', async () => {
     const admin = await firstAdmin();
     const id = await siteEvent(admin);

@@ -196,6 +196,68 @@ describe('Eventos que já existem no site', () => {
   });
 });
 
+describe('Eventos excluídos no jogo', () => {
+  const deleted = (over: Partial<BackupEvent> = {}) =>
+    gameEvent({ origin: 'site', status: 'excluido', ...over });
+  const cancelled = (over: Partial<BackupSiteEvent> = {}) =>
+    siteEvent({ status: 'cancelado', ...over });
+
+  it('exclui o evento cancelado quando a exclusão é mais nova que o site', () => {
+    expect(planEvent(deleted(), cancelled(), NOW).action).toBe('delete');
+    // Mesmo um evento que já começou (o site exclui cancelados a qualquer momento).
+    const past = cancelled({ startsAt: new Date('2026-11-01T00:00:00Z') });
+    expect(planEvent(deleted(), past, NOW).action).toBe('delete');
+  });
+
+  it('é conflito se o evento está ativo no site', () => {
+    expect(planEvent(deleted(), siteEvent(), NOW).action).toBe('conflict');
+  });
+
+  it('é conflito se o site alterou o evento depois da exclusão no jogo', () => {
+    const later = cancelled({ lastChangedAt: new Date((GAME + 60) * 1000) });
+    expect(planEvent(deleted(), later, NOW).action).toBe('conflict');
+    const same = cancelled({ lastChangedAt: new Date(GAME * 1000) });
+    expect(planEvent(deleted(), same, NOW).action).toBe('conflict');
+  });
+
+  it('ignora sem aviso quando o evento não existe no site', () => {
+    for (const origin of ['site', 'jogo'] as const) {
+      expect(planEvent(deleted({ origin }), null, NOW)).toMatchObject({
+        action: 'ignored',
+        reason: 'already-deleted',
+      });
+    }
+  });
+
+  it('recusa evento que não é do WoW Forever', () => {
+    expect(planEvent(deleted(), cancelled({ game: 'retail' }), NOW)).toMatchObject({
+      action: 'refused',
+      reason: 'not-forever',
+    });
+  });
+
+  it('ignora as presenças de evento excluído, neste backup ou antes', () => {
+    const presence = (id: string) => ({
+      id,
+      records: [{ character: 'Maren Luz', status: 1 as const, updatedAt: GAME }],
+    });
+    const plan = planBackup(
+      backup({
+        events: [deleted(), deleted({ id: 'Hq2mB8xY4nRcT0vKs9Ue', origin: 'jogo' })],
+        attendance: [presence(ID), presence('Hq2mB8xY4nRcT0vKs9Ue')],
+      }),
+      site({ events: new Map([[ID, state(cancelled())]]) }),
+      NOW,
+    );
+    expect(plan.events.map((e) => e.action)).toEqual(['delete', 'ignored']);
+    expect(plan.presences).toEqual([
+      { eventId: ID, event: null, ignored: 'deleted', items: [] },
+      { eventId: 'Hq2mB8xY4nRcT0vKs9Ue', event: null, ignored: 'deleted', items: [] },
+    ]);
+    expect(countEventActions(plan.events)).toMatchObject({ delete: 1, ignored: 1 });
+  });
+});
+
 describe('Prévia do backup', () => {
   it('aplica as presenças de um evento criado neste backup', () => {
     const plan = planBackup(
